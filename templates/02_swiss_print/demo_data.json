@@ -1,0 +1,433 @@
+{
+  "meta": {
+    "title": "Swiss Print Collage · 组件展厅",
+    "style": "02_swiss_print",
+    "version": "1.1.0",
+    "fps": 30,
+    "size": [
+      1920,
+      1080
+    ],
+    "avatar": {
+      "video": "",
+      "bg": "assets/studio_bg.png",
+      "tag": "YOUR NAME · CH01"
+    },
+    "bgm": ""
+  },
+  "theme": {
+    "paper": "#EDE8DC",
+    "sheet": "#F7F4EC",
+    "red": "#D92323",
+    "ink": "#141414"
+  },
+  "scenes": [
+    {
+      "type": "cover",
+      "label": "封面",
+      "dur": 6,
+      "avatar": "card",
+      "sub": [
+        "这一期我们聊一个问题",
+        "怎样用一套模板稳定做出口播视频"
+      ],
+      "data": {
+        "kicker": "EPISODE 02 — 开场",
+        "title": "口播视频\n模板化",
+        "chapterLabel": "CHAPTER",
+        "chapter": "01",
+        "subtitle": "从文案到成片\n一套 **JSON** 剧本驱动",
+        "dim": "1 份剧本 = 1 条视频",
+        "stamp": "开工",
+        "stampSmall": "START"
+      }
+    },
+    {
+      "type": "stat",
+      "label": "数据",
+      "dur": 7,
+      "avatar": "card",
+      "sub": [
+        "先看一组数字",
+        "以前剪一条要三个小时",
+        "现在用模板二十分钟出片"
+      ],
+      "data": {
+        "kicker": "BY THE NUMBERS — 数据",
+        "title": "一条片要剪多久？",
+        "items": [
+          {
+            "value": 180,
+            "unit": "分钟",
+            "label": "以前 · 手动剪辑",
+            "bar": 1
+          },
+          {
+            "value": 20,
+            "unit": "分钟",
+            "label": "现在 · 模板出片",
+            "bar": 0.11
+          }
+        ],
+        "delta": "快 9 倍",
+        "deltaSmall": "×9 FASTER",
+        "note": "同一条 3 分钟口播实测"
+      }
+    },
+    {
+      "type": "steps",
+      "label": "步骤",
+      "dur": 8,
+      "avatar": "card",
+      "sub": [
+        "整个流程拆成四步",
+        "文案、录制、剪辑、发布",
+        "每一步的产物都放进同一个文件夹"
+      ],
+      "data": {
+        "kicker": "STEP BY STEP — 流程",
+        "title": "四步做完一条视频",
+        "dim": "4 STEPS",
+        "folder": "MY_VIDEO_PROJECT /",
+        "folderBig": "EP02",
+        "folderMeta": "PROJECT ROOT\n4 ITEMS",
+        "items": [
+          {
+            "title": "文案",
+            "desc": "script.md"
+          },
+          {
+            "title": "录制",
+            "desc": "raw/*.mp4"
+          },
+          {
+            "title": "剪辑",
+            "desc": "timeline.json"
+          },
+          {
+            "title": "发布",
+            "desc": "final.mp4"
+          }
+        ],
+        "label": "统一归档",
+        "labelSmall": "ALL IN ONE"
+      }
+    },
+    {
+      "type": "checklist",
+      "label": "清单",
+      "dur": 8,
+      "avatar": "card",
+      "sub": [
+        "开工之前先写一份规则清单",
+        "范围、素材、确认、自查",
+        "这就是项目的工作说明"
+      ],
+      "data": {
+        "kicker": "PROJECT ROOT / 工作说明",
+        "title": "RULES.md",
+        "subtitle": "这个项目的执行规则",
+        "items": [
+          {
+            "k": "工作范围",
+            "d": "只在项目文件夹内读写"
+          },
+          {
+            "k": "素材只读",
+            "d": "原始素材不改、不删"
+          },
+          {
+            "k": "先确认再动手",
+            "d": "关键步骤先给我看"
+          },
+          {
+            "k": "先自查再交付",
+            "d": "改完画面先截图检查"
+          }
+        ],
+        "noteLead": "可以理解成 ——",
+        "note": "这个项目的工作说明"
+      }
+    },
+    {
+      "type": "compare",
+      "label": "对比",
+      "dur": 7,
+      "avatar": "card",
+      "sub": [
+        "很多人一上来就让 AI 直接开干",
+        "更好的做法是先把规矩讲清楚"
+      ],
+      "data": {
+        "kicker": "BEFORE / AFTER — 对比",
+        "title": "先立规矩，再开工",
+        "wrong": {
+          "label": "✕ 常见做法",
+          "title": "一上来\n直接开干",
+          "desc": "需求每次重新解释，结果忽好忽坏。",
+          "stamp": "✕ 别这样"
+        },
+        "right": {
+          "label": "✓ 推荐做法",
+          "title": "先写规则\n再交给 AI",
+          "desc": "规则自动加载，每次都按同一标准执行。"
+        },
+        "verdictLabel": "VERDICT",
+        "verdict": "规则写一次，**每次都生效**"
+      }
+    },
+    {
+      "type": "timeline",
+      "label": "演进",
+      "dur": 8,
+      "avatar": "card",
+      "sub": [
+        "口播剪辑这几年变了好几轮",
+        "从手动剪到套模板",
+        "再到现在一份脚本直接出片"
+      ],
+      "data": {
+        "kicker": "TIMELINE — 演进",
+        "title": "口播剪辑的五个阶段",
+        "nodes": [
+          {
+            "time": "2019",
+            "title": "手动剪辑",
+            "desc": "逐帧对字幕"
+          },
+          {
+            "time": "2021",
+            "title": "套模板",
+            "desc": "换文案换素材"
+          },
+          {
+            "time": "2023",
+            "title": "AI 字幕",
+            "desc": "自动识别卡点"
+          },
+          {
+            "time": "2024",
+            "title": "脚本驱动",
+            "desc": "JSON 描述画面"
+          },
+          {
+            "time": "NOW",
+            "title": "开源模板",
+            "desc": "拿来改一份剧本"
+          }
+        ],
+        "now": 4,
+        "nowLabel": "你在这",
+        "nowSmall": "YOU ARE HERE"
+      }
+    },
+    {
+      "type": "diagram",
+      "label": "原理",
+      "dur": 8,
+      "avatar": "pip",
+      "sub": [
+        "原理其实很简单",
+        "剧本决定内容，组件决定样子",
+        "展厅把它们拼起来再录成视频"
+      ],
+      "data": {
+        "kicker": "HOW IT WORKS — 原理",
+        "title": "一份剧本怎么变成视频",
+        "nodes": [
+          {
+            "id": "script",
+            "label": "剧本",
+            "sub": "demo_data.json",
+            "at": [
+              0,
+              45
+            ]
+          },
+          {
+            "id": "comp",
+            "label": "组件库",
+            "sub": "components.js",
+            "at": [
+              36,
+              0
+            ]
+          },
+          {
+            "id": "theme",
+            "label": "主题色",
+            "sub": "theme { }",
+            "at": [
+              36,
+              92
+            ]
+          },
+          {
+            "id": "stage",
+            "label": "展厅",
+            "sub": "index.html",
+            "at": [
+              72,
+              45
+            ]
+          },
+          {
+            "id": "out",
+            "label": "成片",
+            "sub": "final.mp4",
+            "at": [
+              100,
+              92
+            ]
+          }
+        ],
+        "links": [
+          {
+            "from": "script",
+            "to": "comp",
+            "label": "scenes"
+          },
+          {
+            "from": "script",
+            "to": "theme",
+            "label": "theme"
+          },
+          {
+            "from": "comp",
+            "to": "stage"
+          },
+          {
+            "from": "theme",
+            "to": "stage"
+          },
+          {
+            "from": "stage",
+            "to": "out",
+            "label": "录制"
+          }
+        ],
+        "focus": "stage",
+        "focusLabel": "核心",
+        "focusSmall": "CORE"
+      }
+    },
+    {
+      "type": "showcase",
+      "label": "展示",
+      "dur": 8,
+      "avatar": "corner",
+      "sub": [
+        "看一下实际的配置长什么样",
+        "几行就能把设备参数写清楚"
+      ],
+      "data": {
+        "kicker": "SHOWCASE — 实物",
+        "title": "一份真实的配置脚本",
+        "kind": "code",
+        "file": "setup.py",
+        "lines": [
+          {
+            "t": "# 设备 → 录制软件推荐设置",
+            "c": "c"
+          },
+          {
+            "t": "video  = \"1920x1080 @ 30fps\""
+          },
+          {
+            "t": "audio  = \"48kHz · 峰值 -12dB\""
+          },
+          {
+            "t": "encode = \"H.264 · CBR 12 Mbps\""
+          },
+          {
+            "t": "$ python setup.py",
+            "c": "k"
+          },
+          {
+            "t": "✓ 场景 / 音频 / 输出 已写入",
+            "c": "ok"
+          }
+        ],
+        "notes": [
+          {
+            "text": "分辨率与帧率",
+            "at": [
+              56,
+              24
+            ]
+          },
+          {
+            "text": "一键写入",
+            "at": [
+              44,
+              68
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "quote",
+      "label": "金句",
+      "dur": 6,
+      "avatar": "full",
+      "sub": [
+        "记住一句话",
+        "工具会变，流程才是你的资产"
+      ],
+      "data": {
+        "kicker": "KEY TAKEAWAY",
+        "text": "工具会变，\n**流程**才是\n你的资产。",
+        "by": "— 本期金句",
+        "stamp": "划重点",
+        "stampSmall": "MUST READ",
+        "pos": "left",
+        "stampTop": 700
+      }
+    },
+    {
+      "type": "outro",
+      "label": "结尾",
+      "dur": 7,
+      "avatar": "card",
+      "sub": [
+        "今天就到这里",
+        "模板已经开源，链接放在简介",
+        "觉得有用记得一键三连"
+      ],
+      "data": {
+        "kicker": "WHAT'S NEXT — 行动",
+        "title": "现在就动手试试",
+        "actions": [
+          {
+            "tag": "CLONE",
+            "title": "下载模板",
+            "desc": "git clone 仓库到本地"
+          },
+          {
+            "tag": "EDIT",
+            "title": "改一份剧本",
+            "desc": "只改 JSON，不碰代码"
+          },
+          {
+            "tag": "SHIP",
+            "title": "出第一条片",
+            "desc": "抽帧自查后再发布"
+          }
+        ],
+        "cta": {
+          "kicker": "OPEN SOURCE",
+          "title": "模板已开源",
+          "repo": "github.com/your-name/your-repo",
+          "buttons": [
+            "点赞",
+            "投币",
+            "收藏"
+          ],
+          "stamp": "GO",
+          "stampSmall": "一键三连"
+        }
+      }
+    }
+  ]
+}

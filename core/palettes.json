@@ -1,0 +1,78 @@
+{
+  "version": "1.0",
+  "rule": "60-30-10 proportion rule (60% ambient canvas, 30% structural cards/UI, 10% high-contrast accents)",
+  "active_template_01": {
+    "name": "01_b2_glass_splash_v8_6",
+    "moods": {
+      "warm_silk": {
+        "source": "Luson #30 (desaturated for talking-head comfort)",
+        "stops": ["#FFFFFF", "#FBF0E6", "#E4F1F8"],
+        "accent": "#EE5706",
+        "secondary": "#238EC5"
+      },
+      "emerald_grid": {
+        "source": "Studio Emerald + Brass",
+        "stops": ["#1A3A34", "#0B1416", "#070C0E"],
+        "accent": "#23D2CE",
+        "secondary": "#FAB540"
+      },
+      "obsidian_violet": {
+        "source": "HiHi Xiaozhuang #38 (Leonardo.ai dark tech)",
+        "stops": ["#0A0B14", "#171433", "#05060C"],
+        "accent": "#6E5FEF",
+        "secondary": "#238EC5"
+      },
+      "aqua_blush_silver": {
+        "source": "Luson #28 (soft airy aqua-to-blush mist)",
+        "stops": ["#FFFFFF", "#E2F4F7", "#F7E9EE"],
+        "accent": "#0D9488",
+        "secondary": "#E53935"
+      },
+      "mocha_platinum": {
+        "source": "HiHi Xiaozhuang #35 (Mocha Brown + Platinum Silver + Pale Lavender)",
+        "stops": ["#4A3425", "#1E1611", "#0C0908"],
+        "accent": "#FAB540",
+        "secondary": "#E5E4E2",
+        "highlight": "#E6E0F0"
+      }
+    },
+    "badge_accents": {
+      "source": "DENGubai Coral/Sand/SeaSalt",
+      "coral": "#E53935",
+      "sand_gold": "#FFB74D",
+      "sea_salt": "#0288D1"
+    }
+  },
+  "archived_future_templates": [
+    {
+      "id": "tpl_dreamy_cloud",
+      "name": "梦幻浅色 AI 模板",
+      "source": "HiHi Xiaozhuang #34 (TypeSafe AI)",
+      "colors": { "sky_haze": "#7BACCE", "cloud_pink": "#E466CA", "lavender_haze": "#AA88DD", "base": "#FFFFFF" }
+    },
+    {
+      "id": "tpl_sport_vitality",
+      "name": "高能量效率/运动模板",
+      "source": "HiHi Xiaozhuang #36 (Tennis Academy)",
+      "colors": { "sky_blue": "#2C99D6", "cloud_white": "#F8FAFC", "scarlet_red": "#EB2F33" }
+    },
+    {
+      "id": "tpl_dev_pop",
+      "name": "开发者波普极客模板",
+      "source": "HiHi Xiaozhuang #37 (fal.ai)",
+      "colors": { "ice_cyan": "#A4EFFF", "neon_yellow": "#FFFE0E", "digital_violet": "#B582FE", "ink": "#0F172A" }
+    },
+    {
+      "id": "tpl_poster_vivid",
+      "name": "高饱和潮流海报/封面色板组",
+      "source": "DENGubai #2-#5 & Luson #26/#29/#31/#32/#33",
+      "sets": [
+        ["#F4511E", "#FFD600", "#7C4DFF"],
+        ["#00C853", "#FF9100", "#2962FF"],
+        ["#FF6E83", "#D4E157", "#00BFA5"],
+        ["#9C27B0", "#FFC107", "#039BE5"],
+        ["#FFFFFF", "#3B00C5", "#7CFF85"]
+      ]
+    }
+  ]
+}

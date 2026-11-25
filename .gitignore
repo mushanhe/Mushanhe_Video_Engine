@@ -1,0 +1,67 @@
+# ============================================================
+# Mushanhe Video Engine v1.0 — 开源仓库忽略规则
+# 开源范围只包含：core/ · templates/02_swiss_print/ · templates/06_neobrutalism/
+#               README.md · index.html · .gitignore
+# ============================================================
+
+# ---------- 音视频（个人录制 / 第三方 BGM），任何目录都不进仓库 ----------
+BGM/
+*.mp3
+*.wav
+*.m4a
+*.aac
+*.flac
+*.ogg
+*.webm
+*.mp4
+*.mov
+*.mkv
+
+# ---------- 个人节目与私有模板 ----------
+episodes/
+templates/01_b2_glass_splash/
+
+# ---------- 第三方参考图 / 来源未确认的图片素材（小红书截图、配色参考等） ----------
+color_refs/
+design_refs/
+background image/
+
+# ---------- 本地协作文档与个人工作流 ----------
+.agent/
+.claude/
+CLAUDE.md
+PROJECT_STATE.md
+*启动预览服务命令*.txt
+# 个人整期素材预处理脚本（内含本机私有素材路径）
+core/tools/prep_full_episode.py
+
+# ---------- 验货截图 / 临时输出 ----------
+scratch_verify/
+scratch*/
+preview_frames/
+
+# ---------- 密钥与环境变量 ----------
+*Key*.txt
+*key*.txt
+*KEY*.txt
+*.env
+.env.*
+*.pem
+*.key
+secrets*
+
+# ---------- Python ----------
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# ---------- 系统 / 编辑器 ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.log
+node_modules/

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mushanhe Video Engine · v1.0</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --ink: #141414; --paper: #F2EEE4; --muted: #6B665C;
+      --sp-paper: #EDE8DC; --sp-sheet: #F7F4EC; --sp-red: #D92323;
+      --nb-paper: #F6F1E3; --nb-ink: #111111; --nb-yellow: #FFE500; --nb-blue: #3B82F6; --nb-mint: #00E599; --nb-coral: #FF4D6D;
+      --cn: 'Noto Sans SC', 'Source Han Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+      --latin: 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
+      --mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      min-height: 100vh; background: var(--paper); color: var(--ink); font-family: var(--cn);
+      background-image: radial-gradient(rgba(20,20,20,.12) 1.4px, transparent 1.4px); background-size: 24px 24px;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 56px 24px 64px; }
+    header .tag { display: inline-block; padding: 6px 12px; background: var(--ink); color: var(--paper); font: 800 13px/1 var(--mono); letter-spacing: .16em; }
+    header h1 { margin: 18px 0 10px; font: 900 clamp(40px, 7vw, 84px)/1 var(--latin); letter-spacing: -.04em; }
+    header p { margin: 0; max-width: 720px; font-size: 18px; font-weight: 700; line-height: 1.7; color: var(--muted); }
+    header p b { color: var(--ink); }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+    .chips span { padding: 6px 12px; border: 2px solid var(--ink); background: #fff; font: 800 13px/1.2 var(--mono); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; margin-top: 48px; }
+    a.pack { display: block; position: relative; text-decoration: none; color: inherit; min-height: 360px; padding: 32px 32px 28px; transition: transform .18s ease, box-shadow .18s ease; }
+    a.pack:focus-visible { outline: 4px solid var(--nb-blue); outline-offset: 4px; }
+    .pack .no { font: 900 96px/0.9 var(--latin); letter-spacing: -.06em; }
+    .pack h2 { margin: 18px 0 8px; font-size: 32px; font-weight: 900; line-height: 1.15; }
+    .pack .en { font: 800 13px/1.4 var(--mono); letter-spacing: .14em; }
+    .pack ul { margin: 18px 0 0; padding: 0; list-style: none; font-size: 15px; font-weight: 700; line-height: 1.9; }
+    .pack .go { position: absolute; right: 28px; bottom: 26px; font: 900 15px/1 var(--mono); letter-spacing: .1em; }
+
+    /* 旗舰包 #1：瑞士印刷拼贴 */
+    .swiss { background: var(--sp-sheet); box-shadow: 0 2px 2px rgba(20,20,20,.1), 0 22px 40px -18px rgba(20,20,20,.45);
+      background-image: linear-gradient(90deg, rgba(20,20,20,.06) 1px, transparent 1px); background-size: 56px 100%; border-left: 10px solid var(--sp-red); }
+    .swiss .no { color: var(--sp-red); }
+    .swiss .en { color: var(--sp-red); }
+    .swiss ul li::before { content: '■ '; color: var(--sp-red); }
+    .swiss .go { padding: 10px 16px; background: var(--ink); color: var(--sp-sheet); }
+    .swiss:hover { transform: translateY(-4px) rotate(-.4deg); }
+
+    /* 旗舰包 #2：Neo-Brutalism 撞色潮刊 */
+    .nb { background: var(--nb-yellow); border: 4px solid var(--nb-ink); box-shadow: 12px 12px 0 var(--nb-ink); }
+    .nb .no { color: #fff; -webkit-text-stroke: 4px var(--nb-ink); text-shadow: 7px 7px 0 var(--nb-coral); }
+    .nb .en { display: inline-block; padding: 4px 10px; background: var(--nb-ink); color: var(--nb-yellow); }
+    .nb ul li::before { content: '▲ '; color: var(--nb-coral); }
+    .nb .go { padding: 10px 16px; background: var(--nb-coral); color: #fff; border: 3px solid var(--nb-ink); box-shadow: 4px 4px 0 var(--nb-ink); }
+    .nb:hover { transform: translate(-3px, -3px); box-shadow: 15px 15px 0 var(--nb-ink); }
+    .nb .stk { position: absolute; right: 24px; top: 24px; padding: 6px 12px; background: var(--nb-mint); border: 3px solid var(--nb-ink); font: 900 14px/1 var(--mono); transform: rotate(4deg); }
+
+    section.how { margin-top: 56px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .how div { padding: 18px 20px; background: #fff; border: 2px solid var(--ink); }
+    .how b { display: block; font: 900 13px/1 var(--mono); letter-spacing: .14em; margin-bottom: 10px; }
+    .how code { font: 700 14px/1.5 var(--mono); background: var(--paper); padding: 2px 6px; word-break: break-all; }
+    .how p { margin: 0; font-size: 14px; font-weight: 700; line-height: 1.7; color: var(--muted); }
+    footer { margin-top: 40px; font: 700 13px/1.6 var(--mono); color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span class="tag">MUSHANHE VIDEO ENGINE · v1.0</span>
+      <h1>一份 JSON，<br />一条口播片。</h1>
+      <p>1 套 <b>core/</b> 通用内核 + 统一 <b>{ meta, theme, scenes }</b> 剧本标准。同一份剧本，换一套风格包，画面整体换一套美术。</p>
+      <div class="chips">
+        <span>10 大万能句型</span><span>4 种人像粒子变形</span><span>3D 摄影机运镜</span><span>逐字高亮字幕</span><span>任意时间点 seek 还原</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <a class="pack swiss" href="templates/02_swiss_print/index.html">
+        <div class="no">02</div>
+        <h2>瑞士印刷拼贴</h2>
+        <div class="en">SWISS PRINT COLLAGE</div>
+        <ul>
+          <li>米白网格纸 · 瑞士红 · 油墨黑</li>
+          <li>木尺 / 铅笔 / 三角板实物道具</li>
+          <li>整页抽纸转场 · 红边纸条字幕</li>
+        </ul>
+        <span class="go">进入展厅 →</span>
+      </a>
+
+      <a class="pack nb" href="templates/06_neobrutalism/index.html">
+        <span class="stk">NEW!</span>
+        <div class="no">06</div>
+        <h2>Neo-Brutalism 撞色潮刊</h2>
+        <div class="en">NEO-BRUTALISM ZINE</div>
+        <ul>
+          <li>4px 粗黑边 · 12px 硬投影 · 四色撞色</li>
+          <li>倾斜贴纸 · 重盖印章 · 呼吸波点</li>
+          <li>四色色块横扫转场 · 黑底黄影字幕</li>
+        </ul>
+        <span class="go">进入展厅 →</span>
+      </a>
+    </div>
+
+    <section class="how">
+      <div><b>01 · 播放</b><p>展厅里按 <code>空格</code> 连播，<code>1</code>–<code>9</code> / <code>0</code> 跳段，<code>H</code> 隐藏控制栏。</p></div>
+      <div><b>02 · 换剧本</b><p>复制 <code>demo_data.json</code> 改文案，用 <code>?data=my_script.json</code> 加载。</p></div>
+      <div><b>03 · 验货</b><p><code>python core/tools/inspect_frames.py --template 06_neobrutalism --times 3,9.5 --out preview_frames</code></p></div>
+    </section>
+
+    <footer>本页需通过 python core/tools/serve.py 启动的本地服务打开 · http://127.0.0.1:8765/</footer>
+  </div>
+</body>
+</html>

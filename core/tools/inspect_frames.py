@@ -1,0 +1,99 @@
+"""
+Mushanhe Video Engine — 无头浏览器关键帧自动抽帧验货脚本
+用法:
+  python core/tools/inspect_frames.py --template 02_swiss_print --times 3,9.5,17,25,32.5,40,48,56,63,69.5 --out preview_frames
+"""
+import argparse
+import functools
+import http.server
+import os
+import socketserver
+import threading
+import time
+from pathlib import Path
+from playwright.sync_api import sync_playwright
+
+
+class QuietHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass
+
+
+def start_server(root_dir: Path):
+    handler = functools.partial(QuietHandler, directory=str(root_dir))
+    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    httpd.daemon_threads = True
+    port = httpd.server_address[1]
+    t = threading.Thread(target=httpd.serve_forever, daemon=True)
+    t.start()
+    return httpd, port
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--template", default="02_swiss_print")
+    parser.add_argument("--file", default="index.html")
+    parser.add_argument("--url-path", default=None, help="Optional repo-relative URL path, e.g. episodes/ep02_ai_workflow/ch00_intro/index.html")
+    parser.add_argument("--times", default="6.5,15.6,20.6,26.0,35.5,47.0")
+    parser.add_argument("--out", required=True)
+    args = parser.parse_args()
+
+    repo_root = Path(__file__).resolve().parents[2]
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    times = [float(x.strip()) for x in args.times.split(",") if x.strip()]
+
+    httpd, port = start_server(repo_root)
+    if args.url_path:
+        rel = args.url_path.lstrip("/")
+        base_url = f"http://127.0.0.1:{port}/{rel}"
+    else:
+        base_url = f"http://127.0.0.1:{port}/templates/{args.template}/{args.file}"
+
+    try:
+        with sync_playwright() as p:
+            browser = None
+            for ch in ("msedge", "chrome", None):
+                try:
+                    kwargs = {"headless": True}
+                    if ch:
+                        kwargs["channel"] = ch
+                    browser = p.chromium.launch(**kwargs)
+                    break
+                except Exception:
+                    continue
+            if browser is None:
+                raise RuntimeError("No Chromium/Edge/Chrome browser available for Playwright.")
+            page = browser.new_page(viewport={"width": 1920, "height": 1080})
+            errors = []
+            page.on("pageerror", lambda err: errors.append(str(err)))
+            page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+
+            page.goto(f"{base_url}?t={times[0]}&clean=1", wait_until="domcontentloaded")
+            page.wait_for_function("() => window.__MH_ENGINE__ !== undefined", timeout=15000)
+            page.wait_for_function(
+                "() => { const v = document.getElementById('avatar-video'); return !v || v.readyState >= 2; }",
+                timeout=15000,
+            )
+            time.sleep(0.5)
+
+            for idx, t in enumerate(times, start=1):
+                page.evaluate("(sec) => window.__MH_ENGINE__.seek(sec)", t)
+                time.sleep(0.45)
+                out_path = out_dir / f"frame_{idx:02d}_{t:.1f}s.png"
+                page.screenshot(path=str(out_path))
+                print(f"CAPTURED {out_path}")
+
+            if errors:
+                print("CONSOLE/PAGE ERRORS:")
+                for e in errors:
+                    print("  -", e)
+            else:
+                print("ZERO_ERRORS")
+            browser.close()
+    finally:
+        httpd.shutdown()
+
+
+if __name__ == "__main__":
+    main()
