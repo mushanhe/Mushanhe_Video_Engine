@@ -1,5 +1,7 @@
 <div align="center">
 
+### [🚀 在线预览 Demo（免下载直达）](https://mushanhe.github.io/Mushanhe_Video_Engine/)
+
 # Mushanhe Video Engine
 
 **一份 JSON 剧本，驱动一整条电影级口播视频。**
@@ -7,6 +9,14 @@
 1 套 `core/` 通用内核 · 10 大万能口播句型 · 4 种动态人像粒子变形 · 2 套旗舰风格包
 
 `v1.0` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原
+
+<a href="https://mushanhe.github.io/Mushanhe_Video_Engine/templates/02_swiss_print/index.html"><img src="docs/preview_swiss.png" alt="风格包 02 · 瑞士印刷拼贴：封面、大数字、时间轴、全屏金句" width="100%" /></a>
+
+**02 · 瑞士印刷拼贴** —— [▶ 在线打开展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/02_swiss_print/index.html)
+
+<a href="https://mushanhe.github.io/Mushanhe_Video_Engine/templates/06_neobrutalism/index.html"><img src="docs/preview_neobrutalism.png" alt="风格包 06 · Neo-Brutalism 撞色潮刊：封面、步骤、关系图、全屏金句" width="100%" /></a>
+
+**06 · Neo-Brutalism 撞色潮刊** —— [▶ 在线打开展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/06_neobrutalism/index.html)
 
 </div>
 
@@ -55,7 +65,7 @@ Mushanhe Video Engine 把口播视频拆成两层：
 
 ## 3 步本地预览
 
-需要 Python 3.8+，无需安装任何依赖。
+不想下载？直接打开 [在线 Demo](https://mushanhe.github.io/Mushanhe_Video_Engine/)。想本地改剧本，需要 Python 3.8+，无需安装任何依赖：
 
 ```bash
 # 1. 克隆仓库
