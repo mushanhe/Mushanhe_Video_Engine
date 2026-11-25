@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retro CRT 复古像素终端 · 组件展厅（风格包 10）</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="../../core/engine.css" />
+  <style>
+    :root {
+      --rc-font: 'Consolas', 'JetBrains Mono', 'Cascadia Mono', 'DejaVu Sans Mono', 'Microsoft YaHei', 'WenQuanYi Zen Hei Mono', 'Noto Sans Mono CJK SC', monospace;
+      --rc-screen: #070C08; --rc-green: #33FF66; --rc-amber: #FFB000; --rc-red: #FF3344; --rc-line: #14532D;
+      --rc-ink: #D6FFE0;
+    }
+    #viewport { background: var(--rc-screen); overflow: hidden; font-family: var(--rc-font); color: var(--rc-green); }
+    #avatar-morph-canvas { position: absolute; inset: 0; width: 1920px; height: 1080px; z-index: 32; pointer-events: none; }
+
+    /* 荧光屏底：暗绿磷光点阵 + 中心微亮（屏幕固定层） */
+    #rc-bg-layer {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 60% at 42% 48%, rgba(51,255,102,0.075), transparent 70%),
+        radial-gradient(rgba(51,255,102,0.10) 1.2px, transparent 1.4px) 0 0 / 24px 24px,
+        var(--rc-screen);
+    }
+    /* 3D 终端画布（透明，暗绿 96px 网格作为空间参照） */
+    #camera-viewport { position: absolute; inset: 0; z-index: 10; overflow: hidden; perspective: 1650px; pointer-events: none; background: transparent; transform-origin: 50% 50%; }
+    #rc-world {
+      position: absolute; left: 0; top: 0; width: 11200px; height: 1300px; transform-style: preserve-3d; will-change: transform;
+      background-image: linear-gradient(90deg, rgba(51,255,102,0.06) 1px, transparent 1px), linear-gradient(rgba(51,255,102,0.06) 1px, transparent 1px);
+      background-size: 96px 96px;
+    }
+    #screen-layer { position: absolute; inset: 0; z-index: 26; pointer-events: none; transform-origin: 50% 50%; }
+
+    /* 标志转场：CRT 水平压缩成亮白光束 → 绿色扫描线刷屏 */
+    #rc-tx { position: absolute; inset: 0; z-index: 16; pointer-events: none; display: none; }
+    #rc-beam { position: absolute; left: 0; top: 537px; width: 1920px; height: 6px; background: #FFFFFF; transform-origin: 50% 50%;
+      box-shadow: 0 0 18px 6px rgba(220,255,230,0.95), 0 0 70px 22px rgba(51,255,102,0.55); }
+    #rc-seg { position: absolute; left: 0; right: 0; top: 410px; text-align: center; font-size: 40px; font-weight: 700; letter-spacing: 0.08em; color: var(--rc-amber);
+      text-shadow: 0 0 14px rgba(255,176,0,0.8); white-space: pre; }
+    #rc-seg small { display: block; margin-top: 196px; font-size: 26px; color: var(--rc-green); text-shadow: 0 0 10px rgba(51,255,102,0.8); letter-spacing: 0.12em; }
+    #rc-sweep { position: absolute; left: 0; width: 1920px; height: 150px; z-index: 31; pointer-events: none; display: none;
+      background: linear-gradient(180deg, rgba(51,255,102,0) 0%, rgba(51,255,102,0.10) 70%, rgba(51,255,102,0.55) 96%, #CFFFDC 100%);
+      box-shadow: 0 6px 26px rgba(51,255,102,0.85); }
+
+    /* CRT 罩层：扫描线 + 刷新滚带 + 四角暗角 + 圆角屏边 */
+    #rc-scan { position: absolute; inset: 0; z-index: 40; pointer-events: none;
+      background: repeating-linear-gradient(180deg, rgba(0,0,0,0.30) 0 1px, transparent 1px 3px); }
+    #rc-roll { position: absolute; left: 0; width: 1920px; height: 160px; z-index: 41; pointer-events: none;
+      background: linear-gradient(180deg, transparent, rgba(51,255,102,0.045) 50%, transparent); }
+    #rc-vignette { position: absolute; inset: 0; z-index: 42; pointer-events: none;
+      background: radial-gradient(ellipse 78% 74% at 50% 50%, transparent 62%, rgba(0,0,0,0.62) 100%); }
+    #rc-bezel { position: absolute; inset: 0; z-index: 60; pointer-events: none; border-radius: 34px; box-shadow: 0 0 0 30px #000, inset 0 0 40px rgba(0,0,0,0.85); }
+
+    /* 顶部系统状态条 */
+    #rc-sys { position: absolute; left: 0; top: 0; width: 1920px; height: 46px; z-index: 45; display: flex; align-items: center; gap: 0;
+      background: #031006; border-bottom: 3px double var(--rc-green); box-shadow: 0 0 16px rgba(51,255,102,0.3);
+      font-size: 17px; font-weight: 700; letter-spacing: 0.06em; color: var(--rc-green); white-space: nowrap; }
+    #rc-sys .l { width: 400px; padding-left: 26px; text-shadow: 0 0 8px rgba(51,255,102,0.6); }
+    #rc-sys .l .rec { color: var(--rc-red); text-shadow: 0 0 8px rgba(255,51,68,0.8); }
+    #rc-tabs { display: flex; gap: 4px; }
+    .rc-tab { position: relative; width: 108px; height: 30px; line-height: 30px; text-align: center; font-size: 13px; white-space: nowrap; font-weight: 700; color: #2E8B4E; border: 1px solid #14532D; cursor: pointer; overflow: hidden; }
+    .rc-tab.done { color: #8CF5A8; border-color: #2E8B4E; }
+    .rc-tab.on { background: var(--rc-green); color: #031006; border-color: var(--rc-green); box-shadow: 0 0 14px rgba(51,255,102,0.7); }
+    .rc-tab .fl { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--rc-amber); }
+    #rc-sys .r { margin-left: auto; padding-right: 28px; color: var(--rc-amber); text-shadow: 0 0 8px rgba(255,176,0,0.6); }
+
+    /* 稳态磷光绿双线人像框 + 线框剪影占位 */
+    #avatar-stage { border: 5px double var(--rc-green) !important; background: #020603 !important;
+      box-shadow: 0 0 26px rgba(51,255,102,0.38), 0 0 0 3px #020603 !important; }
+    #avatar-stage.is-full { border: 0 solid transparent !important; box-shadow: none !important; }
+    #avatar-silhouette { position: absolute; left: 50%; bottom: 0; height: 80%; transform: translateX(-50%); z-index: 2; pointer-events: none; filter: drop-shadow(0 0 8px rgba(51,255,102,0.8)); }
+    #avatar-tag { background: #031006 !important; color: var(--rc-green) !important; border: 2px solid var(--rc-green) !important; border-radius: 0 !important; backdrop-filter: none !important;
+      font-family: var(--rc-font) !important; font-weight: 700 !important; font-size: 15px !important; letter-spacing: 0.1em !important; padding: 6px 14px !important; text-shadow: 0 0 8px rgba(51,255,102,0.7); }
+    #avatar-tag i { display: inline-block; width: 11px; height: 11px; background: var(--rc-red); border-radius: 50%; margin-right: 10px; box-shadow: 0 0 10px var(--rc-red); }
+
+    /* 纯黑终端字幕框：磷光绿边框 + 左侧 > 提示符，当前字琥珀橙 */
+    #subtitle-bar {
+      bottom: 36px !important; background: #000000 !important; border: 3px solid var(--rc-green) !important; border-radius: 0 !important;
+      backdrop-filter: none !important; box-shadow: 0 0 22px rgba(51,255,102,0.45), inset 0 0 18px rgba(51,255,102,0.12) !important;
+      padding: 12px 34px 13px 30px !important; color: #E6FFEC !important; font-family: var(--rc-font) !important;
+      font-size: 40px !important; font-weight: 700 !important; letter-spacing: 0.03em !important; white-space: nowrap;
+    }
+    #subtitle-bar::before { content: '>'; color: var(--rc-green); margin-right: 18px; text-shadow: 0 0 10px rgba(51,255,102,0.9); }
+    #subtitle-bar .w { color: #E6FFEC; text-shadow: none; }
+    #subtitle-bar .w.passed { color: #E6FFEC !important; text-shadow: none !important; }
+    #subtitle-bar .w.active { color: var(--rc-amber) !important; text-shadow: 0 0 12px rgba(255,176,0,0.75) !important; }
+
+    #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; background: #000; color: var(--rc-red); border: 4px double var(--rc-red); font-size: 28px; font-weight: 700; display: none; }
+  </style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="rc-bg-layer"></div>
+    <div id="camera-viewport"><div id="rc-world"></div></div>
+    <div id="rc-tx"><div id="rc-seg"></div><div id="rc-beam"></div></div>
+    <div id="screen-layer"></div>
+
+    <div id="avatar-stage">
+      <img id="avatar-studio-bg" src="assets/studio_bg.png" alt="studio" />
+      <svg id="avatar-silhouette" viewBox="0 0 400 520" preserveAspectRatio="xMidYMax meet">
+        <circle cx="200" cy="150" r="92" fill="rgba(3,16,6,0.85)" stroke="#33FF66" stroke-width="4" />
+        <path d="M30 520 C40 340 110 270 200 270 C290 270 360 340 370 520 Z" fill="rgba(3,16,6,0.85)" stroke="#33FF66" stroke-width="4" />
+        <path d="M120 150 H280 M200 60 V240 M140 95 Q200 120 260 95 M140 205 Q200 180 260 205" stroke="#14532D" stroke-width="2" fill="none" />
+        <text x="200" y="372" text-anchor="middle" font-family="Consolas, monospace" font-size="20" font-weight="700" fill="#FFB000" letter-spacing="3">AVATAR · 人像占位</text>
+      </svg>
+      <div id="avatar-tag"><i></i><span id="avatar-tag-tx">YOUR NAME</span></div>
+    </div>
+
+    <div id="rc-sweep"></div>
+    <canvas id="avatar-morph-canvas" width="1920" height="1080"></canvas>
+    <div id="rc-scan"></div>
+    <div id="rc-roll"></div>
+    <div id="rc-vignette"></div>
+    <div id="rc-sys"><div class="l">SYS_MEM 640K · BAUD 9600 · <span class="rec" id="rc-rec">● REC</span></div><div id="rc-tabs"></div><div class="r" id="rc-tc">T+00:00.00</div></div>
+    <div id="subtitle-bar"></div>
+    <div id="rc-bezel"></div>
+    <div id="load-error"></div>
+  </div>
+
+  <div id="hud">
+    <button id="btn-play" class="primary">▶ 连播 10 大句型</button>
+    <button id="btn-replay">↺ 重播</button>
+    <input id="scrubber" type="range" min="0" max="50" step="0.01" value="0" />
+    <span id="time-readout">0.00 / 0.00s</span>
+    <span class="hud-sep"></span>
+    <span class="hud-label">H 隐藏控制栏 · 1–9 / 0 切换句型 · 空格播放</span>
+  </div>
+
+  <script src="../../core/vendor/gsap.min.js"></script>
+  <script src="../../core/camera-rig.js"></script>
+  <script src="../../core/avatar-morph-fx.js"></script>
+  <script src="../../core/avatar.js"></script>
+  <script src="../../core/subtitle.js"></script>
+  <script src="components.js"></script>
+  <script>
+    const vp = document.getElementById('viewport');
+    function fit() {
+      const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      vp.style.transform = `scale(${s})`;
+      vp.style.left = `${(window.innerWidth - 1920 * s) / 2}px`;
+      vp.style.top = `${(window.innerHeight - 1080 * s) / 2}px`;
+    }
+    window.addEventListener('resize', fit); fit();
+
+    const ZONE_GAP = 200, ZONE_Y = 100, SX = 650, SY = 470;
+    // 组件局部安全区 x60–1340 / y100–980 → 屏幕 x≈115–1295（避开人像框 1328+）/ y≈100–910（避开字幕）
+    const CAM_DX = 60, CAM_ZOOM = 0.92;
+    const params = new URLSearchParams(location.search);
+
+    /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
+    function buildWordData(scenes) {
+      const words = [], lines = [];
+      scenes.forEach((sc) => {
+        const subs = sc.sub || []; if (!subs.length) return;
+        const a0 = sc.start + 0.35, a1 = sc.start + sc.dur - 0.3, slot = (a1 - a0) / subs.length;
+        subs.forEach((line, li) => {
+          const toks = line.match(/[A-Za-z0-9.\-_/@#:+]+|\s+|./g) || [];
+          const real = toks.filter((x) => !/^\s+$/.test(x));
+          const s0 = a0 + li * slot, dt = (slot - 0.25) / Math.max(1, real.length);
+          const a = words.length, sp = [];
+          let k = 0;
+          toks.forEach((tk) => {
+            if (/^\s+$/.test(tk)) { if (words.length > a) sp.push(words.length - 1); return; }
+            words.push([tk, +(s0 + k * dt).toFixed(3), +(s0 + (k + 1) * dt).toFixed(3)]); k++;
+          });
+          if (words.length > a) lines.push({ a, b: words.length - 1, sp });
+        });
+      });
+      return { words, lines };
+    }
+
+    async function boot() {
+      let script;
+      try {
+        const src = params.get('data') || 'demo_data.json';
+        script = await (await fetch(src, { cache: 'no-store' })).json();
+      } catch (e) {
+        const el = document.getElementById('load-error');
+        el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
+        throw e;
+      }
+      const theme = script.theme || {};
+      const root = document.documentElement.style;
+      ['screen', 'green', 'amber', 'red', 'line'].forEach((k) => { if (theme[k]) root.setProperty(`--rc-${k}`, theme[k]); });
+      RetroCRT.injectCSS();
+
+      // 人像：可选真人视频，否则用线框剪影占位
+      const meta = script.meta || {}, av = meta.avatar || {};
+      if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
+      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      if (av.video) {
+        const v = document.createElement('video');
+        v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
+        document.getElementById('avatar-stage').insertBefore(v, document.getElementById('avatar-tag'));
+        document.getElementById('avatar-silhouette').style.display = 'none';
+      }
+
+      // 组装场景
+      const world = document.getElementById('rc-world');
+      const scenes = []; let acc = 0, zoneX = 0;
+      (script.scenes || []).forEach((sc, i) => {
+        const factory = RetroCRT.COMPONENTS[sc.type];
+        if (!factory) { console.warn('unknown scene type', sc.type); return; }
+        const dur = sc.dur || 6;
+        const comp = factory.create(sc.data || {}, { dur });
+        const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1400) + ZONE_GAP;
+        if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
+        else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        acc += dur;
+      });
+      const DURATION = acc;
+      world.style.width = `${zoneX + 1400}px`;
+      document.getElementById('scrubber').max = DURATION;
+
+      // 运镜关键帧：每段局部机位 → 世界坐标；段与段之间在 CRT 光束闪切下硬切
+      const kfs = [];
+      scenes.forEach((s, i) => {
+        const cams = s.comp.cams && s.comp.cams.length ? s.comp.cams : [{ t: 0, x: 700, y: 500, zoom: 1 }];
+        cams.forEach((c, j) => {
+          let t = s.start + Math.min(c.t, s.dur);
+          if (j === cams.length - 1 && i < scenes.length - 1) t = s.start + s.dur - 0.002;
+          kfs.push({ t, x: s.zx + c.x - CAM_DX, y: s.zy + c.y, zoom: (c.zoom || 1) * CAM_ZOOM, rx: c.rx || 0, ry: c.ry || 0, rz: c.rz || 0, screenX: SX, screenY: SY });
+        });
+      });
+      const camRig = new MHEngine.CameraRig3D(world, { viewW: 1920, viewH: 1080, handheld: 0.5 });
+      camRig.setKeyframes(kfs);
+
+      // 人像形态：card / pip / corner / full（4 种形态全部走 core 点阵粒子散聚转场）
+      const avatar = new MHEngine.AvatarController({
+        card:   { left: 1328, top: 82,  width: 540, height: 790, borderRadius: 0,   borderWidth: 5, tagOpacity: 1 },
+        pip:    { left: 1532, top: 642, width: 320, height: 320, borderRadius: 160, borderWidth: 5, tagOpacity: 0 },
+        corner: { left: 1410, top: 530, width: 458, height: 342, borderRadius: 0,   borderWidth: 5, tagOpacity: 1 }
+      });
+      const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
+      const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
+      const tl = gsap.timeline({ paused: true });
+      avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
+      scenes.forEach((s, i) => {
+        if (i === 0) return;
+        const prev = mapAv(scenes[i - 1].avatar);
+        const cur = mapAv(s.avatar);
+        if (prev !== cur) {
+          avatarMorph.addMorph({ time: s.start + 0.02, duration: 0.5, fromMode: prev, toMode: cur, count: 1000, seed: 101000 + i });
+          avatar.animateOnTimeline(tl, cur, s.start + 0.06, 0.48);
+        }
+      });
+      tl.to({}, { duration: 0.05 }, DURATION);
+
+      // 字幕
+      const WORD_DATA = buildWordData(scenes);
+      window.WORD_DATA = WORD_DATA;
+      const subtitle = new MHEngine.SubtitleRenderer(document.getElementById('subtitle-bar'), WORD_DATA);
+
+      // 顶部状态条里的句型标签
+      const tabsEl = document.getElementById('rc-tabs');
+      scenes.forEach((s, i) => {
+        const tb = document.createElement('div'); tb.className = 'rc-tab';
+        tb.innerHTML = `${String(i + 1).padStart(2, '0')} ${s.type.toUpperCase()}<div class="fl"></div>`;
+        tb.addEventListener('click', () => jumpTo(i));
+        tabsEl.appendChild(tb); s.tab = tb;
+      });
+
+      const tx = document.getElementById('rc-tx'), beam = document.getElementById('rc-beam'), seg = document.getElementById('rc-seg');
+      const sweep = document.getElementById('rc-sweep'), roll = document.getElementById('rc-roll');
+      const stageEl = document.getElementById('avatar-stage');
+      const camViewport = document.getElementById('camera-viewport');
+      const screenLayer = document.getElementById('screen-layer');
+      const tcEl = document.getElementById('rc-tc'), recEl = document.getElementById('rc-rec');
+      const clamp01 = (x) => Math.max(0, Math.min(1, x));
+      const easeOut = (x) => 1 - Math.pow(1 - x, 3), easeIn = (x) => x * x * x;
+      const fmtTC = (t) => `T+${String(Math.floor(t / 60)).padStart(2, '0')}:${(t % 60).toFixed(2).padStart(5, '0')}`;
+
+      function updateUI(t) {
+        tl.time(Math.min(t, DURATION));
+        camRig.render(t);
+        subtitle.render(t);
+        // CRT 刷新滚带：自上而下缓慢滚动（确定性）
+        roll.style.top = `${(((t * 140) % 1400) - 200).toFixed(0)}px`;
+        recEl.style.opacity = Math.floor(t * 2) % 2 === 0 ? '1' : '0.25';
+        tcEl.textContent = fmtTC(t);
+
+        let cur = scenes.length - 1;
+        scenes.forEach((s, i) => { if (t >= s.start && t < s.start + s.dur) cur = i; });
+        scenes.forEach((s, i) => {
+          if (Math.abs(i - cur) <= 1) s.comp.update(t - s.start);
+          if (s.comp.layer === 'screen') s.comp.el.style.display = i === cur ? 'block' : 'none';
+          s.tab.classList.toggle('on', i === cur);
+          s.tab.classList.toggle('done', i < cur);
+          s.tab.querySelector('.fl').style.width = `${(clamp01((t - s.start) / s.dur) * 100).toFixed(1)}%`;
+        });
+        const S = scenes[cur];
+        const isFull = S.avatar === 'full';
+        stageEl.classList.toggle('is-full', isFull && t >= S.start + 0.2);
+        const hideWorld = isFull && t >= S.start + 0.15 && t < S.start + S.dur;
+
+        // 标志转场：画面纵向压扁成一条亮白光束（b-0.30→b）→ 光束横向收束（b→b+0.14）→ 绿色扫描线自上而下刷出新画面（b+0.08→b+0.56）
+        let txOn = false, sq = 1, bright = 1, clip = 0, sweepY = -1;
+        for (let i = 1; i < scenes.length; i++) {
+          const b = scenes[i].start;
+          if (t >= b - 0.30 && t < b + 0.6) {
+            txOn = true;
+            if (t < b) { const p = easeIn(clamp01((t - (b - 0.30)) / 0.27)); sq = Math.max(0.004, 1 - p); bright = 1 + 2.2 * p; }
+            else { sq = 1; clip = 1 - clamp01((t - b - 0.08) / 0.48); }
+            const bp = t < b ? clamp01((t - (b - 0.14)) / 0.1) : 1 - clamp01((t - b - 0.04) / 0.12);
+            beam.style.opacity = bp.toFixed(3);
+            beam.style.transform = `scaleX(${t < b ? 1 : (1 - easeIn(clamp01((t - b) / 0.16)) * 0.98).toFixed(3)}) scaleY(${(1 + bp * 0.6).toFixed(2)})`;
+            const lp = t < b ? clamp01((t - (b - 0.1)) / 0.06) : 1 - clamp01((t - b - 0.2) / 0.15);
+            const loadBar = '█'.repeat(Math.round(clamp01((t - (b - 0.25)) / 0.45) * 12)).padEnd(12, '░');
+            seg.innerHTML = `&gt; LOAD SEG_${String(i + 1).padStart(2, '0')} :: ${scenes[i].label || scenes[i].type}<small>[${loadBar}] ${scenes[i].type.toUpperCase()}.EXE</small>`;
+            seg.style.opacity = lp.toFixed(3);
+            if (t >= b + 0.08) sweepY = (1 - clip) * 1080;
+            break;
+          }
+        }
+        tx.style.display = txOn ? 'block' : 'none';
+        const tf = sq < 1 ? `scale(${(1 + (1 - sq) * 0.03).toFixed(3)}, ${sq.toFixed(4)})` : '';
+        const fl = bright > 1 ? `brightness(${bright.toFixed(2)})` : '';
+        const cp = clip > 0 ? `inset(0 0 ${(clip * 100).toFixed(2)}% 0)` : '';
+        [camViewport, screenLayer].forEach((el) => { el.style.transform = tf; el.style.filter = fl; el.style.clipPath = cp; });
+        camViewport.style.opacity = hideWorld ? '0' : '1';
+        if (sweepY >= 0 && clip > 0) { sweep.style.display = 'block'; sweep.style.top = `${(sweepY - 150).toFixed(0)}px`; }
+        else sweep.style.display = 'none';
+
+        stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        document.getElementById('scrubber').value = t.toFixed(2);
+        document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
+      }
+
+      // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
+      let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
+      const vid = document.getElementById('avatar-video');
+      function seek(t) {
+        cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
+        scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });
+        if (vid) { try { vid.currentTime = cur; } catch (_) {} }
+        if (playing) { t0 = performance.now(); tStart = cur; }
+      }
+      function loop() {
+        if (!playing) return;
+        const t = tStart + (performance.now() - t0) / 1000;
+        if (t >= DURATION) { pause(); seek(DURATION); return; }
+        cur = t; updateUI(t); raf = requestAnimationFrame(loop);
+      }
+      function play() { if (cur >= DURATION - 0.05) cur = 0; playing = true; t0 = performance.now(); tStart = cur; if (vid) vid.play().catch(() => {}); scenes.forEach((s) => s.comp.media && s.comp.media.play && s.comp.media.play().catch(() => {})); document.getElementById('btn-play').textContent = '⏸ 暂停'; raf = requestAnimationFrame(loop); }
+      function pause() { playing = false; cancelAnimationFrame(raf); if (vid) vid.pause(); scenes.forEach((s) => s.comp.media && s.comp.media.pause && s.comp.media.pause()); document.getElementById('btn-play').textContent = '▶ 连播 10 大句型'; }
+      function jumpTo(i) { seek(scenes[i].start + 0.65); }
+
+      document.getElementById('btn-play').addEventListener('click', () => playing ? pause() : play());
+      document.getElementById('btn-replay').addEventListener('click', () => { seek(0); play(); });
+      document.getElementById('scrubber').addEventListener('input', (e) => { pause(); seek(parseFloat(e.target.value)); });
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); }
+        else if (e.key === 'h' || e.key === 'H') document.getElementById('hud').classList.toggle('hidden');
+        else if (/^[0-9]$/.test(e.key)) { const k = e.key === '0' ? 9 : +e.key - 1; if (scenes[k]) jumpTo(k); }
+      });
+
+      window.__MH_ENGINE__ = { duration: DURATION, seek, scenes: scenes.map((s) => ({ type: s.type, start: s.start, dur: s.dur })) };
+      if (params.get('clean') === '1') document.getElementById('hud').classList.add('hidden');
+      seek(params.has('t') ? parseFloat(params.get('t')) : 0);
+    }
+    boot();
+  </script>
+</body>
+</html>

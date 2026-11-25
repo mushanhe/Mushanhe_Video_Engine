@@ -1,14 +1,14 @@
 <div align="center">
 
-### [🚀 在线预览 Demo（6 大风格免下载直达）](https://mushanhe.github.io/Mushanhe_Video_Engine/)
+### [🚀 在线预览 Demo（12 大流派免下载直达）](https://mushanhe.github.io/Mushanhe_Video_Engine/)
 
 # Mushanhe Video Engine
 
-**一份 JSON 剧本，驱动 6 大电影级风格 × 24 套实时皮肤。**
+**一份 JSON 剧本，驱动 12 大电影级流派 × 30 套开箱皮肤。**
 
-1 套 `core/` 通用内核 · 10 大万能口播句型 · 4 种动态人像粒子变形 · **6 套旗舰风格包 × 每包 4 套实时皮肤**
+1 套 `core/` 通用内核 · 10 大万能口播句型 · 4 种动态人像粒子变形 · **01–06 各 4 色实时换肤（24 套）+ 07–12 六大新流派**
 
-`v2.5` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 自带 AI Agent Skill（`SKILL.md`）
+`v3.0` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 自带 AI Agent Skill（`SKILL.md`）
 
 | 01 · 3D 工业实体画廊 | 02 · 瑞士印刷拼贴 |
 |---|---|
@@ -21,6 +21,18 @@
 | 05 · Pro NLE 多轨剪辑台 | 06 · Neo-Brutalism 撞色潮刊 |
 |---|---|
 | <a href="https://mushanhe.github.io/Mushanhe_Video_Engine/templates/05_pro_nle/index.html"><img src="docs/preview_nle.png" alt="05 Pro NLE 多轨剪辑台" width="100%" /></a><br />[▶ 在线打开 05 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/05_pro_nle/index.html) | <a href="https://mushanhe.github.io/Mushanhe_Video_Engine/templates/06_neobrutalism/index.html"><img src="docs/preview_neobrutalism.png" alt="06 Neo-Brutalism 撞色潮刊" width="100%" /></a><br />[▶ 在线打开 06 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/06_neobrutalism/index.html) |
+
+| 07 · 学院黑板 · 粉笔手绘 | 08 · 宋韵水墨 · 新中式 |
+|---|---|
+| <a href="https://mushanhe.github.io/Mushanhe_Video_Engine/templates/07_chalkboard/index.html"><img src="docs/preview_chalkboard.png" alt="07 学院黑板 · 粉笔手绘" width="100%" /></a><br />[▶ 在线打开 07 展厅 🆕](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/07_chalkboard/index.html) | <a href="https://mushanhe.github.io/Mushanhe_Video_Engine/templates/08_song_ink/index.html"><img src="docs/preview_song_ink.png" alt="08 宋韵水墨 · 新中式" width="100%" /></a><br />[▶ 在线打开 08 展厅 🆕](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/08_song_ink/index.html) |
+
+| 09 · 日系胶片 · 独立杂志 | 10 · 复古 CRT 像素终端 |
+|---|---|
+| <a href="https://mushanhe.github.io/Mushanhe_Video_Engine/templates/09_analog_film/index.html"><img src="docs/preview_analog_film.png" alt="09 日系胶片 · 独立杂志" width="100%" /></a><br />[▶ 在线打开 09 展厅 🆕](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/09_analog_film/index.html) | <a href="https://mushanhe.github.io/Mushanhe_Video_Engine/templates/10_retro_crt/index.html"><img src="docs/preview_retro_crt.png" alt="10 复古 CRT 像素终端" width="100%" /></a><br />[▶ 在线打开 10 展厅 🆕](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/10_retro_crt/index.html) |
+
+| 11 · Keynote 暗黑流光 | 12 · 华尔街金融终端 |
+|---|---|
+| <a href="https://mushanhe.github.io/Mushanhe_Video_Engine/templates/11_keynote_glass/index.html"><img src="docs/preview_keynote_glass.png" alt="11 Keynote 暗黑流光" width="100%" /></a><br />[▶ 在线打开 11 展厅 🆕](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/11_keynote_glass/index.html) | <a href="https://mushanhe.github.io/Mushanhe_Video_Engine/templates/12_bloomberg_fin/index.html"><img src="docs/preview_bloomberg.png" alt="12 华尔街金融终端" width="100%" /></a><br />[▶ 在线打开 12 展厅 🆕](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/12_bloomberg_fin/index.html) |
 
 </div>
 
@@ -40,12 +52,12 @@ Mushanhe Video Engine 把口播视频拆成两层：
 | | |
 |---|---|
 | 🧱 **通用内核 `core/`** | 6 自由度 3D 摄影机（推拉摇移 + 手持感）、词级逐字高亮字幕、人像形态控制器、点阵粒子散聚转场、无头抽帧验货脚本 |
-| 📜 **统一剧本标准** | `{ meta, theme, scenes }` 一种格式通吃全部 6 套风格包；`theme` 只改配色变量，`scenes[].data` 只放文案 |
+| 📜 **统一剧本标准** | `{ meta, theme, scenes }` 一种格式通吃全部 12 套风格包；`theme` 只改配色变量，`scenes[].data` 只放文案 |
 | 🗂 **10 大万能句型** | 覆盖知识 / 科技 / 数码 / 工具类口播里最常见的段落类型 |
 | 🧑 **4 种人像形态** | `card` 侧栏画框 · `pip` 圆形/方形画中画 · `corner` 角落小窗 · `full` 全屏出镜，形态切换自带粒子散聚转场 |
-| 🎨 **6 套旗舰风格包** | 3D 工业实体画廊 · 瑞士印刷拼贴 · Vox 侦探桌面 · ComfyUI 3D 节点图 · Pro NLE 多轨剪辑台 · Neo-Brutalism 撞色潮刊 |
-| 🌗 **24 套实时皮肤（v2.5 新增）** | 每套风格包内置 4 套深浅配色皮肤，展厅右上角胶囊一点即换、无刷新，`?theme=` 或剧本 `theme.preset` 也能指定 |
-| 🤖 **AI Agent Skill（v2.5 新增）** | 根目录 `SKILL.md`：Claude Code / Antigravity / Cursor 读完就会选风格、写剧本、抽帧验货、交付预览 |
+| 🎨 **12 大旗舰流派（v3.0）** | 3D 工业实体画廊 · 瑞士印刷拼贴 · Vox 侦探桌面 · ComfyUI 3D 节点图 · Pro NLE 多轨剪辑台 · Neo-Brutalism 撞色潮刊 · **学院黑板 · 宋韵水墨 · 日系胶片 · 复古 CRT · Keynote 暗黑流光 · 华尔街金融终端** |
+| 🌗 **30 套开箱皮肤** | 01–06 每包内置 4 套深浅配色实时皮肤（24 套），展厅右上角胶囊一点即换、`?theme=` 或剧本 `theme.preset` 也能指定；07–12 各自 1 套独立流派美术（6 套） |
+| 🤖 **AI Agent Skill** | 根目录 `SKILL.md`：Claude Code / Antigravity / Cursor 读完就会在 12 套里推荐最对味的风格、写剧本、抽帧验货、交付预览 |
 
 ### 10 大万能口播句型
 
@@ -62,7 +74,7 @@ Mushanhe Video Engine 把口播视频拆成两层：
 | `quote` 金句 | 全屏人像 + 侧边金句卡，自动避开人脸 |
 | `outro` 结尾 | 行动建议 + 关注 / 开源地址 CTA |
 
-### 6 套旗舰风格包
+### 12 大旗舰风格包
 
 | 风格包 | 美术关键词 | 在线体验 |
 |---|---|---|
@@ -72,10 +84,16 @@ Mushanhe Video Engine 把口播视频拆成两层：
 | [`templates/04_nodegraph/`](templates/04_nodegraph/) | 深空蓝黑网格 · 发光贝塞尔信号线与脉冲光点 · 示波器 / 环形通过率表 / 激光线框展柜 · 霓虹光幕转场 | [▶ 04 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/04_nodegraph/index.html) |
 | [`templates/05_pro_nle/`](templates/05_pro_nle/) | 未来非编多轨剪辑台 · 真 4 轨时间线与逐字波形 · 右侧 Lumetri 示波器智能补位 · 四色色条场记转场 | [▶ 05 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/05_pro_nle/index.html) |
 | [`templates/06_neobrutalism/`](templates/06_neobrutalism/) | 暖米色呼吸波点 · 4px 粗黑边 · 8 / 12px 硬投影 · 明黄 / 电光蓝 / 薄荷绿 / 珊瑚红撞色 · 四色色块横扫转场 | [▶ 06 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/06_neobrutalism/index.html) |
+| [`templates/07_chalkboard/`](templates/07_chalkboard/) 🆕 | 深墨绿磨砂黑板 · 粉笔白 / 黄 / 天蓝 / 珊瑚粉 · 种子化手绘抖动边框 · 逐笔描出圈勾箭头 · 原木黑板擦与彩色粉笔头 | [▶ 07 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/07_chalkboard/index.html) |
+| [`templates/08_song_ink/`](templates/08_song_ink/) 🆕 | 宣纸 · 徽墨 · 朱砂 · 石青 · 1px 细墨双框 + 回纹角花 · 朱砂方印 · 毛笔飞白 · 竖排引题 · 月洞窗人像 | [▶ 08 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/08_song_ink/index.html) |
+| [`templates/09_analog_film/`](templates/09_analog_film/) 🆕 | 奶白杂志纸 · 拍立得白边 · 35mm 齿孔胶片条 · 橙色发光日期戳 · 即显相纸显影动画 · 油性记号笔圈注 | [▶ 09 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/09_analog_film/index.html) |
+| [`templates/10_retro_crt/`](templates/10_retro_crt/) 🆕 | 纯黑微绿荧光屏 · 磷光绿发光 + 扫描线 · 双线 ASCII 窗框 · 像素块进度条 · 打字机逐字敲出 · CRT 开窗闪烁 | [▶ 10 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/10_retro_crt/index.html) |
+| [`templates/11_keynote_glass/`](templates/11_keynote_glass/) 🆕 | 纯黑舞台 · 1px 亮边液态毛玻璃 Bento · 钛金属渐变超大标题 · 蓝紫青极光点睛 · 景深模糊柔和入场 | [▶ 11 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/11_keynote_glass/index.html) |
+| [`templates/12_bloomberg_fin/`](templates/12_bloomberg_fin/) 🆕 | 深海藏青终端面板 · 琥珀功能键 · 等宽表格数字 · 确定性 K 线 / sparkline · 滚动行情条 · 评级徽章涨绿跌红 | [▶ 12 展厅](https://mushanhe.github.io/Mushanhe_Video_Engine/templates/12_bloomberg_fin/index.html) |
 
-### 24 套实时皮肤（v2.5）
+### 30 套开箱皮肤（v3.0）
 
-每套风格包都有自己的 `themes.js`，内置 4 套皮肤（第一套是默认，不带参数打开时与 v2.0 画面完全一致）。每套皮肤都用无头浏览器抽帧检查过文字、卡片、字幕、人像边框的对比度（暗色皮肤不出现黑字配黑底，浅色皮肤不出现白字配白底）。
+**01–06** 每套风格包都有自己的 `themes.js`，内置 4 套皮肤（第一套是默认，不带参数打开时与 v2.0 画面完全一致）。每套皮肤都用无头浏览器抽帧检查过文字、卡片、字幕、人像边框的对比度（暗色皮肤不出现黑字配黑底，浅色皮肤不出现白字配白底）。
 
 | 风格包 | `?theme=` 皮肤 |
 |---|---|
@@ -85,8 +103,9 @@ Mushanhe Video Engine 把口播视频拆成两层：
 | 04 · ComfyUI 3D 节点图 | `cyber` 深空赛博 · `matrix` 黑客矩阵 · `amber_lab` 核能琥珀 · `daylight` 白昼蓝图 |
 | 05 · Pro NLE 多轨剪辑台 | `premiere` 深蓝黑 · `davinci` 达芬奇 · `fcp_silver` 浅银 · `broadcast` 导播台 |
 | 06 · Neo-Brutalism 撞色潮刊 | `zine` 潮刊 · `acid` 酸性 · `pop_pink` 波普 · `mono_ink` 漫画 |
+| 07–12 · 六大新流派 | 各 1 套独立流派美术（黑板 / 水墨 / 胶片 / CRT / Keynote / 金融终端），`theme` 里写颜色变量即可微调 |
 
-三种换法，优先级从高到低：
+01–06 三种换法，优先级从高到低：
 
 1. URL 参数：`templates/02_swiss_print/index.html?theme=midnight`
 2. 剧本里写：`"theme": { "preset": "midnight" }`
@@ -151,7 +170,7 @@ http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=my_script.json
 
 ## 作为 AI Agent Skill 使用
 
-仓库根目录的 [`SKILL.md`](SKILL.md) 是一份标准 Agent Skill：6 × 4 风格皮肤索引、10 大句型速查、剧本规范和 4 步出片流程都在里面。把仓库交给 AI 编程助手后，直接说人话就能出片。
+仓库根目录的 [`SKILL.md`](SKILL.md) 是一份标准 Agent Skill：12 大流派 + 30 套皮肤索引、10 大句型速查、剧本规范和 4 步出片流程都在里面。把仓库交给 AI 编程助手后，直接说人话就能出片。
 
 **Claude Code**：把 `SKILL.md` 复制到 `~/.claude/skills/mushanhe-video-engine/SKILL.md`（全局）或仓库内 `.claude/skills/mushanhe-video-engine/SKILL.md`，之后说到做口播视频时会自动调用；临时用也可以在对话里说“先读根目录 SKILL.md”。
 
@@ -164,8 +183,10 @@ http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=my_script.json
 > 这段稿子讲 AI 工作流，帮我推荐一个风格和皮肤，做完给我预览链接。
 >
 > 刚才那条换成瑞士印刷的包豪斯皮肤再出一版。
+>
+> 这是一期讲宋词的读书视频，你挑一个最对味的风格。
 
-AI 会按 4 步走：① 确认或推荐风格与皮肤 → ② 把口播稿写成 `{ meta, theme, scenes }` 剧本 → ③ 跑 `inspect_frames.py` 抽帧，确认 `ZERO_ERRORS` 并逐张检查 → ④ 启动 `serve.py` 交付预览链接。同一份剧本随时可以换成其他 5 套风格或另外 3 套皮肤。
+AI 会按 4 步走：① 确认或推荐风格与皮肤 → ② 把口播稿写成 `{ meta, theme, scenes }` 剧本 → ③ 跑 `inspect_frames.py` 抽帧，确认 `ZERO_ERRORS` 并逐张检查 → ④ 启动 `serve.py` 交付预览链接。同一份剧本随时可以换成其他 11 套风格，01–06 还能换另外 3 套皮肤。
 
 ## 无头抽帧验货
 
@@ -181,9 +202,9 @@ python core/tools/inspect_frames.py --template 01_industrial_3d --times 3,9.5,17
 
 ```text
 Mushanhe_Video_Engine/
-├── index.html                 # 导航页：6 套风格包 × 24 套皮肤色点直达
+├── index.html                 # 导航页：12 张流派海报卡 · 01–06 皮肤色点直达
 ├── SKILL.md                   # AI Agent Skill：选风格 → 写剧本 → 验货 → 交付
-├── docs/                      # 6 套风格包 2×2 预览拼图
+├── docs/                      # 12 套风格包 2×2 预览拼图（1616×930）
 ├── core/                      # 通用内核（所有风格包共享）
 │   ├── camera-rig.js          # 6 自由度 3D 空间摄影机
 │   ├── avatar.js              # 人像形态控制器
@@ -200,9 +221,15 @@ Mushanhe_Video_Engine/
     ├── 03_vox_desk/           # 旗舰包 #3 · Vox 侦探桌面
     ├── 04_nodegraph/          # 旗舰包 #4 · ComfyUI 3D 节点图
     ├── 05_pro_nle/            # 旗舰包 #5 · Pro NLE 多轨剪辑台
-    └── 06_neobrutalism/       # 旗舰包 #6 · Neo-Brutalism 撞色潮刊
+    ├── 06_neobrutalism/       # 旗舰包 #6 · Neo-Brutalism 撞色潮刊
+    ├── 07_chalkboard/         # 旗舰包 #7 · 学院黑板粉笔手绘（v3.0）
+    ├── 08_song_ink/           # 旗舰包 #8 · 宋韵水墨新中式（v3.0）
+    ├── 09_analog_film/        # 旗舰包 #9 · 日系胶片独立杂志（v3.0）
+    ├── 10_retro_crt/          # 旗舰包 #10 · 复古 CRT 像素终端（v3.0）
+    ├── 11_keynote_glass/      # 旗舰包 #11 · Keynote 暗黑流光（v3.0）
+    └── 12_bloomberg_fin/      # 旗舰包 #12 · 华尔街金融终端（v3.0）
         ├── components.js      # 10 大句型组件
-        ├── themes.js          # 4 套实时皮肤（v2.5）
+        ├── themes.js          # 4 套实时皮肤（仅 01–06）
         ├── demo_data.json     # 10 段示例剧本
         ├── index.html         # 展厅 / 渲染宿主
         └── assets/            # 演播室背景
@@ -218,13 +245,15 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 
 - `el`：组件根节点；`layer`：`world`（跟随 3D 摄影机）或 `screen`（贴在屏幕上）。
 - `cams`：本段的机位关键帧；`update(localT)`：按本段时间渲染，必须是确定性的。
-- 数据字段与现有 6 套旗舰包保持一致，这样任何一份剧本都能在所有风格包之间无缝切换。
+- 数据字段与现有 12 套旗舰包保持一致，这样任何一份剧本都能在所有风格包之间无缝切换。
 
 ## Roadmap
 
 - [x] **v1.0**：通用内核 `core/` + 10 大句型 + 4 种人像粒子变形 + 2 套旗舰包上线
 - [x] **v2.0**：6 大旗舰风格矩阵全部开源上线（工业 3D / 瑞士印刷 / Vox 侦探 / ComfyUI 节点 / Pro NLE / 撞色潮刊）
 - [x] **v2.5**：6 套风格包各内置 4 套实时皮肤（共 24 套）+ 01 工业 3D 的 4 个 `variant` 版式变体 + 统一 `SKILL.md` Agent Skill
+- [x] **v3.0**：12 大旗舰流派（新增学院黑板 / 宋韵水墨 / 日系胶片 / 复古 CRT / Keynote 暗黑流光 / 华尔街金融终端）+ 30 套开箱皮肤 + 12 张 2×2 预览拼图 + `SKILL.md` 12 套平权索引
+- [ ] **07–12 实时皮肤**：六大新流派各补 4 套 `themes.js` 实时皮肤
 - [ ] **更多变体与垂类组件**：其余风格包的 `variant` 布局变体 + 垂类组件（财经 / 编程 / 读书）
 - [ ] `export_mp4.py`：无头浏览器一键导出 MP4，自带人声响度与 BGM 闪避
 - [ ] 剧本可视化编辑器
@@ -240,4 +269,4 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 
 ## License
 
-本仓库原创代码与素材（`core/`、`templates/01_industrial_3d/` ~ `templates/06_neobrutalism/`，含演播室背景图 `studio_bg.png`）以 [MIT License](LICENSE) 发布，© 2026 mushanhe。`core/vendor/` 中的第三方库除外，见上节。
+本仓库原创代码与素材（`core/`、`templates/01_industrial_3d/` ~ `templates/12_bloomberg_fin/` 全部 12 套风格包，含演播室背景图 `studio_bg.png` 与 `docs/` 预览拼图）以 [MIT License](LICENSE) 发布，© 2026 mushanhe。`core/vendor/` 中的第三方库除外，见上节。

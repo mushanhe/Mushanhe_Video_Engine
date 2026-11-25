@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chalkboard 学院派黑板 · 组件展厅（风格包 07）</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="../../core/engine.css" />
+  <style>
+    :root {
+      --cb-font: 'KaiTi', 'STKaiti', 'Kaiti SC', '楷体', 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+      --cb-num: 'KaiTi', 'STKaiti', 'Kaiti SC', 'Georgia', serif;
+      --cb-mono: 'Consolas', 'Cascadia Code', 'JetBrains Mono', 'Courier New', monospace;
+      --cb-board: #183028; --cb-white: #F4F4EE; --cb-yellow: #FFE066; --cb-blue: #74C0FC; --cb-pink: #FF8787;
+      --cb-dim: rgba(244, 244, 238, 0.62);
+      --cb-glow: 0 0 1px rgba(244, 244, 238, 0.55), 0 0 7px rgba(244, 244, 238, 0.12);
+      --cb-glow-lg: 0 0 2px rgba(244, 244, 238, 0.45), 0 0 14px rgba(244, 244, 238, 0.14);
+    }
+    #viewport { background: var(--cb-board); overflow: hidden; font-family: var(--cb-font); color: var(--cb-white); }
+    #avatar-morph-canvas { position: absolute; inset: 0; width: 1920px; height: 1080px; z-index: 32; pointer-events: none; }
+
+    /* 深墨绿磨砂黑板：粉笔灰噪点（启动时种子化生成）+ 擦拭残影 + 边缘暗角 */
+    .cb-board-tex {
+      background-color: var(--cb-board);
+      background-image:
+        var(--cb-noise, none),
+        radial-gradient(ellipse 520px 120px at 22% 30%, rgba(244,244,238,0.045), transparent 70%),
+        radial-gradient(ellipse 700px 150px at 70% 62%, rgba(244,244,238,0.04), transparent 70%),
+        radial-gradient(ellipse 420px 90px at 40% 84%, rgba(244,244,238,0.035), transparent 70%),
+        linear-gradient(176deg, rgba(244,244,238,0.025) 0 18%, transparent 18% 40%, rgba(244,244,238,0.02) 40% 52%, transparent 52%);
+      background-size: 256px 256px, auto, auto, auto, auto;
+    }
+    #cb-bg-layer { position: absolute; inset: -80px; z-index: 0; pointer-events: none; will-change: transform; }
+    #cb-vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+      background: radial-gradient(ellipse 78% 72% at 46% 46%, transparent 55%, rgba(4, 12, 9, 0.62) 100%); }
+
+    /* 3D 黑板画布（透明）+ 粉笔颗粒蒙版：所有粉笔字 / 手绘线条都被噪点“磨掉”一点，呈现真实粉笔质感 */
+    #camera-viewport { position: absolute; inset: 0; z-index: 10; overflow: hidden; perspective: 1650px; pointer-events: none; background: transparent; }
+    #cb-world { position: absolute; left: 0; top: 0; width: 11200px; height: 1300px; transform-style: preserve-3d; will-change: transform;
+      -webkit-mask-image: var(--cb-mask, none); mask-image: var(--cb-mask, none); -webkit-mask-size: 180px 180px; mask-size: 180px 180px; }
+
+    /* 标志转场：原木黑板擦横扫 + 粉笔灰轨迹 + 段号 */
+    #cb-wipe { position: absolute; inset: 0; z-index: 15; pointer-events: none; display: none; overflow: hidden; }
+    #cb-wipe-panel { position: absolute; inset: 0; }
+    #cb-wipe-panel .streaks { position: absolute; inset: 0;
+      background:
+        repeating-linear-gradient(178.5deg, transparent 0 46px, rgba(244,244,238,0.05) 46px 92px, transparent 92px 150px),
+        linear-gradient(180deg, rgba(244,244,238,0.05), transparent 30%, rgba(244,244,238,0.04) 60%, transparent); }
+    #cb-wipe-num { position: absolute; left: 150px; top: 250px; font-family: var(--cb-num); font-weight: 700; color: var(--cb-yellow); line-height: 1; text-shadow: 0 0 3px rgba(255,224,102,.5), 0 0 22px rgba(255,224,102,.18); }
+    #cb-wipe-num .no { font-size: 340px; letter-spacing: -0.02em; }
+    #cb-wipe-num .lb { margin-top: 26px; font-family: var(--cb-font); font-size: 72px; color: var(--cb-white); text-shadow: 0 0 2px rgba(244,244,238,.5); white-space: nowrap; }
+    #cb-wipe-num .lb small { font-family: var(--cb-mono); font-size: 30px; letter-spacing: .2em; color: var(--cb-blue); margin-left: 24px; }
+    #cb-wipe-ul { position: absolute; left: 150px; top: 610px; }
+    #cb-dust { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+    #cb-wipe-eraser { position: absolute; left: 0; top: 0; width: 300px; height: 760px; filter: drop-shadow(18px 24px 22px rgba(0,0,0,.55)); }
+
+    #screen-layer { position: absolute; inset: 0; z-index: 26; pointer-events: none; }
+
+    /* 顶部粉笔课程表（兼作进度） */
+    #cb-tabs { position: absolute; left: 40px; top: 18px; z-index: 45; display: flex; gap: 6px; }
+    .cb-tab { width: 120px; position: relative; padding: 6px 8px 12px; box-sizing: border-box; font-family: var(--cb-mono); font-size: 13px; font-weight: 700; letter-spacing: .04em; color: rgba(244,244,238,.5); cursor: pointer; white-space: nowrap;
+      border: 2px dashed rgba(244,244,238,.28); border-radius: 3px; }
+    .cb-tab.done { color: rgba(244,244,238,.78); }
+    .cb-tab.done:after { content: '✓'; position: absolute; right: -5px; top: -11px; padding: 0 3px; font-size: 14px; line-height: 16px; background: var(--cb-board); color: var(--cb-blue); }
+    .cb-tab.on { color: var(--cb-yellow); border-color: rgba(255,224,102,.8); text-shadow: 0 0 6px rgba(255,224,102,.35); }
+    .cb-tab .fl { position: absolute; left: 6px; bottom: 4px; height: 3px; width: 0; max-width: calc(100% - 12px); background: var(--cb-yellow); border-radius: 2px; }
+
+    /* 底部实体原木粉笔槽（屏幕固定） */
+    #cb-tray { position: absolute; left: -10px; right: -10px; bottom: 0; height: 30px; z-index: 40; pointer-events: none;
+      background: linear-gradient(180deg, #C08A52 0, #A0703C 30%, #7A4F26 72%, #4E3117 100%);
+      box-shadow: 0 -6px 16px rgba(0,0,0,.5), inset 0 2px 0 rgba(255,230,190,.35); }
+    #cb-tray:before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(60,34,14,.0) 0 90px, rgba(60,34,14,.18) 90px 92px, transparent 92px 170px); }
+    #cb-tray .stk { position: absolute; bottom: 20px; }
+    #cb-tray .dust { position: absolute; bottom: 22px; height: 6px; border-radius: 50%; background: rgba(244,244,238,.35); filter: blur(2px); }
+
+    /* 原木相框人像 + 粉笔剪影占位 */
+    #avatar-stage { border-radius: 4px; border: 12px solid #8E5E31 !important; box-sizing: border-box;
+      box-shadow: 0 0 0 3px #5C3A1E, inset 0 0 0 2px rgba(255,230,190,.25), 0 22px 40px rgba(0,0,0,.55) !important; }
+    #avatar-stage.is-full { border: 0 solid transparent !important; box-shadow: none !important; }
+    #avatar-silhouette { position: absolute; left: 50%; bottom: 0; height: 82%; transform: translateX(-50%); z-index: 2; pointer-events: none; }
+    #avatar-tag { background: rgba(16, 34, 28, 0.92) !important; color: var(--cb-yellow) !important; border: 2px dashed rgba(244,244,238,.8) !important; border-radius: 4px !important;
+      font-family: var(--cb-mono) !important; font-weight: 700 !important; font-size: 15px !important; letter-spacing: 0.12em !important; padding: 7px 14px !important; backdrop-filter: none !important; transform: rotate(-2deg); }
+    #avatar-tag i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--cb-pink); box-shadow: 0 0 8px var(--cb-pink); margin-right: 8px; }
+
+    /* 字幕：深黑板底 + 粉笔白虚线框 + 当前字粉笔黄 */
+    #subtitle-bar {
+      bottom: 50px !important; background: rgba(13, 29, 23, 0.96) !important; border: 3px dashed rgba(244, 244, 238, 0.88) !important; border-radius: 6px !important;
+      backdrop-filter: none !important; box-shadow: 0 0 0 6px rgba(13, 29, 23, 0.96), 0 14px 30px rgba(0,0,0,.5) !important;
+      padding: 10px 32px 12px !important; color: #F4F4EE !important; font-family: var(--cb-font) !important;
+      font-size: 42px !important; font-weight: 700 !important; letter-spacing: 0.04em !important;
+    }
+    #subtitle-bar .w { color: #F4F4EE; text-shadow: 0 0 1px rgba(244,244,238,.5); }
+    #subtitle-bar .w.passed { color: #F4F4EE !important; text-shadow: 0 0 1px rgba(244,244,238,.5) !important; }
+    #subtitle-bar .w.active { color: #FFE066 !important; text-shadow: 0 0 10px rgba(255,224,102,.45) !important; }
+
+    #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; background: #3a1414; color: #fff; border: 3px dashed var(--cb-pink); font-size: 28px; font-weight: 700; display: none; }
+  </style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="cb-bg-layer" class="cb-board-tex"></div>
+    <div id="cb-vignette"></div>
+    <div id="camera-viewport"><div id="cb-world"></div></div>
+    <div id="cb-wipe">
+      <div id="cb-wipe-panel" class="cb-board-tex">
+        <div class="streaks"></div>
+        <div id="cb-wipe-num"><div class="no">01</div><div class="lb">—</div></div>
+        <div id="cb-wipe-ul"></div>
+      </div>
+      <canvas id="cb-dust" width="1920" height="1080"></canvas>
+      <div id="cb-wipe-eraser"></div>
+    </div>
+    <div id="screen-layer"></div>
+    <div id="cb-tabs"></div>
+
+    <div id="avatar-stage">
+      <img id="avatar-studio-bg" src="assets/studio_bg.png" alt="studio" />
+      <svg id="avatar-silhouette" viewBox="0 0 400 520" preserveAspectRatio="xMidYMax meet">
+        <g fill="rgba(16,34,28,0.88)" stroke="#F4F4EE" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="14 7">
+          <circle cx="200" cy="150" r="92" />
+          <path d="M30 520 C40 340 110 270 200 270 C290 270 360 340 370 520 Z" />
+        </g>
+        <text x="200" y="352" text-anchor="middle" font-family="Consolas, monospace" font-size="20" font-weight="700" fill="#FFE066" letter-spacing="3">AVATAR · 人像占位</text>
+      </svg>
+      <div id="avatar-tag"><i></i><span id="avatar-tag-tx">YOUR NAME</span></div>
+    </div>
+
+    <canvas id="avatar-morph-canvas" width="1920" height="1080"></canvas>
+    <div id="cb-tray"></div>
+    <div id="subtitle-bar"></div>
+    <div id="load-error"></div>
+  </div>
+
+  <div id="hud">
+    <button id="btn-play" class="primary">▶ 连播 10 大句型</button>
+    <button id="btn-replay">↺ 重播</button>
+    <input id="scrubber" type="range" min="0" max="50" step="0.01" value="0" />
+    <span id="time-readout">0.00 / 0.00s</span>
+    <span class="hud-sep"></span>
+    <span class="hud-label">H 隐藏控制栏 · 1–9 / 0 切换句型 · 空格播放</span>
+  </div>
+
+  <script src="../../core/vendor/gsap.min.js"></script>
+  <script src="../../core/camera-rig.js"></script>
+  <script src="../../core/avatar-morph-fx.js"></script>
+  <script src="../../core/avatar.js"></script>
+  <script src="../../core/subtitle.js"></script>
+  <script src="components.js"></script>
+  <script>
+    const vp = document.getElementById('viewport');
+    function fit() {
+      const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      vp.style.transform = `scale(${s})`;
+      vp.style.left = `${(window.innerWidth - 1920 * s) / 2}px`;
+      vp.style.top = `${(window.innerHeight - 1080 * s) / 2}px`;
+    }
+    window.addEventListener('resize', fit); fit();
+
+    const ZONE_GAP = 200, ZONE_Y = 100, SX = 650, SY = 470;
+    // 组件局部安全区 x60–1340 / y100–980 → 屏幕 x≈115–1295（避开人像框 1328+）/ y≈100–910（避开字幕与粉笔槽）
+    const CAM_DX = 60, CAM_ZOOM = 0.92;
+    const params = new URLSearchParams(location.search);
+
+    /** 种子化噪点纹理：粉笔灰颗粒（底板）与粉笔颗粒蒙版（画布）——确定性，逐帧一致 */
+    function noiseURL(size, seed, fn) {
+      const c = document.createElement('canvas'); c.width = c.height = size;
+      const g = c.getContext('2d'), img = g.createImageData(size, size);
+      let a = seed >>> 0;
+      const rnd = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+      for (let i = 0; i < size * size; i++) { const [r, gg, b, al] = fn(rnd); img.data[i * 4] = r; img.data[i * 4 + 1] = gg; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = al; }
+      g.putImageData(img, 0, 0);
+      return `url(${c.toDataURL('image/png')})`;
+    }
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty('--cb-noise', noiseURL(256, 707, (r) => { const v = r(); return v > 0.93 ? [244, 244, 238, Math.floor(10 + r() * 26)] : v < 0.35 ? [0, 0, 0, Math.floor(r() * 22)] : [244, 244, 238, Math.floor(r() * 6)]; }));
+    rootStyle.setProperty('--cb-mask', noiseURL(180, 2026, (r) => { const v = r(); return [0, 0, 0, v < 0.07 ? 70 : v < 0.22 ? 175 : 255]; }));
+
+    /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
+    function buildWordData(scenes) {
+      const words = [], lines = [];
+      scenes.forEach((sc) => {
+        const subs = sc.sub || []; if (!subs.length) return;
+        const a0 = sc.start + 0.35, a1 = sc.start + sc.dur - 0.3, slot = (a1 - a0) / subs.length;
+        subs.forEach((line, li) => {
+          const toks = line.match(/[A-Za-z0-9.\-_/@#:+]+|\s+|./g) || [];
+          const real = toks.filter((x) => !/^\s+$/.test(x));
+          const s0 = a0 + li * slot, dt = (slot - 0.25) / Math.max(1, real.length);
+          const a = words.length, sp = [];
+          let k = 0;
+          toks.forEach((tk) => {
+            if (/^\s+$/.test(tk)) { if (words.length > a) sp.push(words.length - 1); return; }
+            words.push([tk, +(s0 + k * dt).toFixed(3), +(s0 + (k + 1) * dt).toFixed(3)]); k++;
+          });
+          if (words.length > a) lines.push({ a, b: words.length - 1, sp });
+        });
+      });
+      return { words, lines };
+    }
+
+    async function boot() {
+      let script;
+      try {
+        const src = params.get('data') || 'demo_data.json';
+        script = await (await fetch(src, { cache: 'no-store' })).json();
+      } catch (e) {
+        const el = document.getElementById('load-error');
+        el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
+        throw e;
+      }
+      const theme = script.theme || {};
+      ['board', 'white', 'yellow', 'blue', 'pink'].forEach((k) => { if (theme[k]) rootStyle.setProperty(`--cb-${k}`, theme[k]); });
+      Chalkboard.injectCSS();
+
+      // 人像：可选真人视频，否则用粉笔剪影占位
+      const meta = script.meta || {}, av = meta.avatar || {};
+      if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
+      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      if (av.video) {
+        const v = document.createElement('video');
+        v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
+        document.getElementById('avatar-stage').insertBefore(v, document.getElementById('avatar-tag'));
+        document.getElementById('avatar-silhouette').style.display = 'none';
+      }
+
+      // 粉笔槽：彩色粉笔头 + 粉笔灰
+      const tray = document.getElementById('cb-tray');
+      [[110, 96, '#F4F4EE'], [230, 74, '#FFE066'], [322, 60, '#74C0FC'], [1640, 84, '#FF8787'], [1750, 52, '#F4F4EE']].forEach(([x, l, c]) => {
+        const d = document.createElement('div'); d.className = 'stk'; d.style.left = `${x}px`; d.innerHTML = Chalkboard.PROPS.chalk(l, c); tray.appendChild(d);
+      });
+      [[90, 160], [420, 120], [1600, 200], [1800, 90]].forEach(([x, w]) => { const d = document.createElement('div'); d.className = 'dust'; d.style.left = `${x}px`; d.style.width = `${w}px`; tray.appendChild(d); });
+      const trEr = document.createElement('div'); trEr.className = 'stk'; trEr.style.left = '1440px'; trEr.style.bottom = '18px'; trEr.innerHTML = Chalkboard.PROPS.eraser(170, 58); tray.appendChild(trEr);
+
+      // 组装场景
+      const world = document.getElementById('cb-world');
+      const scenes = []; let acc = 0, zoneX = 0;
+      (script.scenes || []).forEach((sc, i) => {
+        const factory = Chalkboard.COMPONENTS[sc.type];
+        if (!factory) { console.warn('unknown scene type', sc.type); return; }
+        const dur = sc.dur || 6;
+        const comp = factory.create(sc.data || {}, { dur });
+        const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1400) + ZONE_GAP;
+        if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
+        else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        acc += dur;
+      });
+      const DURATION = acc;
+      world.style.width = `${zoneX + 1400}px`;
+      document.getElementById('scrubber').max = DURATION;
+
+      // 运镜关键帧：每段局部机位 → 世界坐标；段与段之间在黑板擦遮挡下硬切
+      const kfs = [];
+      scenes.forEach((s, i) => {
+        const cams = s.comp.cams && s.comp.cams.length ? s.comp.cams : [{ t: 0, x: 700, y: 500, zoom: 1 }];
+        cams.forEach((c, j) => {
+          let t = s.start + Math.min(c.t, s.dur);
+          if (j === cams.length - 1 && i < scenes.length - 1) t = s.start + s.dur - 0.002;
+          kfs.push({ t, x: s.zx + c.x - CAM_DX, y: s.zy + c.y, zoom: (c.zoom || 1) * CAM_ZOOM, rx: c.rx || 0, ry: c.ry || 0, rz: c.rz || 0, screenX: SX, screenY: SY });
+        });
+      });
+      const camRig = new MHEngine.CameraRig3D(world, { viewW: 1920, viewH: 1080, handheld: 0.6 });
+      camRig.setKeyframes(kfs);
+
+      // 人像形态：card / pip / corner / full（4 种形态全部走 core 点阵粒子散聚转场）
+      const avatar = new MHEngine.AvatarController({
+        card:   { left: 1328, top: 82,  width: 540, height: 790, borderRadius: 4,   borderWidth: 12, tagOpacity: 1 },
+        pip:    { left: 1532, top: 600, width: 320, height: 320, borderRadius: 160, borderWidth: 10, tagOpacity: 0 },
+        corner: { left: 1410, top: 500, width: 458, height: 342, borderRadius: 4,   borderWidth: 12, tagOpacity: 1 }
+      });
+      const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
+      const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
+      const tl = gsap.timeline({ paused: true });
+      avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
+      scenes.forEach((s, i) => {
+        if (i === 0) return;
+        const prev = mapAv(scenes[i - 1].avatar);
+        const cur = mapAv(s.avatar);
+        if (prev !== cur) {
+          avatarMorph.addMorph({ time: s.start + 0.02, duration: 0.5, fromMode: prev, toMode: cur, count: 1000, seed: 70700 + i });
+          avatar.animateOnTimeline(tl, cur, s.start + 0.06, 0.48);
+        }
+      });
+      tl.to({}, { duration: 0.05 }, DURATION);
+
+      // 字幕
+      const WORD_DATA = buildWordData(scenes);
+      window.WORD_DATA = WORD_DATA;
+      const subtitle = new MHEngine.SubtitleRenderer(document.getElementById('subtitle-bar'), WORD_DATA);
+
+      // 顶部粉笔课程表
+      const tabsEl = document.getElementById('cb-tabs');
+      scenes.forEach((s, i) => {
+        const tb = document.createElement('div'); tb.className = 'cb-tab';
+        tb.innerHTML = `${String(i + 1).padStart(2, '0')} ${s.type.toUpperCase()}<div class="fl"></div>`;
+        tb.addEventListener('click', () => jumpTo(i));
+        tabsEl.appendChild(tb); s.tab = tb;
+      });
+
+      // ===== 标志转场：原木黑板擦横扫 =====
+      const wipe = document.getElementById('cb-wipe');
+      const wPanel = document.getElementById('cb-wipe-panel');
+      const wNum = document.getElementById('cb-wipe-num');
+      const wUl = document.getElementById('cb-wipe-ul');
+      const wEr = document.getElementById('cb-wipe-eraser');
+      const dust = document.getElementById('cb-dust'), dg = dust.getContext('2d');
+      // 竖握的大号黑板擦（毛毡面朝左，即擦拭方向）
+      wEr.innerHTML = `<div style="position:absolute;left:0;top:0;width:760px;height:300px;transform-origin:0 0;transform:translate(300px,0) rotate(90deg);">${Chalkboard.PROPS.eraser(760, 300)}</div>`;
+      wUl.innerHTML = `<svg width="760" height="60" style="overflow:visible"><path d="${Chalkboard.G.wave(0, 20, 700, 8, 50)}" pathLength="1" fill="none" stroke="#FFE066" stroke-width="7" stroke-linecap="round" style="stroke-dasharray:1 2"/></svg>`;
+      const wUlPath = wUl.querySelector('path');
+      const DUSTN = 220, dustP = [];
+      { let a = 99173; const r = () => { a = (a * 1103515245 + 12345) & 0x7fffffff; return a / 0x7fffffff; };
+        for (let i = 0; i < DUSTN; i++) dustP.push({ u: r(), y: r(), vx: 30 + r() * 140, vy: 20 + r() * 90, s: 1 + r() * 3.2, a: 0.25 + r() * 0.5 }); }
+      const SW0 = 0.48, SW1 = 0.02, HOLD = 0.3, FADE = 0.3;
+      const eraserX = (t, b) => { const p = clamp01((t - (b - SW0)) / (SW0 - SW1)); return 2000 - 2420 * (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2); };
+
+      const bg = document.getElementById('cb-bg-layer');
+      const stageEl = document.getElementById('avatar-stage');
+      const camViewport = document.getElementById('camera-viewport');
+      const clamp01 = (x) => Math.max(0, Math.min(1, x));
+
+      function renderWipe(t) {
+        for (let i = 1; i < scenes.length; i++) {
+          const b = scenes[i].start;
+          if (t < b - SW0 || t >= b + HOLD + FADE) continue;
+          const ex = eraserX(t, b), sweeping = t < b - SW1;
+          // 已擦区域 = 黑板擦右侧；擦痕边缘带毛边
+          const edge = Math.max(-40, ex + 120);
+          let poly = `polygon(${edge}px 0`;
+          for (let k = 0; k <= 12; k++) poly += `, ${(edge + 22 * Math.sin(k * 1.7 + i)).toFixed(0)}px ${k * 90}px`;
+          poly += `, 2000px 1080px, 2000px 0)`;
+          wPanel.style.clipPath = sweeping ? poly : 'none';
+          const fade = clamp01((t - b - HOLD) / FADE);
+          wPanel.style.opacity = (1 - fade).toFixed(3);
+          wEr.style.display = sweeping ? 'block' : 'none';
+          const bob = 150 * Math.sin((t - b) * 9 + i);
+          wEr.style.transform = `translate(${ex.toFixed(1)}px, ${(160 + bob).toFixed(1)}px) rotate(${(-6 + 4 * Math.sin((t - b) * 11)).toFixed(2)}deg)`;
+          // 段号：擦完即用粉笔写出
+          const wk = clamp01((t - (b - 0.12)) / 0.22);
+          wNum.style.opacity = wk.toFixed(3);
+          wNum.style.filter = wk < 1 ? `blur(${((1 - wk) * 6).toFixed(1)}px)` : '';
+          wNum.querySelector('.no').textContent = String(i + 1).padStart(2, '0');
+          wNum.querySelector('.lb').innerHTML = `${scenes[i].label || ''}<small>${String(scenes[i].type).toUpperCase()}</small>`;
+          wUlPath.style.strokeDashoffset = (1 - clamp01((t - (b + 0.02)) / 0.22)).toFixed(3);
+          // 粉笔灰：在黑板擦经过时扬起，随后飘落、淡出
+          dg.clearRect(0, 0, 1920, 1080);
+          dust.style.opacity = (1 - fade).toFixed(3);
+          dustP.forEach((p) => {
+            const tb = b - SW0 + p.u * (SW0 - SW1); if (t < tb) return;
+            const age = t - tb, x0 = eraserX(tb, b) + 60 + p.y * 40, y0 = 60 + p.y * 960;
+            const x = x0 + p.vx * age, y = y0 + p.vy * age + 40 * age * age, al = p.a * Math.max(0, 1 - age / 1.1);
+            if (al <= 0) return;
+            dg.globalAlpha = al; dg.fillStyle = '#F4F4EE'; dg.beginPath(); dg.arc(x, y, p.s, 0, Math.PI * 2); dg.fill();
+          });
+          dg.globalAlpha = 1;
+          wipe.style.display = 'block';
+          return;
+        }
+        wipe.style.display = 'none';
+      }
+
+      function updateUI(t) {
+        tl.time(Math.min(t, DURATION));
+        camRig.render(t);
+        subtitle.render(t);
+        // 黑板底纹极缓慢漂移（纯 transform，确定性）
+        const dx = 14 * Math.sin(t * 0.19), dy = 10 * Math.cos(t * 0.15);
+        bg.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(${(1 + 0.012 * Math.sin(t * 0.4)).toFixed(4)})`;
+
+        let cur = scenes.length - 1;
+        scenes.forEach((s, i) => { if (t >= s.start && t < s.start + s.dur) cur = i; });
+        scenes.forEach((s, i) => {
+          if (s.comp.layer === 'screen') s.comp.el.style.display = i === cur ? 'block' : 'none';
+          if (Math.abs(i - cur) <= 1) s.comp.update(t - s.start);
+          s.tab.classList.toggle('on', i === cur);
+          s.tab.classList.toggle('done', i < cur);
+          s.tab.querySelector('.fl').style.width = `${(clamp01((t - s.start) / s.dur) * 100).toFixed(1)}%`;
+        });
+        const S = scenes[cur];
+        const isFull = S.avatar === 'full';
+        stageEl.classList.toggle('is-full', isFull && t >= S.start + 0.2);
+        camViewport.style.opacity = isFull && t >= S.start + 0.15 && t < S.start + S.dur ? '0' : '1';
+
+        renderWipe(t);
+
+        stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        document.getElementById('scrubber').value = t.toFixed(2);
+        document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
+      }
+
+      // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
+      let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
+      const vid = document.getElementById('avatar-video');
+      function seek(t) {
+        cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
+        scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });
+        if (vid) { try { vid.currentTime = cur; } catch (_) {} }
+        if (playing) { t0 = performance.now(); tStart = cur; }
+      }
+      function loop() {
+        if (!playing) return;
+        const t = tStart + (performance.now() - t0) / 1000;
+        if (t >= DURATION) { pause(); seek(DURATION); return; }
+        cur = t; updateUI(t); raf = requestAnimationFrame(loop);
+      }
+      function play() { if (cur >= DURATION - 0.05) cur = 0; playing = true; t0 = performance.now(); tStart = cur; if (vid) vid.play().catch(() => {}); scenes.forEach((s) => s.comp.media && s.comp.media.play && s.comp.media.play().catch(() => {})); document.getElementById('btn-play').textContent = '⏸ 暂停'; raf = requestAnimationFrame(loop); }
+      function pause() { playing = false; cancelAnimationFrame(raf); if (vid) vid.pause(); scenes.forEach((s) => s.comp.media && s.comp.media.pause && s.comp.media.pause()); document.getElementById('btn-play').textContent = '▶ 连播 10 大句型'; }
+      function jumpTo(i) { seek(scenes[i].start + 0.45); }
+
+      document.getElementById('btn-play').addEventListener('click', () => playing ? pause() : play());
+      document.getElementById('btn-replay').addEventListener('click', () => { seek(0); play(); });
+      document.getElementById('scrubber').addEventListener('input', (e) => { pause(); seek(parseFloat(e.target.value)); });
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); }
+        else if (e.key === 'h' || e.key === 'H') document.getElementById('hud').classList.toggle('hidden');
+        else if (/^[0-9]$/.test(e.key)) { const k = e.key === '0' ? 9 : +e.key - 1; if (scenes[k]) jumpTo(k); }
+      });
+
+      window.__MH_ENGINE__ = { duration: DURATION, seek, scenes: scenes.map((s) => ({ type: s.type, start: s.start, dur: s.dur })) };
+      if (params.get('clean') === '1') document.getElementById('hud').classList.add('hidden');
+      seek(params.has('t') ? parseFloat(params.get('t')) : 0);
+    }
+    boot();
+  </script>
+</body>
+</html>

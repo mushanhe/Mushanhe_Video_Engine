@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>华尔街金融终端 · 财经研报风 · 组件展厅（风格包 12）</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="../../core/engine.css" />
+  <style>
+    :root {
+      --bf-font-cn: 'Noto Sans SC', 'Source Han Sans SC', 'Microsoft YaHei', 'PingFang SC', 'WenQuanYi Zen Hei', sans-serif;
+      --bf-font-mono: 'JetBrains Mono', 'Cascadia Code', 'Consolas', 'Menlo', monospace;
+      --bf-navy: #0B1220; --bf-amber: #F59E0B; --bf-amber2: #FBBF24; --bf-up: #10B981; --bf-down: #EF4444;
+      --bf-silver: #F1F5F9; --bf-steel: #1E293B; --bf-mute: #94A3B8;
+    }
+    #viewport { background: var(--bf-navy); overflow: hidden; font-family: var(--bf-font-cn); color: var(--bf-silver); }
+    #avatar-morph-canvas { position: absolute; inset: 0; width: 1920px; height: 1080px; z-index: 32; pointer-events: none; }
+
+    /* 精密数据网格底纹（屏幕固定层，按时间确定性缓慢平移）+ 四角暗角 */
+    #bf-bg-layer {
+      position: absolute; inset: -120px; z-index: 0; pointer-events: none; will-change: transform;
+      background-color: var(--bf-navy);
+      background-image:
+        linear-gradient(rgba(30,41,59,0.85) 1px, transparent 1px), linear-gradient(90deg, rgba(30,41,59,0.85) 1px, transparent 1px),
+        linear-gradient(rgba(30,41,59,0.38) 1px, transparent 1px), linear-gradient(90deg, rgba(30,41,59,0.38) 1px, transparent 1px);
+      background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+    }
+    #bf-vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+      background: radial-gradient(ellipse 75% 70% at 45% 50%, transparent 40%, rgba(3,6,12,0.72) 100%), linear-gradient(180deg, rgba(37,99,235,0.07), transparent 40%); }
+    /* 扫描刷新光带 */
+    #bf-scan { position: absolute; left: 0; right: 0; height: 60px; z-index: 2; pointer-events: none;
+      background: linear-gradient(180deg, transparent, rgba(245,158,11,0.015) 80%, rgba(245,158,11,0.07) 99%, transparent); }
+
+    #camera-viewport { position: absolute; inset: 0; z-index: 10; overflow: hidden; perspective: 1650px; pointer-events: none; background: transparent; }
+    #bf-world { position: absolute; left: 0; top: 0; width: 11200px; height: 1300px; transform-style: preserve-3d; will-change: transform; }
+
+    /* 顶部跑马灯行情条 */
+    #bf-ticker { position: absolute; left: 0; top: 0; width: 1920px; height: 40px; z-index: 46; display: flex; background: #070D18; border-bottom: 1px solid var(--bf-steel); overflow: hidden; font-family: var(--bf-font-mono); font-size: 17px; font-weight: 700; }
+    #bf-ticker .brand { flex: none; display: flex; align-items: center; gap: 10px; padding: 0 18px; background: var(--bf-amber); color: #0B1220; letter-spacing: .14em; font-weight: 800; z-index: 2; }
+    #bf-ticker .brand i { width: 9px; height: 9px; border-radius: 50%; background: var(--bf-down); box-shadow: 0 0 0 3px rgba(239,68,68,.25); }
+    #bf-ticker .tape { position: relative; flex: 1; overflow: hidden; }
+    #bf-ticker .run { position: absolute; left: 0; top: 0; height: 40px; display: flex; align-items: center; white-space: nowrap; will-change: transform; }
+    #bf-ticker .it { display: inline-flex; align-items: center; gap: 10px; padding: 0 22px; border-right: 1px solid var(--bf-steel); letter-spacing: .06em; }
+    #bf-ticker .it b { color: var(--bf-silver); font-weight: 800; }
+    #bf-ticker .u { color: var(--bf-up); } #bf-ticker .d { color: var(--bf-down); } #bf-ticker .z { color: var(--bf-amber2); }
+    #bf-ticker .clk { flex: none; display: flex; align-items: center; padding: 0 18px; border-left: 1px solid var(--bf-steel); color: var(--bf-amber2); letter-spacing: .1em; background: #070D18; z-index: 2; }
+
+    /* 功能键式句型标签（兼作进度） */
+    #bf-tabs { position: absolute; left: 40px; top: 50px; z-index: 45; display: flex; gap: 6px; }
+    .bf-tab { position: relative; width: 112px; height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 8px; background: #0A1222; border: 1px solid var(--bf-steel); font-family: var(--bf-font-mono); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--bf-mute); cursor: pointer; white-space: nowrap; overflow: hidden; }
+    .bf-tab b { color: var(--bf-amber2); font-weight: 800; }
+    .bf-tab.done { color: var(--bf-up); } .bf-tab.done b { color: var(--bf-up); }
+    .bf-tab.on { background: var(--bf-amber); color: #0B1220; border-color: var(--bf-amber); } .bf-tab.on b { color: #0B1220; }
+    .bf-tab .fl { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--bf-up); }
+    .bf-tab.on .fl { background: #0B1220; }
+
+    /* 标志转场：金融数据矩阵百叶条横向刷新扫描 + 琥珀金章节行情牌 */
+    #bf-wipe { position: absolute; inset: 0; z-index: 15; pointer-events: none; display: none; overflow: hidden; }
+    .bf-slat { position: absolute; left: 0; width: 2000px; height: 90px; background: #08101E; border-bottom: 1px solid #16233A; overflow: hidden; }
+    .bf-slat::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--bf-amber); box-shadow: 0 0 22px rgba(245,158,11,.8); }
+    .bf-slat .row { position: absolute; left: 30px; top: 0; height: 90px; display: flex; align-items: center; gap: 46px; white-space: nowrap; font-family: var(--bf-font-mono); font-size: 26px; font-weight: 700; color: #3B4C66; }
+    .bf-slat .row .u { color: rgba(16,185,129,.75); } .bf-slat .row .d { color: rgba(239,68,68,.7); } .bf-slat .row .z { color: rgba(251,191,36,.7); }
+    #bf-board { position: absolute; left: 50%; top: 50%; width: 900px; height: 260px; margin: -130px 0 0 -760px; z-index: 3; display: flex; background: var(--bf-amber); color: #0B1220; box-shadow: 0 0 0 1px #FBBF24, 0 40px 100px rgba(0,0,0,.6); opacity: 0; }
+    #bf-board .no { flex: none; width: 300px; display: flex; align-items: center; justify-content: center; background: #0B1220; color: var(--bf-amber2); font-family: var(--bf-font-mono); font-size: 170px; font-weight: 800; letter-spacing: -.05em; }
+    #bf-board .rt { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 40px; }
+    #bf-board .k { font-family: var(--bf-font-mono); font-size: 22px; font-weight: 800; letter-spacing: .24em; }
+    #bf-board .lb { font-size: 96px; font-weight: 900; line-height: 1.1; white-space: nowrap; }
+    #bf-board .q { font-family: var(--bf-font-mono); font-size: 24px; font-weight: 800; letter-spacing: .1em; display: flex; gap: 24px; }
+    #bf-board .q .u { color: #065F46; }
+
+    /* 终端外壳：功能键行的不透明底带（推镜时内容从其下方穿过，干净裁切） */
+    #bf-chrome { position: absolute; left: 0; top: 40px; width: 1920px; height: 46px; z-index: 44; background: rgba(7,13,24,0.96); border-bottom: 1px solid var(--bf-steel); pointer-events: none; }
+    #screen-layer { position: absolute; inset: 0; z-index: 26; pointer-events: none; }
+
+    /* 稳态人像：钢蓝细框 + 琥珀角标 + LIVE 机构铭牌 */
+    #avatar-stage { border-radius: 2px !important; border: 2px solid #26354F !important; box-shadow: 0 0 0 1px rgba(245,158,11,.28), 0 30px 70px rgba(0,0,0,.55) !important; background: #0A1222 !important; }
+    #avatar-stage.is-full { border: 0 solid transparent !important; box-shadow: none !important; }
+    #avatar-silhouette { position: absolute; left: 50%; bottom: 0; height: 80%; transform: translateX(-50%); z-index: 2; pointer-events: none; }
+    #avatar-tag { background: rgba(7,13,24,.92) !important; color: var(--bf-silver) !important; border: 1px solid var(--bf-steel) !important; border-left: 3px solid var(--bf-amber) !important; border-radius: 0 !important; backdrop-filter: none !important; font-family: var(--bf-font-mono) !important; font-weight: 800 !important; font-size: 15px !important; letter-spacing: 0.1em !important; padding: 7px 14px !important; }
+    #avatar-tag i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--bf-down); box-shadow: 0 0 0 3px rgba(239,68,68,.25); margin-right: 4px; }
+    #avatar-tag em { font-style: normal; color: var(--bf-down); margin-right: 8px; }
+
+    /* 深藏青机构字幕条：顶部 2px 琥珀金线 + 左侧 LIVE 红点 */
+    #subtitle-bar {
+      bottom: 36px !important; background: rgba(8,14,26,0.96) !important; border: 1px solid var(--bf-steel) !important; border-top: 2px solid var(--bf-amber) !important; border-radius: 2px !important;
+      backdrop-filter: none !important; box-shadow: 0 18px 44px rgba(0,0,0,.5) !important;
+      padding: 12px 34px 13px 128px !important; color: #F1F5F9 !important; font-family: var(--bf-font-cn) !important;
+      font-size: 40px !important; font-weight: 800 !important; letter-spacing: 0.03em !important;
+    }
+    #subtitle-bar::before { content: 'LIVE'; position: absolute; left: 22px; top: 50%; transform: translateY(-50%); padding: 3px 10px 3px 26px; border: 1px solid rgba(239,68,68,.6); font-family: var(--bf-font-mono); font-size: 16px; font-weight: 800; letter-spacing: .16em; color: #EF4444; }
+    #subtitle-bar::after { content: ''; position: absolute; left: 32px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: #EF4444; box-shadow: 0 0 10px rgba(239,68,68,.9); }
+    #subtitle-bar .w { color: #F1F5F9; text-shadow: none; }
+    #subtitle-bar .w.passed { color: #F1F5F9 !important; text-shadow: none !important; }
+    #subtitle-bar .w.active { color: #FBBF24 !important; text-shadow: 0 0 14px rgba(251,191,36,.45) !important; }
+
+    #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; background: var(--bf-down); color: #fff; font-size: 28px; font-weight: 900; display: none; }
+  </style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="bf-bg-layer"></div>
+    <div id="bf-vignette"></div>
+    <div id="bf-scan"></div>
+    <div id="camera-viewport"><div id="bf-world"></div></div>
+    <div id="bf-wipe">
+      <div id="bf-board"><div class="no">01</div><div class="rt"><div class="k">SECTION · 章节</div><div class="lb">—</div><div class="q"><span class="ty">COVER</span><span class="u">▲ 01/10</span></div></div></div>
+    </div>
+    <div id="screen-layer"></div>
+    <div id="bf-ticker"><div class="brand"><i></i>MVE TERMINAL</div><div class="tape"><div class="run"></div></div><div class="clk">REC 00:00.0</div></div>
+    <div id="bf-chrome"></div>
+    <div id="bf-tabs"></div>
+
+    <div id="avatar-stage">
+      <img id="avatar-studio-bg" src="assets/studio_bg.png" alt="studio" />
+      <svg id="avatar-silhouette" viewBox="0 0 400 520" preserveAspectRatio="xMidYMax meet">
+        <circle cx="200" cy="150" r="90" fill="#111C30" stroke="#F59E0B" stroke-width="3" />
+        <path d="M30 520 C40 340 110 270 200 270 C290 270 360 340 370 520 Z" fill="#111C30" stroke="#F59E0B" stroke-width="3" />
+        <path d="M160 300 L200 360 L240 300" fill="none" stroke="#F59E0B" stroke-width="3" />
+        <text x="200" y="400" text-anchor="middle" font-family="Consolas, monospace" font-size="20" font-weight="700" fill="#FBBF24" letter-spacing="3">AVATAR · 人像占位</text>
+      </svg>
+      <div id="avatar-tag"><i></i><em>LIVE</em><span id="avatar-tag-tx">YOUR NAME</span></div>
+    </div>
+
+    <canvas id="avatar-morph-canvas" width="1920" height="1080"></canvas>
+    <div id="subtitle-bar"></div>
+    <div id="load-error"></div>
+  </div>
+
+  <div id="hud">
+    <button id="btn-play" class="primary">▶ 连播 10 大句型</button>
+    <button id="btn-replay">↺ 重播</button>
+    <input id="scrubber" type="range" min="0" max="50" step="0.01" value="0" />
+    <span id="time-readout">0.00 / 0.00s</span>
+    <span class="hud-sep"></span>
+    <span class="hud-label">H 隐藏控制栏 · 1–9 / 0 切换句型 · 空格播放</span>
+  </div>
+
+  <script src="../../core/vendor/gsap.min.js"></script>
+  <script src="../../core/camera-rig.js"></script>
+  <script src="../../core/avatar-morph-fx.js"></script>
+  <script src="../../core/avatar.js"></script>
+  <script src="../../core/subtitle.js"></script>
+  <script src="components.js"></script>
+  <script>
+    const vp = document.getElementById('viewport');
+    function fit() {
+      const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      vp.style.transform = `scale(${s})`;
+      vp.style.left = `${(window.innerWidth - 1920 * s) / 2}px`;
+      vp.style.top = `${(window.innerHeight - 1080 * s) / 2}px`;
+    }
+    window.addEventListener('resize', fit); fit();
+
+    const ZONE_GAP = 200, ZONE_Y = 100, SX = 650, SY = 470;
+    // 组件局部安全区 x60–1340 / y100–980 → 屏幕 x≈115–1295（避开人像框 1328+）/ y≈100–910（避开字幕）
+    const CAM_DX = 60, CAM_ZOOM = 0.92;
+    const params = new URLSearchParams(location.search);
+
+    /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
+    function buildWordData(scenes) {
+      const words = [], lines = [];
+      scenes.forEach((sc) => {
+        const subs = sc.sub || []; if (!subs.length) return;
+        const a0 = sc.start + 0.35, a1 = sc.start + sc.dur - 0.3, slot = (a1 - a0) / subs.length;
+        subs.forEach((line, li) => {
+          const toks = line.match(/[A-Za-z0-9.\-_/@#:+]+|\s+|./g) || [];
+          const real = toks.filter((x) => !/^\s+$/.test(x));
+          const s0 = a0 + li * slot, dt = (slot - 0.25) / Math.max(1, real.length);
+          const a = words.length, sp = [];
+          let k = 0;
+          toks.forEach((tk) => {
+            if (/^\s+$/.test(tk)) { if (words.length > a) sp.push(words.length - 1); return; }
+            words.push([tk, +(s0 + k * dt).toFixed(3), +(s0 + (k + 1) * dt).toFixed(3)]); k++;
+          });
+          if (words.length > a) lines.push({ a, b: words.length - 1, sp });
+        });
+      });
+      return { words, lines };
+    }
+
+    /** 确定性伪随机（转场百叶条里的滚动数字） */
+    function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+    async function boot() {
+      let script;
+      try {
+        const src = params.get('data') || 'demo_data.json';
+        script = await (await fetch(src, { cache: 'no-store' })).json();
+      } catch (e) {
+        const el = document.getElementById('load-error');
+        el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
+        throw e;
+      }
+      const theme = script.theme || {};
+      const root = document.documentElement.style;
+      ['navy', 'amber', 'amber2', 'up', 'down', 'silver', 'steel', 'mute'].forEach((k) => { if (theme[k]) root.setProperty(`--bf-${k}`, theme[k]); });
+      BloombergFin.injectCSS();
+
+      // 人像：可选真人视频，否则用剪影占位
+      const meta = script.meta || {}, av = meta.avatar || {};
+      if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
+      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      if (av.video) {
+        const v = document.createElement('video');
+        v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
+        document.getElementById('avatar-stage').insertBefore(v, document.getElementById('avatar-tag'));
+        document.getElementById('avatar-silhouette').style.display = 'none';
+      }
+
+      // 跑马灯行情条（meta.ticker 可自定义）
+      const tick = meta.ticker && meta.ticker.length ? meta.ticker : [
+        { s: 'MVE', v: '+9.0x', c: 1 }, { s: 'GPU', v: '100%', c: 1 }, { s: 'JSON', v: '1.00', c: 0 }, { s: 'FPS', v: '30.00', c: 0 }, { s: 'BUG', v: '-100%', c: -1 }];
+      const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      const tickHTML = tick.map((q) => `<span class="it"><b>${esc(q.s)}</b><span class="${q.c > 0 ? 'u' : q.c < 0 ? 'd' : 'z'}">${esc(q.v)} ${q.c > 0 ? '▲' : q.c < 0 ? '▼' : '■'}</span></span>`).join('');
+      const run = document.querySelector('#bf-ticker .run');
+      run.innerHTML = tickHTML + tickHTML + tickHTML;
+      let tapeW = 0;
+      const clk = document.querySelector('#bf-ticker .clk');
+
+      // 组装场景
+      const world = document.getElementById('bf-world');
+      const scenes = []; let acc = 0, zoneX = 0;
+      (script.scenes || []).forEach((sc, i) => {
+        const factory = BloombergFin.COMPONENTS[sc.type];
+        if (!factory) { console.warn('unknown scene type', sc.type); return; }
+        const dur = sc.dur || 6;
+        const comp = factory.create(sc.data || {}, { dur });
+        const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1400) + ZONE_GAP;
+        if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
+        else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        acc += dur;
+      });
+      const DURATION = acc;
+      world.style.width = `${zoneX + 1400}px`;
+      document.getElementById('scrubber').max = DURATION;
+
+      // 运镜关键帧：每段局部机位 → 世界坐标；段与段之间在百叶条遮挡下硬切
+      const kfs = [];
+      scenes.forEach((s, i) => {
+        const cams = s.comp.cams && s.comp.cams.length ? s.comp.cams : [{ t: 0, x: 700, y: 500, zoom: 1 }];
+        cams.forEach((c, j) => {
+          let t = s.start + Math.min(c.t, s.dur);
+          if (j === cams.length - 1 && i < scenes.length - 1) t = s.start + s.dur - 0.002;
+          kfs.push({ t, x: s.zx + c.x - CAM_DX, y: s.zy + c.y, zoom: (c.zoom || 1) * CAM_ZOOM, rx: c.rx || 0, ry: c.ry || 0, rz: c.rz || 0, screenX: SX, screenY: SY });
+        });
+      });
+      const camRig = new MHEngine.CameraRig3D(world, { viewW: 1920, viewH: 1080, handheld: 0.45 });
+      camRig.setKeyframes(kfs);
+
+      // 人像形态：card / pip / corner / full（4 种形态全部走 core 点阵粒子散聚转场）
+      const avatar = new MHEngine.AvatarController({
+        card:   { left: 1328, top: 96,  width: 540, height: 776, borderRadius: 2,   borderWidth: 2, tagOpacity: 1 },
+        pip:    { left: 1532, top: 642, width: 320, height: 320, borderRadius: 160, borderWidth: 2, tagOpacity: 0 },
+        corner: { left: 1410, top: 530, width: 458, height: 342, borderRadius: 2,   borderWidth: 2, tagOpacity: 1 }
+      });
+      const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
+      const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
+      const tl = gsap.timeline({ paused: true });
+      avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
+      scenes.forEach((s, i) => {
+        if (i === 0) return;
+        const prev = mapAv(scenes[i - 1].avatar), cur = mapAv(s.avatar);
+        if (prev !== cur) {
+          avatarMorph.addMorph({ time: s.start + 0.02, duration: 0.5, fromMode: prev, toMode: cur, count: 1000, seed: 121200 + i });
+          avatar.animateOnTimeline(tl, cur, s.start + 0.06, 0.48);
+        }
+      });
+      tl.to({}, { duration: 0.05 }, DURATION);
+
+      // 字幕
+      const WORD_DATA = buildWordData(scenes);
+      window.WORD_DATA = WORD_DATA;
+      const subtitle = new MHEngine.SubtitleRenderer(document.getElementById('subtitle-bar'), WORD_DATA);
+
+      // 功能键句型标签
+      const tabsEl = document.getElementById('bf-tabs');
+      scenes.forEach((s, i) => {
+        const tb = document.createElement('div'); tb.className = 'bf-tab';
+        tb.innerHTML = `<b>F${i + 1}</b>${s.type.toUpperCase()}<div class="fl"></div>`;
+        tb.addEventListener('click', () => jumpTo(i));
+        tabsEl.appendChild(tb); s.tab = tb;
+      });
+
+      // 转场百叶条：12 条 × 90px，每条一行确定性滚动行情数字
+      const wipe = document.getElementById('bf-wipe');
+      const R = rng(1212), SLATS = 12, slats = [];
+      for (let k = 0; k < SLATS; k++) {
+        const sl = document.createElement('div'); sl.className = 'bf-slat'; sl.style.top = `${k * 90}px`;
+        let row = '';
+        for (let j = 0; j < 14; j++) {
+          const v = (R() * 400 - 120), cls = v > 30 ? 'u' : v < -10 ? 'd' : 'z';
+          row += `<span>${['MVE', 'GPU', 'FPS', 'SUB', 'AVT', 'CAM', 'JSN', 'REC'][Math.floor(R() * 8)]}</span><span class="${cls}">${v >= 0 ? '+' : ''}${(v / 10).toFixed(2)}%</span>`;
+        }
+        sl.innerHTML = `<div class="row">${row}</div>`;
+        wipe.appendChild(sl); slats.push({ el: sl, row: sl.firstChild, order: Math.abs(k - 5.5) });
+      }
+      const board = document.getElementById('bf-board');
+      const bNo = board.querySelector('.no'), bLb = board.querySelector('.lb'), bTy = board.querySelector('.ty'), bQ = board.querySelector('.q .u');
+
+      const bg = document.getElementById('bf-bg-layer');
+      const scan = document.getElementById('bf-scan');
+      const stageEl = document.getElementById('avatar-stage');
+      const camViewport = document.getElementById('camera-viewport');
+      const clamp01 = (x) => Math.max(0, Math.min(1, x));
+      const easeOut = (x) => 1 - Math.pow(1 - x, 3), easeIn = (x) => x * x * x;
+
+      function updateUI(t) {
+        tl.time(Math.min(t, DURATION));
+        camRig.render(t);
+        subtitle.render(t);
+        // 网格缓慢平移 + 扫描刷新光带
+        bg.style.transform = `translate(${(-(t * 6) % 120).toFixed(1)}px, ${(8 * Math.sin(t * 0.2)).toFixed(1)}px)`;
+        scan.style.top = `${(((t * 140) % 1400) - 200).toFixed(1)}px`;
+        // 跑马灯
+        if (!tapeW) tapeW = run.scrollWidth / 3;
+        if (tapeW) run.style.transform = `translateX(${(-(t * 90) % tapeW).toFixed(1)}px)`;
+        const mm = Math.floor(t / 60), ss = (t % 60).toFixed(1).padStart(4, '0');
+        clk.textContent = `REC ${String(mm).padStart(2, '0')}:${ss}`;
+
+        let cur = scenes.length - 1;
+        scenes.forEach((s, i) => { if (t >= s.start && t < s.start + s.dur) cur = i; });
+        scenes.forEach((s, i) => {
+          if (Math.abs(i - cur) <= 1) s.comp.update(t - s.start);
+          if (s.comp.layer === 'screen') s.comp.el.style.display = i === cur ? 'block' : 'none';
+          s.tab.classList.toggle('on', i === cur);
+          s.tab.classList.toggle('done', i < cur);
+          s.tab.querySelector('.fl').style.width = `${(clamp01((t - s.start) / s.dur) * 100).toFixed(1)}%`;
+        });
+        const S = scenes[cur];
+        const isFull = S.avatar === 'full';
+        stageEl.classList.toggle('is-full', isFull && t >= S.start + 0.2);
+        camViewport.style.opacity = isFull && t >= S.start + 0.15 && t < S.start + S.dur ? '0' : '1';
+
+        // 百叶条：由中间向上下两侧依次自右刷入 → 行情牌闪切 → 依次向左刷出
+        let shown = false;
+        for (let i = 1; i < scenes.length; i++) {
+          const b = scenes[i].start;
+          if (t >= b - 0.4 && t < b + 0.46) {
+            slats.forEach((sl) => {
+              let x;
+              const dl = sl.order * 0.022;
+              if (t < b) x = 2000 * (1 - easeOut(clamp01((t - (b - 0.4) - dl) / 0.24)));
+              else x = -2040 * easeIn(clamp01((t - b - 0.12 - dl) / 0.24));
+              sl.el.style.transform = `translateX(${x.toFixed(1)}px)`;
+              sl.row.style.transform = `translateX(${(-((t - b + 0.4) * 900 + sl.order * 140) % 700).toFixed(1)}px)`;
+            });
+            const bp = clamp01((t - (b - 0.2)) / 0.12), bq = clamp01((t - (b + 0.2)) / 0.12);
+            board.style.opacity = (bp * (1 - bq)).toFixed(3);
+            board.style.transform = `scaleY(${(0.2 + 0.8 * easeOut(bp)).toFixed(3)}) translateX(${(-60 * easeIn(bq)).toFixed(1)}px)`;
+            bNo.textContent = String(i + 1).padStart(2, '0');
+            bLb.textContent = scenes[i].label || scenes[i].type;
+            bTy.textContent = `FN·${String(i + 1).padStart(2, '0')}  ${scenes[i].type.toUpperCase()}`;
+            bQ.textContent = `▲ ${String(i + 1).padStart(2, '0')}/${String(scenes.length).padStart(2, '0')}`;
+            wipe.style.display = 'block'; shown = true; break;
+          }
+        }
+        if (!shown) wipe.style.display = 'none';
+
+        stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        document.getElementById('scrubber').value = t.toFixed(2);
+        document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
+      }
+
+      // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
+      let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
+      const vid = document.getElementById('avatar-video');
+      function seek(t) {
+        cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
+        scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });
+        if (vid) { try { vid.currentTime = cur; } catch (_) {} }
+        if (playing) { t0 = performance.now(); tStart = cur; }
+      }
+      function loop() {
+        if (!playing) return;
+        const t = tStart + (performance.now() - t0) / 1000;
+        if (t >= DURATION) { pause(); seek(DURATION); return; }
+        cur = t; updateUI(t); raf = requestAnimationFrame(loop);
+      }
+      function play() { if (cur >= DURATION - 0.05) cur = 0; playing = true; t0 = performance.now(); tStart = cur; if (vid) vid.play().catch(() => {}); scenes.forEach((s) => s.comp.media && s.comp.media.play && s.comp.media.play().catch(() => {})); document.getElementById('btn-play').textContent = '⏸ 暂停'; raf = requestAnimationFrame(loop); }
+      function pause() { playing = false; cancelAnimationFrame(raf); if (vid) vid.pause(); scenes.forEach((s) => s.comp.media && s.comp.media.pause && s.comp.media.pause()); document.getElementById('btn-play').textContent = '▶ 连播 10 大句型'; }
+      function jumpTo(i) { seek(scenes[i].start + 0.5); }
+
+      document.getElementById('btn-play').addEventListener('click', () => playing ? pause() : play());
+      document.getElementById('btn-replay').addEventListener('click', () => { seek(0); play(); });
+      document.getElementById('scrubber').addEventListener('input', (e) => { pause(); seek(parseFloat(e.target.value)); });
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); }
+        else if (e.key === 'h' || e.key === 'H') document.getElementById('hud').classList.toggle('hidden');
+        else if (/^[0-9]$/.test(e.key)) { const k = e.key === '0' ? 9 : +e.key - 1; if (scenes[k]) jumpTo(k); }
+      });
+
+      window.__MH_ENGINE__ = { duration: DURATION, seek, scenes: scenes.map((s) => ({ type: s.type, start: s.start, dur: s.dur })) };
+      if (params.get('clean') === '1') document.getElementById('hud').classList.add('hidden');
+      seek(params.has('t') ? parseFloat(params.get('t')) : 0);
+    }
+    boot();
+  </script>
+</body>
+</html>

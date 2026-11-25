@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mushanhe Video Engine · v2.5</title>
+  <title>Mushanhe Video Engine · v3.0</title>
   <link rel="icon" href="data:," />
   <style>
     :root {
@@ -145,6 +145,115 @@
     .nb .skins .sk { border: 2.5px solid var(--nb-ink); background: #fff; border-radius: 0; box-shadow: 3px 3px 0 var(--nb-ink); }
     .nb .skins .sk i { box-shadow: 0 0 0 2px var(--nb-ink); }
 
+    /* ===================== v3.0 · 07–12 六大新流派 ===================== */
+    .pack .stk.new { font-size: 12px; letter-spacing: .08em; }
+    .dna { position: relative; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 16px; }
+    .dna .sk-tag { flex-basis: 100%; font: 900 11px/1 var(--mono); letter-spacing: .12em; opacity: .75; }
+    .dna span.c { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px 4px 5px; font: 800 11px/1 var(--mono); border: 1.5px solid currentColor; opacity: .9; }
+    .dna span.c i { width: 13px; height: 13px; flex: none; box-shadow: 0 0 0 1.5px rgba(127,127,127,.55); }
+
+    /* 07 学院黑板 · 原木框 + 粉笔虚线 */
+    .pack.cb {
+      background: #183028; color: #F4F4EE; border: 10px solid #8B5A2B; border-bottom-width: 16px; border-radius: 4px;
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.35), inset 0 0 60px rgba(0,0,0,.35), 0 18px 34px -16px rgba(30,20,10,.6);
+      background-image: radial-gradient(rgba(244,244,238,.06) 1px, transparent 1.2px); background-size: 9px 9px;
+    }
+    .cb .thumb { border: 2px dashed rgba(244,244,238,.55); }
+    .cb .no { color: #FFE066; font-family: 'KaiTi', 'STKaiti', var(--latin); }
+    .cb .en { color: #74C0FC; }
+    .cb h2 { color: #FFFFFF; font-family: 'KaiTi', 'STKaiti', var(--cn); text-decoration: underline wavy #FFE066 2px; text-underline-offset: 6px; }
+    .cb ul { color: #E8EDE6; }
+    .cb ul li::before { content: '✓ '; color: #FFE066; }
+    .cb .go { background: transparent; color: #F4F4EE; border: 2px dashed #F4F4EE; }
+    .cb .stk { background: #FF8787; color: #183028; transform: rotate(-5deg); border-radius: 50% / 40%; padding: 7px 12px; }
+    .pack.cb:hover { transform: translateY(-4px) rotate(-.3deg); }
+
+    /* 08 宋韵水墨 · 宣纸 + 细墨双框 + 朱砂印 */
+    .pack.ink {
+      background: #F3EFE6; color: #1C1B18; border: 1px solid #1C1B18; outline: 1px solid rgba(28,27,24,.5); outline-offset: -7px;
+      box-shadow: 0 16px 30px -16px rgba(60,45,25,.4);
+      background-image: radial-gradient(ellipse at 85% 10%, rgba(46,90,107,.1), transparent 55%), radial-gradient(ellipse at 10% 95%, rgba(28,27,24,.07), transparent 50%);
+    }
+    .ink .thumb { border: 1px solid rgba(28,27,24,.35); padding: 4px; background: #FBF8F1; }
+    .ink .no { color: #F3EFE6; background: #B82925; padding: 6px 8px 4px; font-family: 'STSong', 'SimSun', serif; font-size: 36px; }
+    .ink .en { color: #2E5A6B; }
+    .ink h2 { font-family: 'STSong', 'SimSun', 'Noto Serif SC', serif; letter-spacing: .08em; }
+    .ink ul li::before { content: '◇ '; color: #B82925; }
+    .ink .go { background: #1C1B18; color: #F3EFE6; border-left: 5px solid #B82925; }
+    .ink .stk { background: #B82925; color: #F3EFE6; border: 2px double #F3EFE6; }
+    .pack.ink:hover { transform: translateY(-4px); }
+
+    /* 09 日系胶片 · 拍立得白边 + 35mm 齿孔 */
+    .pack.film {
+      background: #F6F3EC; color: #1A1A1A; padding-top: 34px; padding-bottom: 34px;
+      box-shadow: 0 2px 4px rgba(0,0,0,.08), 0 18px 34px -16px rgba(80,50,20,.4);
+      background-image:
+        repeating-linear-gradient(90deg, #1A1A1A 0 10px, #F6F3EC 10px 16px, #1A1A1A 16px 22px),
+        repeating-linear-gradient(90deg, #1A1A1A 0 10px, #F6F3EC 10px 16px, #1A1A1A 16px 22px),
+        radial-gradient(ellipse at 100% 0%, rgba(224,109,59,.16), transparent 55%);
+      background-size: 100% 14px, 100% 14px, 100% 100%; background-position: 0 6px, 0 calc(100% - 6px), 0 0; background-repeat: no-repeat;
+    }
+    .film .thumb { border: 12px solid #FDFCF8; border-bottom-width: 34px; box-shadow: 0 8px 18px rgba(60,40,20,.22); transform: rotate(-.8deg); }
+    .film .no { color: #E06D3B; font-style: italic; font-family: Georgia, serif; }
+    .film .en { color: #C2531A; }
+    .film ul li::before { content: '● '; color: #2B6E63; font-size: 11px; }
+    .film .go { background: #2B6E63; color: #FDFCF8; border-radius: 999px; }
+    .film .stk { top: 26px; background: #FF7B29; color: #fff; border-radius: 50%; width: 54px; height: 54px; display: grid; place-items: center; padding: 0; transform: rotate(10deg); }
+    .pack.film:hover { transform: translateY(-4px) rotate(.3deg); }
+
+    /* 10 复古 CRT · 磷光绿双线 ASCII 框 + 扫描线 */
+    .pack.crt {
+      background: #070C08; color: #D6FFE0; border: 4px double #33FF66;
+      box-shadow: 0 0 0 1px #14532D, 0 0 26px rgba(51,255,102,.22), 0 18px 34px -16px rgba(0,0,0,.7);
+      background-image: repeating-linear-gradient(0deg, rgba(51,255,102,.05) 0 1px, transparent 1px 3px);
+    }
+    .crt .thumb { border: 1px solid #33FF66; }
+    .crt .no { color: #33FF66; text-shadow: 0 0 10px rgba(51,255,102,.7); font-family: var(--mono); }
+    .crt .en { color: #FFB000; }
+    .crt h2 { color: #33FF66; text-shadow: 0 0 8px rgba(51,255,102,.45); }
+    .crt ul { color: #D6FFE0; }
+    .crt ul li::before { content: '> '; color: #FFB000; }
+    .crt .go { background: #33FF66; color: #052E16; }
+    .crt .go span::after { content: ' █'; }
+    .crt .stk { background: #FF3344; color: #fff; }
+    .pack.crt:hover { transform: translateY(-4px); box-shadow: 0 0 0 1px #14532D, 0 0 40px rgba(51,255,102,.38); }
+
+    /* 11 Keynote Glass · 纯黑舞台 + 极光渐变亮边玻璃 */
+    .pack.kg {
+      color: #F8FAFC; border: 1px solid transparent; border-radius: 28px;
+      background: linear-gradient(160deg, rgba(37,99,235,.2), rgba(5,5,7,0) 45%) padding-box, linear-gradient(#050507, #0B0B14) padding-box,
+                  linear-gradient(135deg, #60A5FA, #A78BFA 50%, #22D3EE) border-box;
+      box-shadow: 0 24px 50px -20px rgba(124,58,237,.55), inset 0 1px 0 rgba(255,255,255,.18);
+    }
+    .kg .thumb { border-radius: 16px; border: 1px solid rgba(255,255,255,.16); }
+    .kg .no { background: linear-gradient(180deg, #FFFFFF, #94A3B8); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 300; }
+    .kg .en { color: #A5B4FC; }
+    .kg h2 { color: #FFFFFF; }
+    .kg ul { color: #CBD5E1; }
+    .kg ul li::before { content: '• '; color: #22D3EE; }
+    .kg .go { background: linear-gradient(90deg, #2563EB, #7C3AED); color: #fff; border-radius: 999px; }
+    .kg .stk { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; }
+    .kg .dna span.c { border-radius: 999px; }
+    .pack.kg:hover { transform: translateY(-4px); }
+
+    /* 12 华尔街金融终端 · 藏青面板 + 琥珀功能键条 */
+    .pack.bbg {
+      background: #0B1220; color: #F1F5F9; border: 1px solid #1E293B; border-top: 26px solid #F59E0B; border-radius: 2px;
+      box-shadow: 0 18px 36px -16px rgba(2,6,23,.8);
+      background-image: linear-gradient(rgba(30,41,59,.55) 1px, transparent 1px), linear-gradient(90deg, rgba(30,41,59,.55) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .pack.bbg::before { content: 'MVE <GO>  ▲ +9.0x  ▼ -82.4%'; position: absolute; top: -20px; left: 12px; font: 900 11px/14px var(--mono); color: #0B1220; letter-spacing: .06em; white-space: nowrap; overflow: hidden; max-width: calc(100% - 90px); }
+    .bbg .thumb { border: 1px solid #334155; }
+    .bbg .no { color: #F59E0B; font-variant-numeric: tabular-nums; }
+    .bbg .en { color: #10B981; }
+    .bbg h2 { color: #FFFFFF; }
+    .bbg ul { color: #CBD5E1; }
+    .bbg ul li::before { content: '▲ '; color: #10B981; font-size: 11px; }
+    .bbg .go { background: #F59E0B; color: #0B1220; border-radius: 2px; }
+    .bbg .stk { top: -22px; right: 10px; background: #EF4444; color: #fff; }
+    .pack.bbg:hover { transform: translateY(-4px); border-color: #F59E0B; }
+
     section.how { margin-top: 52px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 16px; }
     .how div { padding: 18px 20px; background: #fff; border: 2px solid var(--ink); }
     .how b { display: block; font: 900 13px/1 var(--mono); letter-spacing: .14em; margin-bottom: 10px; }
@@ -156,11 +265,11 @@
 <body>
   <div class="wrap">
     <header>
-      <span class="tag">MUSHANHE VIDEO ENGINE · v2.5 · 6 PACKS × 24 LIVE SKINS</span>
-      <h1>一份 JSON，<br />六套电影级口播画风。</h1>
-      <p>1 套 <b>core/</b> 通用内核 + 统一 <b>{ meta, theme, scenes }</b> 剧本标准。同一份剧本，在 <b>6 套旗舰风格包 × 24 套实时皮肤</b> 之间一键切换，文案一个字不用改。点卡片上的色点，直接进入对应皮肤。</p>
+      <span class="tag">MUSHANHE VIDEO ENGINE · v3.0 · 12 FLAGSHIP PACKS</span>
+      <h1>一份 JSON，<br />十二套电影级口播画风。</h1>
+      <p>1 套 <b>core/</b> 通用内核 + 统一 <b>{ meta, theme, scenes }</b> 剧本标准。同一份剧本，在 <b>12 大旗舰流派 · 30 套开箱皮肤</b>（01–06 各 4 色实时换肤 + 07–12 六大新流派）之间一键切换，文案一个字不用改。点 01–06 卡片上的色点，直接进入对应皮肤。</p>
       <div class="chips">
-        <span>6 套旗舰风格包</span><span>24 套实时皮肤</span><span>AI Agent Skill</span><span>10 大万能句型</span><span>4 种人像粒子变形</span><span>3D 摄影机运镜</span><span>逐字高亮字幕</span><span>任意时间点 seek 还原</span>
+        <span>12 大旗舰流派</span><span>30 套开箱皮肤</span><span>AI Agent Skill</span><span>10 大万能句型</span><span>4 种人像粒子变形</span><span>3D 摄影机运镜</span><span>逐字高亮字幕</span><span>任意时间点 seek 还原</span>
       </div>
     </header>
 
@@ -279,12 +388,132 @@
         </div>
         <div class="foot"><a class="go" href="templates/06_neobrutalism/index.html">进入展厅 →</a></div>
       </article>
+
+      <article class="pack cb">
+        <span class="stk new">NEW!</span>
+        <img class="thumb" src="docs/preview_chalkboard.png" alt="07 学院黑板预览" loading="lazy" />
+        <div class="head"><div class="no">07</div><div class="en">CHALKBOARD ACADEMY</div></div>
+        <h2>学院黑板 · 粉笔手绘</h2>
+        <ul>
+          <li>深墨绿磨砂黑板 · 粉笔白 / 黄 / 天蓝 / 珊瑚粉</li>
+          <li>种子化手绘抖动边框 · 逐笔描出圈勾箭头</li>
+          <li>原木黑板擦 + 彩色粉笔头实体道具</li>
+        </ul>
+        <div class="dna">
+          <span class="sk-tag">流派色板</span>
+          <span class="c"><i style="background:#183028"></i>黑板</span>
+          <span class="c"><i style="background:#F4F4EE"></i>粉笔白</span>
+          <span class="c"><i style="background:#FFE066"></i>粉笔黄</span>
+          <span class="c"><i style="background:#FF8787"></i>珊瑚</span>
+        </div>
+        <div class="foot"><a class="go" href="templates/07_chalkboard/index.html"><span>进入展厅 →</span></a></div>
+      </article>
+
+      <article class="pack ink">
+        <span class="stk new">NEW!</span>
+        <img class="thumb" src="docs/preview_song_ink.png" alt="08 宋韵水墨预览" loading="lazy" />
+        <div class="head"><div class="no">08</div><div class="en">SONG DYNASTY INK</div></div>
+        <h2>宋韵水墨 · 新中式</h2>
+        <ul>
+          <li>宣纸肌理 · 徽墨 · 朱砂 · 石青四色</li>
+          <li>1px 细墨双框 + 回纹角花 · 0 圆角</li>
+          <li>朱砂方印 · 毛笔飞白 · 竖排引题 · 月洞窗人像</li>
+        </ul>
+        <div class="dna">
+          <span class="sk-tag">流派色板</span>
+          <span class="c"><i style="background:#F3EFE6"></i>宣纸</span>
+          <span class="c"><i style="background:#1C1B18"></i>徽墨</span>
+          <span class="c"><i style="background:#B82925"></i>朱砂</span>
+          <span class="c"><i style="background:#2E5A6B"></i>石青</span>
+        </div>
+        <div class="foot"><a class="go" href="templates/08_song_ink/index.html"><span>进入展厅 →</span></a></div>
+      </article>
+
+      <article class="pack film">
+        <span class="stk new">NEW!</span>
+        <img class="thumb" src="docs/preview_analog_film.png" alt="09 日系胶片预览" loading="lazy" />
+        <div class="head"><div class="no">09</div><div class="en">ANALOG FILM ZINE</div></div>
+        <h2>日系胶片 · 独立杂志</h2>
+        <ul>
+          <li>奶白杂志纸 · 拍立得白边 · 柔和纸面投影</li>
+          <li>35mm 齿孔胶片条 · 橙色发光日期戳</li>
+          <li>即显相纸显影动画 · 油性记号笔圈注</li>
+        </ul>
+        <div class="dna">
+          <span class="sk-tag">流派色板</span>
+          <span class="c"><i style="background:#F6F3EC"></i>杂志纸</span>
+          <span class="c"><i style="background:#E06D3B"></i>落日</span>
+          <span class="c"><i style="background:#2B6E63"></i>墨绿</span>
+          <span class="c"><i style="background:#FF7B29"></i>日期橙</span>
+        </div>
+        <div class="foot"><a class="go" href="templates/09_analog_film/index.html"><span>进入展厅 →</span></a></div>
+      </article>
+
+      <article class="pack crt">
+        <span class="stk new">NEW!</span>
+        <img class="thumb" src="docs/preview_retro_crt.png" alt="10 复古 CRT预览" loading="lazy" />
+        <div class="head"><div class="no">10</div><div class="en">RETRO CRT TERMINAL</div></div>
+        <h2>复古 CRT 像素终端</h2>
+        <ul>
+          <li>纯黑微绿荧光屏 · 磷光绿发光 · 扫描线</li>
+          <li>双线 ASCII 窗框 · 像素块进度条 [████░░]</li>
+          <li>打字机逐字敲出 · CRT 开窗闪烁转场</li>
+        </ul>
+        <div class="dna">
+          <span class="sk-tag">流派色板</span>
+          <span class="c"><i style="background:#070C08"></i>荧光屏</span>
+          <span class="c"><i style="background:#33FF66"></i>磷光绿</span>
+          <span class="c"><i style="background:#FFB000"></i>琥珀</span>
+          <span class="c"><i style="background:#FF3344"></i>警示红</span>
+        </div>
+        <div class="foot"><a class="go" href="templates/10_retro_crt/index.html"><span>进入展厅 →</span></a></div>
+      </article>
+
+      <article class="pack kg">
+        <span class="stk new">NEW!</span>
+        <img class="thumb" src="docs/preview_keynote_glass.png" alt="11 Keynote 暗黑流光预览" loading="lazy" />
+        <div class="head"><div class="no">11</div><div class="en">KEYNOTE GLASS</div></div>
+        <h2>Keynote 暗黑流光</h2>
+        <ul>
+          <li>纯黑舞台 · 1px 亮边液态毛玻璃 Bento</li>
+          <li>钛金属渐变超大标题 · 28px 大圆角</li>
+          <li>蓝紫青极光点睛 · 景深模糊柔和入场</li>
+        </ul>
+        <div class="dna">
+          <span class="sk-tag">流派色板</span>
+          <span class="c"><i style="background:#050507"></i>舞台黑</span>
+          <span class="c"><i style="background:#60A5FA"></i>极光蓝</span>
+          <span class="c"><i style="background:#A78BFA"></i>极光紫</span>
+          <span class="c"><i style="background:#22D3EE"></i>极光青</span>
+        </div>
+        <div class="foot"><a class="go" href="templates/11_keynote_glass/index.html"><span>进入展厅 →</span></a></div>
+      </article>
+
+      <article class="pack bbg">
+        <span class="stk new">NEW!</span>
+        <img class="thumb" src="docs/preview_bloomberg.png" alt="12 华尔街金融终端预览" loading="lazy" />
+        <div class="head"><div class="no">12</div><div class="en">WALL ST. TERMINAL</div></div>
+        <h2>华尔街金融终端</h2>
+        <ul>
+          <li>深海藏青终端面板 · 钢蓝细框 · 等宽数字</li>
+          <li>确定性 K 线 / sparkline / 滚动行情条</li>
+          <li>BUY · STRONG 评级徽章 · 涨绿跌红</li>
+        </ul>
+        <div class="dna">
+          <span class="sk-tag">流派色板</span>
+          <span class="c"><i style="background:#0B1220"></i>藏青</span>
+          <span class="c"><i style="background:#F59E0B"></i>琥珀金</span>
+          <span class="c"><i style="background:#10B981"></i>涨</span>
+          <span class="c"><i style="background:#EF4444"></i>跌</span>
+        </div>
+        <div class="foot"><a class="go" href="templates/12_bloomberg_fin/index.html"><span>进入展厅 →</span></a></div>
+      </article>
     </div>
 
     <section class="how">
       <div><b>01 · 播放</b><p>展厅里按 <code>空格</code> 连播，<code>1</code>–<code>9</code> / <code>0</code> 跳段，<code>H</code> 隐藏控制栏。</p></div>
-      <div><b>02 · 换剧本</b><p>复制任意 <code>demo_data.json</code> 改文案，用 <code>?data=my_script.json</code> 加载，6 套通用。</p></div>
-      <div><b>03 · 换肤</b><p>展厅右上角胶囊点一下即换，或加 <code>?theme=obsidian</code>；剧本里写 <code>"theme": { "preset": "…" }</code> 也行。</p></div>
+      <div><b>02 · 换剧本</b><p>复制任意 <code>demo_data.json</code> 改文案，用 <code>?data=my_script.json</code> 加载，12 套通用。</p></div>
+      <div><b>03 · 换肤</b><p>01–06 展厅右上角胶囊点一下即换，或加 <code>?theme=obsidian</code>；剧本里写 <code>"theme": { "preset": "…" }</code> 也行。</p></div>
       <div><b>04 · 验货</b><p><code>python core/tools/inspect_frames.py --template 05_pro_nle --times 3,9.5 --out preview_frames</code></p></div>
       <div><b>05 · 让 AI 出片</b><p>把仓库交给 Claude Code / Antigravity / Cursor，按根目录 <code>SKILL.md</code> 直接说人话：“把这段稿子做成黑曜石工业风”。</p></div>
     </section>
