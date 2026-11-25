@@ -3,7 +3,7 @@ name: mushanhe-video-engine
 description: 把口播文案或口播视频转成确定性、JSON 驱动的电影级口播视频。12 大电影级流派 × 30 套开箱皮肤，同一份 { meta, theme, scenes } 剧本随时换风格、换皮肤，并能按文案情绪在 12 套里自动推荐。用户说“做一条口播视频 / 把这段稿子做成视频 / 换个风格或配色 / 出片”时使用。
 ---
 
-# Mushanhe Video Engine · v3.0
+# Mushanhe Video Engine · v3.1
 
 纯 HTML/CSS/JS，零构建。`core/` 是共享内核（摄影机、字幕、人像、转场），`templates/01_*` ~ `templates/12_*` 是 12 套风格包。
 画面按时间确定性渲染：`?t=37.4` 一定是第 37.4 秒，可逐帧验货、可无头录制。
@@ -80,11 +80,10 @@ description: 把口播文案或口播视频转成确定性、JSON 驱动的电�
    一段只讲一件事，屏幕文字要短，严禁塞大段小字。
 3. **无头抽帧验货**（必做）：
    ```bash
-   python core/tools/inspect_frames.py --template 05_pro_nle --times 3,9.5,17,25 --out scratch_verify/my_ep
+   python core/tools/inspect_frames.py --template 05_pro_nle --data my_script.json --theme davinci --times 3,9.5,17,25 --out scratch_verify/my_ep
    ```
-   每段取中点时间，输出必须是 `ZERO_ERRORS`，再逐张看截图：无文字重叠、无遮挡人脸和字幕、深浅皮肤都高对比。
-   注意：该脚本会自己在 URL 后拼 `?t=..&clean=1`，所以只验默认皮肤和默认剧本；验非默认皮肤或自定义剧本时，
-   用同样的 Playwright 方式打开 `index.html?data=my_script.json&theme=xxx&t=秒&clean=1` 截图。
+   `--data`（剧本，相对风格包目录）和 `--theme`（皮肤）都可省略，省略即默认剧本 / 默认皮肤。
+   `--times` 取每段中点秒数；输出必须是 `ZERO_ERRORS`，再逐张看截图：无文字重叠、无遮挡人脸和字幕、深浅皮肤都高对比。
    截图、视频等大文件只放 `scratch_verify/`，不要提交。
 4. **交付预览**：
    ```bash

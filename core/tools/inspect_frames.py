@@ -2,6 +2,8 @@
 Mushanhe Video Engine — 无头浏览器关键帧自动抽帧验货脚本
 用法:
   python core/tools/inspect_frames.py --template 02_swiss_print --times 3,9.5,17,25,32.5,40,48,56,63,69.5 --out preview_frames
+  # 验非默认皮肤 / 自定义剧本（剧本路径相对风格包目录）
+  python core/tools/inspect_frames.py --template 01_industrial_3d --data demo_variants.json --theme obsidian --times 3,9.5 --out scratch_verify/my_ep
 """
 import argparse
 import functools
@@ -10,6 +12,7 @@ import os
 import socketserver
 import threading
 import time
+from urllib.parse import urlencode
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -34,6 +37,8 @@ def main():
     parser.add_argument("--template", default="02_swiss_print")
     parser.add_argument("--file", default="index.html")
     parser.add_argument("--url-path", default=None, help="Optional repo-relative URL path, e.g. episodes/ep02_ai_workflow/ch00_intro/index.html")
+    parser.add_argument("--data", default=None, help="Optional script JSON, relative to the page dir, e.g. demo_variants.json -> ?data=...")
+    parser.add_argument("--theme", default=None, help="Optional skin name, e.g. obsidian -> ?theme=...")
     parser.add_argument("--times", default="6.5,15.6,20.6,26.0,35.5,47.0")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
@@ -69,7 +74,17 @@ def main():
             page.on("pageerror", lambda err: errors.append(str(err)))
             page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
 
-            page.goto(f"{base_url}?t={times[0]}&clean=1", wait_until="domcontentloaded")
+            params = {}
+            if args.data:
+                params["data"] = args.data
+            if args.theme:
+                params["theme"] = args.theme
+            params["t"] = times[0]
+            params["clean"] = 1
+            sep = "&" if "?" in base_url else "?"
+            page_url = f"{base_url}{sep}{urlencode(params, safe='/')}"
+            print(f"URL {page_url}")
+            page.goto(page_url, wait_until="domcontentloaded")
             page.wait_for_function("() => window.__MH_ENGINE__ !== undefined", timeout=15000)
             page.wait_for_function(
                 "() => { const v = document.getElementById('avatar-video'); return !v || v.readyState >= 2; }",

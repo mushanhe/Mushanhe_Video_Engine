@@ -196,7 +196,13 @@ AI 会按 4 步走：① 确认或推荐风格与皮肤 → ② 把口播稿写�
 python core/tools/inspect_frames.py --template 01_industrial_3d --times 3,9.5,17,25,32.5,40,48,56,63,69.5 --out preview_frames
 ```
 
-输出 `ZERO_ERRORS` 表示页面无报错，截图在 `preview_frames/`。
+验非默认皮肤或自己的剧本，加 `--theme` / `--data`（剧本路径相对风格包目录，会自动拼成 `?data=..&theme=..&t=..&clean=1`）：
+
+```bash
+python core/tools/inspect_frames.py --template 01_industrial_3d --data demo_variants.json --theme obsidian --times 3,9.5 --out scratch_verify/my_ep
+```
+
+输出 `ZERO_ERRORS` 表示页面无报错，截图在 `--out` 指定的目录。
 
 ## 目录结构
 
@@ -253,6 +259,7 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 - [x] **v2.0**：6 大旗舰风格矩阵全部开源上线（工业 3D / 瑞士印刷 / Vox 侦探 / ComfyUI 节点 / Pro NLE / 撞色潮刊）
 - [x] **v2.5**：6 套风格包各内置 4 套实时皮肤（共 24 套）+ 01 工业 3D 的 4 个 `variant` 版式变体 + 统一 `SKILL.md` Agent Skill
 - [x] **v3.0**：12 大旗舰流派（新增学院黑板 / 宋韵水墨 / 日系胶片 / 复古 CRT / Keynote 暗黑流光 / 华尔街金融终端）+ 30 套开箱皮肤 + 12 张 2×2 预览拼图 + `SKILL.md` 12 套平权索引
+- [x] **v3.1**：`inspect_frames.py` 支持 `--data` / `--theme`，一行命令验任意皮肤与自定义剧本；`SKILL.md` 精简，轻量 Agent 也能直接调用
 - [ ] **07–12 实时皮肤**：六大新流派各补 4 套 `themes.js` 实时皮肤
 - [ ] **更多变体与垂类组件**：其余风格包的 `variant` 布局变体 + 垂类组件（财经 / 编程 / 读书）
 - [ ] `export_mp4.py`：无头浏览器一键导出 MP4，自带人声响度与 BGM 闪避
@@ -270,3 +277,5 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 ## License
 
 本仓库原创代码与素材（`core/`、`templates/01_industrial_3d/` ~ `templates/12_bloomberg_fin/` 全部 12 套风格包，含演播室背景图 `studio_bg.png` 与 `docs/` 预览拼图）以 [MIT License](LICENSE) 发布，© 2026 mushanhe。`core/vendor/` 中的第三方库除外，见上节。
+
+字体说明：模板默认调用系统无衬线/衬线字体栈以保证离线秒开；用于商业发布时，请确保所用系统字体已获商用授权或自行替换为开源字体（如思源黑体/宋体）。
