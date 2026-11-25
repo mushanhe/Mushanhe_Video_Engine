@@ -3,13 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mushanhe Video Engine · v1.0</title>
+  <title>Mushanhe Video Engine · v2.0</title>
   <link rel="icon" href="data:," />
   <style>
     :root {
       --ink: #141414; --paper: #F2EEE4; --muted: #6B665C;
-      --sp-paper: #EDE8DC; --sp-sheet: #F7F4EC; --sp-red: #D92323;
-      --nb-paper: #F6F1E3; --nb-ink: #111111; --nb-yellow: #FFE500; --nb-blue: #3B82F6; --nb-mint: #00E599; --nb-coral: #FF4D6D;
+      --ind-bg: #F3F5F8; --ind-steel: #1E232A; --ind-orange: #FF5500; --ind-teal: #00D4AA;
+      --sp-sheet: #F7F4EC; --sp-red: #D92323;
+      --vox-bg: #EFE9DC; --vox-yellow: #FFE14D; --vox-red: #D92B3A;
+      --ng-bg: #0A0D14; --ng-cyan: #38BDF8; --ng-jade: #10B981; --ng-violet: #A78BFA;
+      --nle-bg: #0A0D12; --nle-cyan: #22D3EE; --nle-amber: #F59E0B; --nle-rose: #F43F5E;
+      --nb-ink: #111111; --nb-yellow: #FFE500; --nb-blue: #3B82F6; --nb-mint: #00E599; --nb-coral: #FF4D6D;
       --cn: 'Noto Sans SC', 'Source Han Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
       --latin: 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
       --mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
@@ -20,45 +24,113 @@
       min-height: 100vh; background: var(--paper); color: var(--ink); font-family: var(--cn);
       background-image: radial-gradient(rgba(20,20,20,.12) 1.4px, transparent 1.4px); background-size: 24px 24px;
     }
-    .wrap { max-width: 1180px; margin: 0 auto; padding: 56px 24px 64px; }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 52px 24px 64px; }
     header .tag { display: inline-block; padding: 6px 12px; background: var(--ink); color: var(--paper); font: 800 13px/1 var(--mono); letter-spacing: .16em; }
-    header h1 { margin: 18px 0 10px; font: 900 clamp(40px, 7vw, 84px)/1 var(--latin); letter-spacing: -.04em; }
-    header p { margin: 0; max-width: 720px; font-size: 18px; font-weight: 700; line-height: 1.7; color: var(--muted); }
+    header h1 { margin: 18px 0 10px; font: 900 clamp(38px, 6.4vw, 80px)/1.02 var(--latin); letter-spacing: -.04em; }
+    header p { margin: 0; max-width: 760px; font-size: 18px; font-weight: 700; line-height: 1.7; color: var(--muted); }
     header p b { color: var(--ink); }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
     .chips span { padding: 6px 12px; border: 2px solid var(--ink); background: #fff; font: 800 13px/1.2 var(--mono); }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; margin-top: 48px; }
-    a.pack { display: block; position: relative; text-decoration: none; color: inherit; min-height: 360px; padding: 32px 32px 28px; transition: transform .18s ease, box-shadow .18s ease; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 28px; margin-top: 44px; }
+    a.pack {
+      display: flex; flex-direction: column; position: relative; text-decoration: none; color: inherit;
+      padding: 20px 22px 22px; transition: transform .18s ease, box-shadow .18s ease;
+    }
     a.pack:focus-visible { outline: 4px solid var(--nb-blue); outline-offset: 4px; }
-    .pack .no { font: 900 96px/0.9 var(--latin); letter-spacing: -.06em; }
-    .pack h2 { margin: 18px 0 8px; font-size: 32px; font-weight: 900; line-height: 1.15; }
-    .pack .en { font: 800 13px/1.4 var(--mono); letter-spacing: .14em; }
-    .pack ul { margin: 18px 0 0; padding: 0; list-style: none; font-size: 15px; font-weight: 700; line-height: 1.9; }
-    .pack .go { position: absolute; right: 28px; bottom: 26px; font: 900 15px/1 var(--mono); letter-spacing: .1em; }
+    .pack .thumb { width: 100%; aspect-ratio: 1616 / 930; object-fit: cover; display: block; margin-bottom: 18px; }
+    .pack .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .pack .no { font: 900 44px/0.9 var(--latin); letter-spacing: -.05em; }
+    .pack .en { font: 800 11px/1.4 var(--mono); letter-spacing: .12em; }
+    .pack h2 { margin: 10px 0 6px; font-size: 25px; font-weight: 900; line-height: 1.2; }
+    .pack ul { margin: 10px 0 18px; padding: 0; list-style: none; font-size: 14px; font-weight: 700; line-height: 1.8; flex: 1; }
+    .pack .foot { display: flex; justify-content: flex-end; }
+    .pack .go { display: inline-block; padding: 9px 15px; font: 900 13px/1 var(--mono); letter-spacing: .1em; }
+    .pack .stk { position: absolute; right: 16px; top: 16px; padding: 5px 10px; font: 900 12px/1 var(--mono); z-index: 2; }
 
-    /* 旗舰包 #1：瑞士印刷拼贴 */
-    .swiss { background: var(--sp-sheet); box-shadow: 0 2px 2px rgba(20,20,20,.1), 0 22px 40px -18px rgba(20,20,20,.45);
-      background-image: linear-gradient(90deg, rgba(20,20,20,.06) 1px, transparent 1px); background-size: 56px 100%; border-left: 10px solid var(--sp-red); }
-    .swiss .no { color: var(--sp-red); }
-    .swiss .en { color: var(--sp-red); }
-    .swiss ul li::before { content: '■ '; color: var(--sp-red); }
-    .swiss .go { padding: 10px 16px; background: var(--ink); color: var(--sp-sheet); }
-    .swiss:hover { transform: translateY(-4px) rotate(-.4deg); }
+    /* 01 3D 工业画廊 */
+    .ind {
+      background: var(--ind-bg); border: 2px solid #CBD5E1; border-top: 8px solid var(--ind-steel); border-radius: 10px;
+      box-shadow: 0 14px 30px -16px rgba(15,23,42,.35);
+      background-image: linear-gradient(rgba(15,23,42,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,.04) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    .ind .thumb { border-radius: 6px; border: 1px solid #CBD5E1; }
+    .ind .no { color: var(--ind-orange); }
+    .ind .en { color: var(--ind-steel); opacity: .75; }
+    .ind ul li::before { content: '● '; color: var(--ind-teal); font-size: 11px; }
+    .ind .go { background: var(--ind-steel); color: #fff; border-radius: 999px; }
+    .ind:hover { transform: translateY(-4px); box-shadow: 0 22px 38px -16px rgba(15,23,42,.45); }
 
-    /* 旗舰包 #2：Neo-Brutalism 撞色潮刊 */
-    .nb { background: var(--nb-yellow); border: 4px solid var(--nb-ink); box-shadow: 12px 12px 0 var(--nb-ink); }
-    .nb .no { color: #fff; -webkit-text-stroke: 4px var(--nb-ink); text-shadow: 7px 7px 0 var(--nb-coral); }
-    .nb .en { display: inline-block; padding: 4px 10px; background: var(--nb-ink); color: var(--nb-yellow); }
+    /* 02 瑞士印刷拼贴 */
+    .swiss {
+      background: var(--sp-sheet); border-left: 9px solid var(--sp-red);
+      box-shadow: 0 2px 2px rgba(20,20,20,.1), 0 18px 34px -16px rgba(20,20,20,.4);
+      background-image: linear-gradient(90deg, rgba(20,20,20,.05) 1px, transparent 1px); background-size: 48px 100%;
+    }
+    .swiss .thumb { border: 1px solid rgba(20,20,20,.15); }
+    .swiss .no, .swiss .en { color: var(--sp-red); }
+    .swiss ul li::before { content: '■ '; color: var(--sp-red); font-size: 11px; }
+    .swiss .go { background: var(--ink); color: var(--sp-sheet); }
+    .swiss:hover { transform: translateY(-4px) rotate(-.3deg); }
+
+    /* 03 Vox 侦探桌面 */
+    .vox {
+      background: var(--vox-bg); border: 2px solid #C8BEA8;
+      box-shadow: 0 14px 28px -14px rgba(45,35,20,.38);
+      background-image: linear-gradient(rgba(90,75,50,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(90,75,50,.07) 1px, transparent 1px);
+      background-size: 26px 26px;
+    }
+    .vox .thumb { border: 3px solid #fff; box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+    .vox .no { background: var(--vox-yellow); padding: 2px 8px; color: var(--ink); }
+    .vox .en { color: var(--vox-red); }
+    .vox ul li::before { content: '✦ '; color: var(--vox-red); }
+    .vox .go { background: var(--ink); color: var(--vox-yellow); border-left: 5px solid var(--vox-yellow); }
+    .vox:hover { transform: translateY(-4px) rotate(.3deg); }
+
+    /* 04 ComfyUI 3D 节点图 */
+    a.pack.ng {
+      background: var(--ng-bg); color: #F8FAFC; border: 1.5px solid rgba(56,189,248,.45);
+      box-shadow: 0 16px 36px -14px rgba(2,6,23,.75), inset 0 0 24px rgba(56,189,248,.07);
+      background-image: radial-gradient(rgba(56,189,248,.18) 1px, transparent 1px); background-size: 22px 22px;
+    }
+    .ng .thumb { border: 1px solid rgba(56,189,248,.35); }
+    .ng .no { color: var(--ng-cyan); }
+    .ng .en { color: var(--ng-violet); }
+    .ng h2 { color: #FFFFFF; }
+    .ng ul { color: #CBD5E1; }
+    .ng ul li::before { content: '◆ '; color: var(--ng-jade); font-size: 10px; }
+    .ng .go { background: var(--ng-jade); color: #052E16; }
+    a.pack.ng:hover { transform: translateY(-4px); border-color: var(--ng-cyan); }
+
+    /* 05 Pro NLE 多轨剪辑台 */
+    a.pack.nle {
+      background: var(--nle-bg); color: #F8FAFC; border: 1.5px solid #273244; border-bottom: 6px solid var(--nle-cyan);
+      box-shadow: 0 16px 36px -14px rgba(2,6,23,.78);
+    }
+    .nle .thumb { border: 1px solid #334155; }
+    .nle .no { color: var(--nle-amber); }
+    .nle .en { color: var(--nle-cyan); }
+    .nle h2 { color: #FFFFFF; }
+    .nle ul { color: #CBD5E1; }
+    .nle ul li::before { content: '▸ '; color: var(--nle-rose); }
+    .nle .go { background: var(--nle-cyan); color: #082F49; }
+    a.pack.nle:hover { transform: translateY(-4px); border-color: var(--nle-amber); }
+
+    /* 06 Neo-Brutalism 撞色潮刊 */
+    .nb { background: var(--nb-yellow); border: 4px solid var(--nb-ink); box-shadow: 10px 10px 0 var(--nb-ink); }
+    .nb .thumb { border: 3px solid var(--nb-ink); }
+    .nb .no { color: #fff; -webkit-text-stroke: 2.5px var(--nb-ink); text-shadow: 4px 4px 0 var(--nb-coral); }
+    .nb .en { display: inline-block; padding: 3px 8px; background: var(--nb-ink); color: var(--nb-yellow); }
     .nb ul li::before { content: '▲ '; color: var(--nb-coral); }
-    .nb .go { padding: 10px 16px; background: var(--nb-coral); color: #fff; border: 3px solid var(--nb-ink); box-shadow: 4px 4px 0 var(--nb-ink); }
-    .nb:hover { transform: translate(-3px, -3px); box-shadow: 15px 15px 0 var(--nb-ink); }
-    .nb .stk { position: absolute; right: 24px; top: 24px; padding: 6px 12px; background: var(--nb-mint); border: 3px solid var(--nb-ink); font: 900 14px/1 var(--mono); transform: rotate(4deg); }
+    .nb .go { background: var(--nb-coral); color: #fff; border: 3px solid var(--nb-ink); box-shadow: 4px 4px 0 var(--nb-ink); }
+    .nb .stk { background: var(--nb-mint); border: 3px solid var(--nb-ink); transform: rotate(4deg); }
+    .nb:hover { transform: translate(-3px, -3px); box-shadow: 13px 13px 0 var(--nb-ink); }
 
-    section.how { margin-top: 56px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    section.how { margin-top: 52px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
     .how div { padding: 18px 20px; background: #fff; border: 2px solid var(--ink); }
     .how b { display: block; font: 900 13px/1 var(--mono); letter-spacing: .14em; margin-bottom: 10px; }
-    .how code { font: 700 14px/1.5 var(--mono); background: var(--paper); padding: 2px 6px; word-break: break-all; }
+    .how code { font: 700 13px/1.5 var(--mono); background: var(--paper); padding: 2px 6px; word-break: break-all; }
     .how p { margin: 0; font-size: 14px; font-weight: 700; line-height: 1.7; color: var(--muted); }
     footer { margin-top: 40px; font: 700 13px/1.6 var(--mono); color: var(--muted); }
   </style>
@@ -66,45 +138,93 @@
 <body>
   <div class="wrap">
     <header>
-      <span class="tag">MUSHANHE VIDEO ENGINE · v1.0</span>
-      <h1>一份 JSON，<br />一条口播片。</h1>
-      <p>1 套 <b>core/</b> 通用内核 + 统一 <b>{ meta, theme, scenes }</b> 剧本标准。同一份剧本，换一套风格包，画面整体换一套美术。</p>
+      <span class="tag">MUSHANHE VIDEO ENGINE · v2.0 · 6 FLAGSHIP PACKS</span>
+      <h1>一份 JSON，<br />六套电影级口播画风。</h1>
+      <p>1 套 <b>core/</b> 通用内核 + 统一 <b>{ meta, theme, scenes }</b> 剧本标准。同一份剧本，在 <b>6 套旗舰风格包</b> 之间一键无缝换肤，文案一个字不用改。</p>
       <div class="chips">
-        <span>10 大万能句型</span><span>4 种人像粒子变形</span><span>3D 摄影机运镜</span><span>逐字高亮字幕</span><span>任意时间点 seek 还原</span>
+        <span>6 套旗舰风格包</span><span>10 大万能句型</span><span>4 种人像粒子变形</span><span>3D 摄影机运镜</span><span>逐字高亮字幕</span><span>任意时间点 seek 还原</span>
       </div>
     </header>
 
     <div class="grid">
-      <a class="pack swiss" href="templates/02_swiss_print/index.html">
-        <div class="no">02</div>
-        <h2>瑞士印刷拼贴</h2>
-        <div class="en">SWISS PRINT COLLAGE</div>
+      <a class="pack ind" href="templates/01_industrial_3d/index.html">
+        <img class="thumb" src="docs/preview_industrial3d.png" alt="01 3D 工业画廊预览" loading="lazy" />
+        <div class="head"><div class="no">01</div><div class="en">INDUSTRIAL 3D GALLERY</div></div>
+        <h2>3D 工业实体画廊</h2>
         <ul>
-          <li>米白网格纸 · 瑞士红 · 油墨黑</li>
+          <li>珍珠白光学画廊 · 拉丝金属厚板 · 磨砂玻璃</li>
+          <li>3D 旋转立方体 / 游标卡尺 / 实物相机展柜</li>
+          <li>画廊漫游横移 + 磨砂玻璃隔断转场</li>
+        </ul>
+        <div class="foot"><span class="go">进入展厅 →</span></div>
+      </a>
+
+      <a class="pack swiss" href="templates/02_swiss_print/index.html">
+        <img class="thumb" src="docs/preview_swiss.png" alt="02 瑞士印刷拼贴预览" loading="lazy" />
+        <div class="head"><div class="no">02</div><div class="en">SWISS PRINT COLLAGE</div></div>
+        <h2>瑞士印刷拼贴</h2>
+        <ul>
+          <li>米白网格纸 · 瑞士红 · 油墨黑经典版式</li>
           <li>木尺 / 铅笔 / 三角板实物道具</li>
           <li>整页抽纸转场 · 红边纸条字幕</li>
         </ul>
-        <span class="go">进入展厅 →</span>
+        <div class="foot"><span class="go">进入展厅 →</span></div>
+      </a>
+
+      <a class="pack vox" href="templates/03_vox_desk/index.html">
+        <img class="thumb" src="docs/preview_vox.png" alt="03 Vox 侦探桌面预览" loading="lazy" />
+        <div class="head"><div class="no">03</div><div class="en">VOX DETECTIVE DESK</div></div>
+        <h2>Vox 侦探桌面</h2>
+        <ul>
+          <li>暖亚麻切割垫 · 荧光黄马克笔 · 红笔手绘圈勾</li>
+          <li>红色调查丝线 · 牛皮纸胶带 · 撕边剪报</li>
+          <li>高空俯拍斜飞 + 红丝线串联转场</li>
+        </ul>
+        <div class="foot"><span class="go">进入展厅 →</span></div>
+      </a>
+
+      <a class="pack ng" href="templates/04_nodegraph/index.html">
+        <img class="thumb" src="docs/preview_nodegraph.png" alt="04 ComfyUI 3D 节点图预览" loading="lazy" />
+        <div class="head"><div class="no">04</div><div class="en">COMFYUI 3D NODEGRAPH</div></div>
+        <h2>ComfyUI 3D 节点图</h2>
+        <ul>
+          <li>深空蓝黑网格 · 发光贝塞尔信号线与脉冲光点</li>
+          <li>内置示波器 · 环形通过率仪表 · 激光线框展柜</li>
+          <li>霓虹光幕 + EXECUTE 节点卡转场</li>
+        </ul>
+        <div class="foot"><span class="go">进入展厅 →</span></div>
+      </a>
+
+      <a class="pack nle" href="templates/05_pro_nle/index.html">
+        <img class="thumb" src="docs/preview_nle.png" alt="05 Pro NLE 非编工作台预览" loading="lazy" />
+        <div class="head"><div class="no">05</div><div class="en">PRO NLE WORKSTATION</div></div>
+        <h2>Pro NLE 多轨剪辑台</h2>
+        <ul>
+          <li>真 4 轨实时时间线 · 逐字语音波形 · 实时时码</li>
+          <li>PiP / Corner 模式自动显露右侧 Lumetri 示波器</li>
+          <li>开机自检打字 · 手风琴清单 · 四色色条场记转场</li>
+        </ul>
+        <div class="foot"><span class="go">进入展厅 →</span></div>
       </a>
 
       <a class="pack nb" href="templates/06_neobrutalism/index.html">
-        <span class="stk">NEW!</span>
-        <div class="no">06</div>
+        <span class="stk">HOT!</span>
+        <img class="thumb" src="docs/preview_neobrutalism.png" alt="06 Neo-Brutalism 撞色潮刊预览" loading="lazy" />
+        <div class="head"><div class="no">06</div><div class="en">NEO-BRUTALISM ZINE</div></div>
         <h2>Neo-Brutalism 撞色潮刊</h2>
-        <div class="en">NEO-BRUTALISM ZINE</div>
         <ul>
-          <li>4px 粗黑边 · 12px 硬投影 · 四色撞色</li>
-          <li>倾斜贴纸 · 重盖印章 · 呼吸波点</li>
+          <li>4px 粗黑边 · 12px 硬投影 · 明黄/蓝/绿/珊瑚撞色</li>
+          <li>倾斜贴纸 · 重盖印章 · 动态呼吸波点</li>
           <li>四色色块横扫转场 · 黑底黄影字幕</li>
         </ul>
-        <span class="go">进入展厅 →</span>
+        <div class="foot"><span class="go">进入展厅 →</span></div>
       </a>
     </div>
 
     <section class="how">
       <div><b>01 · 播放</b><p>展厅里按 <code>空格</code> 连播，<code>1</code>–<code>9</code> / <code>0</code> 跳段，<code>H</code> 隐藏控制栏。</p></div>
-      <div><b>02 · 换剧本</b><p>复制 <code>demo_data.json</code> 改文案，用 <code>?data=my_script.json</code> 加载。</p></div>
-      <div><b>03 · 验货</b><p><code>python core/tools/inspect_frames.py --template 06_neobrutalism --times 3,9.5 --out preview_frames</code></p></div>
+      <div><b>02 · 换剧本</b><p>复制任意 <code>demo_data.json</code> 改文案，用 <code>?data=my_script.json</code> 加载，6 套通用。</p></div>
+      <div><b>03 · 验货</b><p><code>python core/tools/inspect_frames.py --template 05_pro_nle --times 3,9.5 --out preview_frames</code></p></div>
     </section>
 
     <footer>

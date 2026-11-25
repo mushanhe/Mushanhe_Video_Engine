@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pro NLE 多轨剪辑台 · 组件展厅（风格包 05）</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="../../core/engine.css" />
+  <style>
+    :root {
+      --pn-font-cn: 'Noto Sans SC', 'Source Han Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+      --pn-font-mono: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+      --pn-bg: #0A0D12; --pn-text: #E2E8F0;
+      --pn-cyan: #38BDF8; --pn-jade: #00E5C3; --pn-amber: #FFB84D; --pn-crimson: #FF3B5C; --pn-violet: #A78BFA;
+      --pn-border: rgba(255, 255, 255, 0.11);
+    }
+    #viewport { background: radial-gradient(circle at 50% 0%, #131B28 0%, var(--pn-bg) 65%); overflow: hidden; font-family: var(--pn-font-cn); color: var(--pn-text); }
+    #viewport::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px); }
+    #avatar-morph-canvas { position: absolute; inset: 0; width: 1920px; height: 1080px; z-index: 32; pointer-events: none; }
+
+    /* ========== 顶部 NLE 菜单栏（0..48） ========== */
+    #pn-topbar {
+      position: absolute; top: 0; left: 0; right: 0; height: 48px; z-index: 42;
+      background: linear-gradient(180deg, #1A212E 0%, #111620 100%); border-bottom: 1px solid var(--pn-border); box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+      display: flex; align-items: center; gap: 14px; padding: 0 36px; font-family: var(--pn-font-mono); white-space: nowrap;
+    }
+    .nt-logo { padding: 4px 10px; border-radius: 6px; background: linear-gradient(135deg, var(--pn-jade), var(--pn-cyan)); color: #061016; font-size: 12px; font-weight: 900; letter-spacing: 0.1em; }
+    .nt-proj { max-width: 240px; overflow: hidden; text-overflow: ellipsis; font-size: 13px; font-weight: 800; color: #E2E8F0; letter-spacing: 0.04em; }
+    .nt-tools { display: flex; gap: 6px; padding-left: 14px; border-left: 1px solid rgba(255,255,255,0.12); }
+    .nt-ico { padding: 4px 8px; border-radius: 5px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); font-size: 11px; font-weight: 800; color: #94A3B8; }
+    .nt-ico.on { color: var(--pn-cyan); border-color: rgba(56,189,248,0.45); background: rgba(56,189,248,0.14); }
+    #nt-stages { display: flex; gap: 5px; margin-left: auto; }
+    .nt-st { position: relative; width: 84px; padding: 5px 0 7px; text-align: center; border-radius: 6px; font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.36); background: rgba(255,255,255,0.03); border: 1px solid transparent; cursor: pointer; overflow: hidden; }
+    .nt-st.active { color: #FFFFFF; background: rgba(56,189,248,0.18); border-color: rgba(56,189,248,0.5); box-shadow: 0 0 14px rgba(56,189,248,0.2); }
+    .nt-st.done { color: var(--pn-jade); }
+    .nt-st .fl { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: var(--pn-cyan); box-shadow: 0 0 6px var(--pn-cyan); }
+    .nt-tc { display: flex; align-items: center; gap: 10px; margin-left: 14px; font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; color: #FFFFFF; letter-spacing: 0.08em; }
+    .nt-rec { width: 8px; height: 8px; border-radius: 50%; background: var(--pn-crimson); box-shadow: 0 0 10px var(--pn-crimson); }
+    .nt-hdr-tag { padding: 2px 7px; border-radius: 4px; background: rgba(255,184,77,0.18); border: 1px solid rgba(255,184,77,0.45); color: #FFE499; font-size: 10px; }
+
+    /* ========== Program Monitor（36,60 · 1268×704） ========== */
+    #pn-monitor {
+      position: absolute; left: 36px; top: 60px; width: 1268px; height: 704px; z-index: 12;
+      border-radius: 14px; background: #0B0F16; border: 1.5px solid var(--pn-border);
+      box-shadow: 0 28px 66px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.08); overflow: hidden; display: flex; flex-direction: column;
+    }
+    .mon-hdr, .mon-foot { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; font-family: var(--pn-font-mono); font-weight: 800; white-space: nowrap; }
+    .mon-hdr { height: 34px; background: linear-gradient(180deg, #19202D, #131823); border-bottom: 1px solid var(--pn-border); font-size: 12px; color: #94A3B8; letter-spacing: 0.12em; }
+    .mon-badge { color: var(--pn-jade); }
+    .mon-foot { height: 32px; background: #121721; border-top: 1px solid var(--pn-border); font-size: 11px; color: #64748B; letter-spacing: 0.08em; }
+    .mf-btns { display: flex; gap: 16px; color: #CBD5E1; font-size: 12px; }
+    .mf-btns .play { color: var(--pn-jade); }
+    #pn-mon-body { position: relative; flex: 1; overflow: hidden; background: radial-gradient(circle at 50% 40%, #0F1622 0%, #090C12 80%); }
+    #camera-viewport { position: absolute; inset: 0; overflow: hidden; perspective: 1400px; pointer-events: none; }
+    #pn-world {
+      position: absolute; left: 0; top: 0; width: 12000px; height: 1100px; transform-style: preserve-3d; will-change: transform;
+      background-image: linear-gradient(90deg, rgba(56,189,248,0.035) 1px, transparent 1px), linear-gradient(rgba(56,189,248,0.035) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .pn-safe { position: absolute; width: 26px; height: 26px; border: 0 solid rgba(255,255,255,0.22); z-index: 5; pointer-events: none; }
+
+    /* 剪辑点转场：四色扫描条 + 场记板 */
+    #pn-cut { position: absolute; inset: 0; z-index: 9; display: none; overflow: hidden; pointer-events: none; }
+    .pn-strip { position: absolute; left: -40px; width: 1360px; background: #0B0F16; border-left: 5px solid var(--c); box-shadow: -10px 0 30px var(--c); }
+    #pn-slate { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: var(--pn-font-mono); }
+    #pn-slate .a { font-size: 16px; font-weight: 900; letter-spacing: 0.3em; color: var(--pn-cyan); }
+    #pn-slate .b { font-family: var(--pn-font-cn); font-size: 76px; font-weight: 900; color: #fff; text-shadow: 0 0 30px rgba(56,189,248,0.35); }
+    #pn-slate .c { padding: 5px 14px; border-radius: 6px; border: 1px solid rgba(255,59,92,0.55); background: rgba(255,59,92,0.12); color: #FFB3C0; font-size: 14px; font-weight: 900; letter-spacing: 0.14em; }
+
+    /* ========== 右侧 Inspector（被 card 人像覆盖，pip/corner 时露出） ========== */
+    #pn-inspector {
+      position: absolute; left: 1324px; top: 60px; width: 560px; height: 704px; z-index: 11; box-sizing: border-box;
+      border-radius: 14px; background: linear-gradient(180deg, #171D28 0%, #10151E 100%); border: 1.5px solid var(--pn-border);
+      box-shadow: 0 20px 44px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); font-family: var(--pn-font-mono);
+    }
+    .ins-hdr { position: absolute; left: 20px; right: 20px; top: 12px; display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #7DD3FC; letter-spacing: 0.14em; border-bottom: 1px solid var(--pn-border); padding-bottom: 8px; }
+    #ins-scope { position: absolute; left: 20px; top: 46px; width: 520px; height: 118px; border-radius: 8px; background: #070A0F; border: 1px solid rgba(255,255,255,0.08); }
+    .ins-vu { position: absolute; left: 20px; right: 20px; height: 12px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
+    .ins-vu i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; transform-origin: left center; background: linear-gradient(90deg, var(--pn-jade) 0%, var(--pn-jade) 58%, var(--pn-amber) 80%, var(--pn-crimson) 100%); }
+    .ins-vu b { position: absolute; left: -16px; top: -2px; font-size: 10px; color: #64748B; }
+    #ins-kv { position: absolute; left: 20px; right: 20px; top: 220px; }
+    .ins-kv { display: flex; justify-content: space-between; height: 29px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; font-weight: 800; color: #94A3B8; letter-spacing: 0.08em; white-space: nowrap; }
+    .ins-kv span:last-child { color: var(--pn-jade); max-width: 330px; overflow: hidden; text-overflow: ellipsis; }
+    .ins-src { position: absolute; left: 20px; top: 376px; font-size: 11px; font-weight: 800; color: #475569; letter-spacing: 0.14em; }
+
+    /* ========== 底部全宽四轨时间轴（36,778 · 1848×196） ========== */
+    #pn-timeline {
+      position: absolute; left: 36px; right: 36px; top: 778px; height: 196px; z-index: 14;
+      border-radius: 14px; background: #10151E; border: 1.5px solid var(--pn-border); overflow: hidden;
+      box-shadow: 0 20px 48px rgba(0,0,0,0.58), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .tl-ruler { position: relative; height: 24px; background: linear-gradient(180deg, #1B2230, #141A24); border-bottom: 1px solid var(--pn-border); }
+    .tl-ruler .tk { position: absolute; left: 150px; right: 0; bottom: 0; height: 7px; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.14) 0 1px, transparent 1px 23.2px); }
+    .tl-ruler .lb { position: absolute; top: 4px; transform: translateX(4px); font-family: var(--pn-font-mono); font-size: 10px; font-weight: 700; color: #64748B; }
+    .tl-ruler .seq { position: absolute; left: 12px; top: 5px; font-family: var(--pn-font-mono); font-size: 10px; font-weight: 900; letter-spacing: 0.14em; color: var(--pn-cyan); }
+    .tl-row { position: relative; height: 43px; display: flex; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .tl-lbl { width: 150px; flex: none; height: 100%; box-sizing: border-box; background: #151B26; border-right: 1px solid var(--pn-border); display: flex; align-items: center; justify-content: space-between; padding: 0 10px 0 12px; font-family: var(--pn-font-mono); font-size: 11px; font-weight: 900; color: #94A3B8; }
+    .tl-lbl em { font-style: normal; color: #475569; font-weight: 800; margin-left: 6px; }
+    .tl-ctrls { display: flex; gap: 4px; }
+    .tl-c { width: 18px; height: 18px; border-radius: 4px; background: rgba(255,255,255,0.06); color: #64748B; font-size: 9px; display: flex; align-items: center; justify-content: center; }
+    .tl-lane { position: relative; flex: 1; height: 100%; }
+    .tl-clip { position: absolute; top: 5px; bottom: 5px; box-sizing: border-box; border-radius: 6px; padding: 0 8px; display: flex; align-items: center; overflow: hidden; white-space: nowrap; font-family: var(--pn-font-mono); font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.16); }
+    .tl-clip.playing { color: #FFFFFF; border-color: #FFFFFF; box-shadow: 0 0 16px rgba(255,255,255,0.3); }
+    .c-amber { background: linear-gradient(180deg, rgba(255,184,77,0.30), rgba(217,119,6,0.20)); border-color: rgba(255,184,77,0.55); }
+    .c-blue { background: linear-gradient(180deg, rgba(56,189,248,0.28), rgba(10,132,255,0.18)); border-color: rgba(56,189,248,0.55); }
+    .c-jade { background: linear-gradient(180deg, rgba(0,229,195,0.26), rgba(0,168,134,0.16)); border-color: rgba(0,229,195,0.5); }
+    .c-violet { background: linear-gradient(180deg, rgba(167,139,250,0.28), rgba(124,58,237,0.16)); border-color: rgba(167,139,250,0.55); }
+    .tl-wave { position: absolute; left: 0; top: 4px; width: 100%; height: 35px; border-radius: 6px; box-sizing: border-box; }
+    #tl-a1 { background: rgba(167,139,250,0.10); border: 1px solid rgba(167,139,250,0.38); }
+    #tl-a2 { background: rgba(255,184,77,0.07); border: 1px solid rgba(255,184,77,0.32); }
+    .tl-sfx { position: absolute; top: 14px; width: 12px; height: 12px; margin-left: -6px; transform: rotate(45deg); background: var(--pn-crimson); box-shadow: 0 0 8px var(--pn-crimson); }
+    #tl-playhead { position: absolute; top: 0; bottom: 0; left: 150px; width: 2.5px; margin-left: -1px; z-index: 10; background: var(--pn-crimson); box-shadow: 0 0 12px var(--pn-crimson); pointer-events: none; }
+    #tl-playhead::before { content: ''; position: absolute; top: 0; left: -6px; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid var(--pn-crimson); }
+    #tl-played { position: absolute; left: 150px; top: 24px; bottom: 0; background: rgba(56,189,248,0.04); pointer-events: none; z-index: 1; }
+
+    /* ========== 人像：冷光监视器框 + 剪影占位 ========== */
+    #avatar-stage { border-style: solid !important; border-color: rgba(56,189,248,0.45) !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 24px 60px rgba(0,0,0,0.65), 0 0 34px rgba(56,189,248,0.16) !important; background: #0A0D12 !important; }
+    #avatar-stage.is-full { border-color: transparent !important; box-shadow: none !important; }
+    #avatar-silhouette { position: absolute; left: 50%; bottom: 0; height: 80%; transform: translateX(-50%); z-index: 2; pointer-events: none; }
+    #avatar-tag { background: rgba(8,12,18,0.86) !important; border: 1px solid rgba(56,189,248,0.45) !important; border-radius: 6px !important; color: #E2E8F0 !important; font-family: var(--pn-font-mono) !important; font-weight: 900 !important; font-size: 13px !important; letter-spacing: 0.12em !important; padding: 7px 12px !important; backdrop-filter: none !important; }
+    #avatar-tag i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--pn-crimson); box-shadow: 0 0 8px var(--pn-crimson); }
+
+    /* 字幕：深色底条 + 青色左边线 + 琥珀高亮（任何背景都可读） */
+    #subtitle-bar {
+      bottom: 16px !important; z-index: 40; background: rgba(6,9,14,0.94) !important; border: 1.5px solid rgba(56,189,248,0.45) !important; border-left: 6px solid var(--pn-cyan) !important;
+      border-radius: 8px !important; backdrop-filter: none !important; box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 24px rgba(56,189,248,0.18) !important;
+      padding: 8px 28px 10px !important; color: #FFFFFF !important; font-family: var(--pn-font-cn) !important; font-size: 38px !important; font-weight: 900 !important; letter-spacing: 0.03em !important; text-shadow: none !important;
+    }
+    #subtitle-bar .w { color: #FFFFFF; text-shadow: none; }
+    #subtitle-bar .w.passed { color: #FFFFFF !important; text-shadow: none !important; }
+    #subtitle-bar .w.active { color: var(--pn-amber) !important; text-shadow: 0 0 14px rgba(255,184,77,0.55) !important; }
+
+    #screen-layer { position: absolute; inset: 0; z-index: 26; pointer-events: none; }
+    #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; background: #1A0A10; color: #fff; border: 2px solid var(--pn-crimson); border-radius: 10px; font-size: 26px; font-weight: 900; display: none; }
+  </style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="pn-topbar">
+      <span class="nt-logo">NLE PRO</span>
+      <span class="nt-proj" id="nt-proj">PROJECT.proj</span>
+      <div class="nt-tools"><span class="nt-ico on">✂ RAZOR</span><span class="nt-ico on">⌁ SNAP</span><span class="nt-ico">⊞ SAFE</span></div>
+      <div id="nt-stages"></div>
+      <div class="nt-tc"><span class="nt-hdr-tag">BT.709</span><span class="nt-rec" id="nt-rec"></span><span id="nt-tc">00:00:00:00</span></div>
+    </div>
+
+    <div id="pn-monitor">
+      <div class="mon-hdr"><span class="mon-badge">● PROGRAM MONITOR · 1920×1080 · 30FPS</span><span id="mon-seq">SEQ 01/10</span></div>
+      <div id="pn-mon-body">
+        <div id="camera-viewport"><div id="pn-world"></div></div>
+        <i class="pn-safe" style="left:14px;top:14px;border-left-width:2px;border-top-width:2px"></i>
+        <i class="pn-safe" style="right:14px;top:14px;border-right-width:2px;border-top-width:2px"></i>
+        <i class="pn-safe" style="left:14px;bottom:14px;border-left-width:2px;border-bottom-width:2px"></i>
+        <i class="pn-safe" style="right:14px;bottom:14px;border-right-width:2px;border-bottom-width:2px"></i>
+        <div id="pn-cut">
+          <div class="pn-strip" style="--c:var(--pn-cyan);top:0;height:25%"></div>
+          <div class="pn-strip" style="--c:var(--pn-jade);top:25%;height:25%"></div>
+          <div class="pn-strip" style="--c:var(--pn-amber);top:50%;height:25%"></div>
+          <div class="pn-strip" style="--c:var(--pn-crimson);top:75%;height:25%"></div>
+          <div id="pn-slate"><div class="a" id="sl-a">SCENE 02 / 10</div><div class="b" id="sl-b">—</div><div class="c" id="sl-c">✂ CUT</div></div>
+        </div>
+      </div>
+      <div class="mon-foot"><span id="mon-io">IN 00:00:00:00 · OUT 00:00:00:00</span><span class="mf-btns"><span>⏮</span><span>◀◀</span><span class="play">▶</span><span>▶▶</span><span>⏭</span></span><span>FIT · 100% · FULL</span></div>
+    </div>
+
+    <div id="pn-inspector">
+      <div class="ins-hdr"><span>INSPECTOR · LUMETRI SCOPES</span><span id="ins-ch">CH 01</span></div>
+      <canvas id="ins-scope" width="520" height="118"></canvas>
+      <div class="ins-vu" style="top:178px"><b>L</b><i id="vu-l"></i></div>
+      <div class="ins-vu" style="top:198px"><b>R</b><i id="vu-r"></i></div>
+      <div id="ins-kv"></div>
+      <div class="ins-src">SOURCE · CAM A · 48kHz</div>
+    </div>
+
+    <div id="pn-timeline">
+      <div class="tl-ruler"><span class="seq">SEQUENCE 01</span><div class="tk"></div></div>
+      <div class="tl-row"><div class="tl-lbl">V2<em>GFX</em><span class="tl-ctrls"><span class="tl-c">◉</span><span class="tl-c">🔒</span></span></div><div class="tl-lane" id="lane-v2"></div></div>
+      <div class="tl-row"><div class="tl-lbl">V1<em>CAM A</em><span class="tl-ctrls"><span class="tl-c">◉</span><span class="tl-c">🔒</span></span></div><div class="tl-lane" id="lane-v1"></div></div>
+      <div class="tl-row"><div class="tl-lbl">A1<em>VOICE</em><span class="tl-ctrls"><span class="tl-c">M</span><span class="tl-c">S</span></span></div><div class="tl-lane" id="lane-a1"><canvas class="tl-wave" id="tl-a1"></canvas></div></div>
+      <div class="tl-row"><div class="tl-lbl">A2<em>BGM</em><span class="tl-ctrls"><span class="tl-c">M</span><span class="tl-c">S</span></span></div><div class="tl-lane" id="lane-a2"><canvas class="tl-wave" id="tl-a2"></canvas></div></div>
+      <div id="tl-played"></div>
+      <div id="tl-playhead"></div>
+    </div>
+
+    <div id="screen-layer"></div>
+
+    <div id="avatar-stage">
+      <img id="avatar-studio-bg" src="assets/studio_bg.png" alt="studio" />
+      <svg id="avatar-silhouette" viewBox="0 0 400 520" preserveAspectRatio="xMidYMax meet">
+        <defs><linearGradient id="sil-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A2433" /><stop offset="1" stop-color="#0B1018" /></linearGradient></defs>
+        <circle cx="200" cy="150" r="92" fill="url(#sil-g)" stroke="#38BDF8" stroke-width="3" />
+        <path d="M30 520 C40 340 110 270 200 270 C290 270 360 340 370 520 Z" fill="url(#sil-g)" stroke="#38BDF8" stroke-width="3" />
+        <text x="200" y="430" text-anchor="middle" font-family="Consolas, monospace" font-size="19" font-weight="900" fill="#38BDF8" letter-spacing="3">AVATAR · 人像占位</text>
+      </svg>
+      <div id="avatar-tag"><i></i><span id="avatar-tag-tx">CAM A · YOUR NAME</span></div>
+    </div>
+
+    <canvas id="avatar-morph-canvas" width="1920" height="1080"></canvas>
+    <div id="subtitle-bar"></div>
+    <div id="load-error"></div>
+  </div>
+
+  <div id="hud">
+    <button id="btn-play" class="primary">▶ 连播 10 大句型</button>
+    <button id="btn-replay">↺ 重播</button>
+    <input id="scrubber" type="range" min="0" max="50" step="0.01" value="0" />
+    <span id="time-readout">0.00 / 0.00s</span>
+    <span class="hud-sep"></span>
+    <span class="hud-label">H 隐藏控制栏 · 1–9 / 0 切换句型 · 空格播放</span>
+  </div>
+
+  <script src="../../core/vendor/gsap.min.js"></script>
+  <script src="../../core/camera-rig.js"></script>
+  <script src="../../core/avatar-morph-fx.js"></script>
+  <script src="../../core/avatar.js"></script>
+  <script src="../../core/subtitle.js"></script>
+  <script src="components.js"></script>
+  <script>
+    const vp = document.getElementById('viewport');
+    function fit() {
+      const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      vp.style.transform = `scale(${s})`;
+      vp.style.left = `${(window.innerWidth - 1920 * s) / 2}px`;
+      vp.style.top = `${(window.innerHeight - 1080 * s) / 2}px`;
+    }
+    window.addEventListener('resize', fit); fit();
+
+    // 组件局部区 1240×620 → 放进 Program Monitor 画面区（约 1265×636），世界画布上各段横向排开
+    const ZONE_GAP = 420, ZONE_Y = 240, ZONE_X0 = 200, CAM_ZOOM = 0.97, FPS = 30;
+    const params = new URLSearchParams(location.search);
+    const clamp01 = (x) => Math.max(0, Math.min(1, x));
+    const tc = (t) => { const f = Math.max(0, Math.round(t * FPS)), s = Math.floor(f / FPS); return `00:${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}:${String(f % FPS).padStart(2, '0')}`; };
+    const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+    /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
+    function buildWordData(scenes) {
+      const words = [], lines = [];
+      scenes.forEach((sc) => {
+        const subs = sc.sub || []; if (!subs.length) return;
+        const a0 = sc.start + 0.35, a1 = sc.start + sc.dur - 0.3, slot = (a1 - a0) / subs.length;
+        subs.forEach((line, li) => {
+          const toks = line.match(/[A-Za-z0-9.\-_/@#:+]+|\s+|./g) || [];
+          const real = toks.filter((x) => !/^\s+$/.test(x));
+          const s0 = a0 + li * slot, dt = (slot - 0.25) / Math.max(1, real.length);
+          const a = words.length, sp = [];
+          let k = 0;
+          toks.forEach((tk) => {
+            if (/^\s+$/.test(tk)) { if (words.length > a) sp.push(words.length - 1); return; }
+            words.push([tk, +(s0 + k * dt).toFixed(3), +(s0 + (k + 1) * dt).toFixed(3)]); k++;
+          });
+          if (words.length > a) lines.push({ a, b: words.length - 1, sp });
+        });
+      });
+      return { words, lines };
+    }
+
+    async function boot() {
+      let script;
+      try {
+        const src = params.get('data') || 'demo_data.json';
+        script = await (await fetch(src, { cache: 'no-store' })).json();
+      } catch (e) {
+        const el = document.getElementById('load-error');
+        el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
+        throw e;
+      }
+      const theme = script.theme || {};
+      const root = document.documentElement.style;
+      ['bg', 'cyan', 'jade', 'amber', 'crimson', 'violet'].forEach((k) => { if (theme[k]) root.setProperty(`--pn-${k}`, theme[k]); });
+      ProNLE.injectCSS();
+
+      // 人像：可选真人视频，否则用剪影占位
+      const meta = script.meta || {}, av = meta.avatar || {};
+      if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
+      document.getElementById('avatar-tag-tx').textContent = av.tag || 'CAM A · YOUR NAME';
+      document.getElementById('nt-proj').textContent = meta.project || meta.title || 'PROJECT.proj';
+      if (av.video) {
+        const v = document.createElement('video');
+        v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
+        document.getElementById('avatar-stage').insertBefore(v, document.getElementById('avatar-tag'));
+        document.getElementById('avatar-silhouette').style.display = 'none';
+      }
+
+      // 组装场景
+      const world = document.getElementById('pn-world');
+      const scenes = []; let acc = 0, zoneX = ZONE_X0;
+      (script.scenes || []).forEach((sc, i) => {
+        const factory = ProNLE.COMPONENTS[sc.type];
+        if (!factory) { console.warn('unknown scene type', sc.type); return; }
+        const dur = sc.dur || 6;
+        const comp = factory.create(sc.data || {}, { dur });
+        const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1240) + ZONE_GAP;
+        if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
+        else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        acc += dur;
+      });
+      const DURATION = acc, N = scenes.length;
+      world.style.width = `${zoneX + 1400}px`;
+      document.getElementById('scrubber').max = DURATION;
+
+      // 运镜关键帧：每段局部机位 → 世界坐标；凝视点落在监视器画面中心；段与段之间在剪辑点转场下硬切
+      const body = document.getElementById('pn-mon-body');
+      const BW = body.clientWidth, BH = body.clientHeight;
+      const kfs = [];
+      scenes.forEach((s, i) => {
+        const cams = s.comp.cams && s.comp.cams.length ? s.comp.cams : [{ t: 0, x: 620, y: 310, zoom: 1 }];
+        cams.forEach((c, j) => {
+          let t = s.start + Math.min(c.t, s.dur);
+          if (j === cams.length - 1 && i < N - 1) t = s.start + s.dur - 0.002;
+          kfs.push({ t, x: s.zx + c.x, y: s.zy + c.y, zoom: (c.zoom || 1) * CAM_ZOOM, rx: c.rx || 0, ry: c.ry || 0, rz: c.rz || 0, screenX: BW / 2, screenY: BH / 2 });
+        });
+      });
+      const camRig = new MHEngine.CameraRig3D(world, { viewW: BW, viewH: BH, handheld: 0.5 });
+      camRig.setKeyframes(kfs);
+
+      // 人像形态：card / pip / corner / full（4 种形态全部走 core 点阵粒子散聚转场）
+      const avatar = new MHEngine.AvatarController({
+        card:         { left: 1324, top: 60,  width: 560,  height: 704,  borderRadius: 14,  borderWidth: 1.5, tagOpacity: 1 },
+        'pip-circle': { left: 1474, top: 496, width: 260,  height: 260,  borderRadius: 130, borderWidth: 2,   tagOpacity: 0 },
+        corner:       { left: 1324, top: 452, width: 560,  height: 312,  borderRadius: 14,  borderWidth: 1.5, tagOpacity: 1 },
+        fullscreen:   { left: 0,    top: 0,   width: 1920, height: 1080, borderRadius: 0,   borderWidth: 0,   tagOpacity: 0 }
+      });
+      const mapAv = (m) => m === 'full' ? 'fullscreen' : m === 'pip' ? 'pip-circle' : m === 'corner' ? 'corner' : 'card';
+      const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
+      const tl = gsap.timeline({ paused: true });
+      avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
+      scenes.forEach((s, i) => {
+        if (i === 0) return;
+        const prev = mapAv(scenes[i - 1].avatar), cur = mapAv(s.avatar);
+        if (prev !== cur) {
+          avatarMorph.addMorph({ time: s.start + 0.02, duration: 0.5, fromMode: prev, toMode: cur, count: 1000, seed: 50500 + i });
+          avatar.animateOnTimeline(tl, cur, s.start + 0.06, 0.48);
+        }
+      });
+      tl.to({}, { duration: 0.05 }, DURATION);
+
+      // 字幕
+      const WORD_DATA = buildWordData(scenes);
+      window.WORD_DATA = WORD_DATA;
+      const subtitle = new MHEngine.SubtitleRenderer(document.getElementById('subtitle-bar'), WORD_DATA);
+
+      // 顶栏句型标签（兼作进度）
+      const tabsEl = document.getElementById('nt-stages');
+      scenes.forEach((s, i) => {
+        const tb = document.createElement('span'); tb.className = 'nt-st';
+        tb.innerHTML = `${String(i + 1).padStart(2, '0')} ${s.label || s.type}<i class="fl"></i>`;
+        tb.addEventListener('click', () => jumpTo(i));
+        tabsEl.appendChild(tb); s.tab = tb;
+      });
+
+      // ========== 四轨时间轴 ==========
+      const pct = (t) => `${(t / DURATION * 100).toFixed(3)}%`;
+      const CLIPC = ['c-jade', 'c-blue', 'c-amber', 'c-violet'];
+      const v2 = document.getElementById('lane-v2'), v1 = document.getElementById('lane-v1'), a2 = document.getElementById('lane-a2');
+      scenes.forEach((s, i) => {
+        const c = document.createElement('div'); c.className = `tl-clip ${CLIPC[i % 4]}`;
+        c.style.left = `calc(${pct(s.start)} + 1px)`; c.style.width = `calc(${pct(s.dur)} - 2px)`;
+        c.textContent = `${String(i + 1).padStart(2, '0')} ${s.type.toUpperCase()} · ${s.label || ''}`;
+        v2.appendChild(c); s.clip = c;
+        if (i > 0) { const m = document.createElement('i'); m.className = 'tl-sfx'; m.style.left = pct(s.start); a2.appendChild(m); }
+      });
+      // V1：按人像形态合并成连续镜头片段
+      let runStart = 0;
+      scenes.forEach((s, i) => {
+        const last = i === N - 1 || scenes[i + 1].avatar !== s.avatar;
+        if (!last) return;
+        const t0 = scenes[runStart].start, t1 = s.start + s.dur;
+        const c = document.createElement('div'); c.className = 'tl-clip c-blue';
+        c.style.left = `calc(${pct(t0)} + 1px)`; c.style.width = `calc(${pct(t1 - t0)} - 2px)`;
+        c.textContent = `CAM A · ${String(s.avatar || 'card').toUpperCase()}`;
+        v1.appendChild(c); runStart = i + 1;
+      });
+      // 标尺时间码
+      const ruler = document.querySelector('.tl-ruler');
+      for (let t = 0; t < DURATION; t += 10) {
+        const lb = document.createElement('span'); lb.className = 'lb';
+        lb.style.left = `calc(150px + (100% - 150px) * ${(t / DURATION).toFixed(4)})`;
+        lb.textContent = tc(t).slice(3, 8); ruler.appendChild(lb);
+      }
+      // A1 人声声波：按逐字时间生成包络（确定性）；A2 BGM 低频铺底
+      const words = WORD_DATA.words;
+      const envAt = (t) => {
+        let e = 0.05 + 0.05 * hash(Math.floor(t * 40));
+        for (let k = 0; k < words.length; k++) { const w = words[k]; if (t >= w[1] - 0.03 && t <= w[2] + 0.03) { e = 0.35 + 0.6 * hash(k * 3.7 + Math.floor(t * 25)); break; } if (w[1] > t) break; }
+        return e;
+      };
+      function drawWave(cv, fn, color) {
+        const W = cv.clientWidth, H = cv.clientHeight; cv.width = W; cv.height = H;
+        const g = cv.getContext('2d'); g.fillStyle = color;
+        for (let x = 2; x < W - 2; x += 3) { const a = fn(x / W * DURATION) * (H / 2 - 3); g.fillRect(x, H / 2 - a, 2, a * 2); }
+      }
+      drawWave(document.getElementById('tl-a1'), envAt, 'rgba(196,181,253,0.85)');
+      drawWave(document.getElementById('tl-a2'), (t) => 0.22 + 0.12 * Math.sin(t * 2.1) * Math.sin(t * 0.37) + 0.08 * hash(Math.floor(t * 30)), 'rgba(255,200,120,0.6)');
+      const playhead = document.getElementById('tl-playhead'), played = document.getElementById('tl-played');
+
+      // ========== Inspector ==========
+      const kvEl = document.getElementById('ins-kv');
+      const KV = ['CLIP', 'TYPE', 'DURATION', 'IN → OUT', 'AVATAR'];
+      const kvVals = KV.map((k) => { const r = document.createElement('div'); r.className = 'ins-kv'; r.innerHTML = `<span>${k}</span><span></span>`; kvEl.appendChild(r); return r.lastChild; });
+      const scope = document.getElementById('ins-scope').getContext('2d');
+      const vuL = document.getElementById('vu-l'), vuR = document.getElementById('vu-r');
+      function drawScope(t, ci) {
+        const W = 520, H = 118; scope.clearRect(0, 0, W, H);
+        scope.strokeStyle = 'rgba(255,255,255,0.06)'; scope.lineWidth = 1;
+        for (let k = 1; k < 4; k++) { scope.beginPath(); scope.moveTo(0, H * k / 4 + 0.5); scope.lineTo(W, H * k / 4 + 0.5); scope.stroke(); }
+        const cols = ['rgba(0,229,195,0.55)', 'rgba(56,189,248,0.5)', 'rgba(255,184,77,0.4)'];
+        for (let x = 0; x < W; x += 4) {
+          const base = 0.5 + 0.28 * Math.sin(x * 0.018 + ci * 1.7 + t * 0.6) + 0.1 * Math.sin(x * 0.07 - t * 1.3);
+          for (let k = 0; k < 6; k++) {
+            const v = clamp01(base + (hash(x * 7 + k * 13 + ci * 101) - 0.5) * 0.36);
+            scope.fillStyle = cols[k % 3]; scope.fillRect(x, (1 - v) * (H - 8) + 4, 2, 2);
+          }
+        }
+      }
+
+      const cut = document.getElementById('pn-cut');
+      const strips = Array.from(cut.querySelectorAll('.pn-strip'));
+      const slate = document.getElementById('pn-slate');
+      const stageEl = document.getElementById('avatar-stage');
+      const easeOut = (x) => 1 - Math.pow(1 - x, 3), easeIn = (x) => x * x * x;
+      const tcEl = document.getElementById('nt-tc'), recEl = document.getElementById('nt-rec');
+      const seqEl = document.getElementById('mon-seq'), ioEl = document.getElementById('mon-io'), insCh = document.getElementById('ins-ch');
+      let lastCur = -1;
+
+      function updateUI(t) {
+        tl.time(Math.min(t, DURATION));
+        camRig.render(t);
+        subtitle.render(t);
+
+        let cur = N - 1;
+        scenes.forEach((s, i) => { if (t >= s.start && t < s.start + s.dur) cur = i; });
+        scenes.forEach((s, i) => {
+          if (Math.abs(i - cur) <= 1) s.comp.update(t - s.start);
+          if (s.comp.layer === 'screen') s.comp.el.style.display = i === cur ? 'block' : 'none';
+          s.tab.classList.toggle('active', i === cur);
+          s.tab.classList.toggle('done', i < cur);
+          s.tab.querySelector('.fl').style.width = `${(clamp01((t - s.start) / s.dur) * 100).toFixed(1)}%`;
+          s.clip.classList.toggle('playing', i === cur);
+        });
+        const S = scenes[cur];
+        stageEl.classList.toggle('is-full', S.avatar === 'full' && t >= S.start + 0.2);
+
+        // 时间码 / 监视器信息 / 时间轴播放头
+        tcEl.textContent = tc(t);
+        recEl.style.opacity = Math.floor(t * 2) % 2 ? '0.3' : '1';
+        const p = clamp01(t / DURATION);
+        playhead.style.left = `calc(150px + (100% - 150px) * ${p.toFixed(5)})`;
+        played.style.width = `calc((100% - 150px) * ${p.toFixed(5)})`;
+        if (cur !== lastCur) {
+          seqEl.textContent = `SEQ ${String(cur + 1).padStart(2, '0')}/${String(N).padStart(2, '0')} · ${S.type.toUpperCase()} · ${S.label || ''}`;
+          ioEl.textContent = `IN ${tc(S.start)} · OUT ${tc(S.start + S.dur)}`;
+          insCh.textContent = `CH ${String(cur + 1).padStart(2, '0')}`;
+          const vals = [`${String(cur + 1).padStart(2, '0')} · ${S.label || S.type}`, S.type.toUpperCase() + (S.data && S.data.kind ? ` · ${S.data.kind}` : ''), `${S.dur.toFixed(2)}s · ${Math.round(S.dur * FPS)}f`, `${tc(S.start).slice(3)} → ${tc(S.start + S.dur).slice(3)}`, String(S.avatar || 'card').toUpperCase()];
+          kvVals.forEach((v, k) => { v.textContent = vals[k]; });
+          lastCur = cur;
+        }
+        drawScope(t, cur);
+        const e = envAt(t);
+        vuL.style.transform = `scaleX(${clamp01(e * (0.92 + 0.08 * Math.sin(t * 17))).toFixed(3)})`;
+        vuR.style.transform = `scaleX(${clamp01(e * (0.86 + 0.1 * Math.cos(t * 13))).toFixed(3)})`;
+
+        // 剪辑点转场：四色扫描条盖上（带场记板）→ 反向抽离
+        let shown = false;
+        for (let i = 1; i < N; i++) {
+          const b = scenes[i].start;
+          if (t >= b - 0.34 && t < b + 0.42) {
+            let cover = 0;
+            strips.forEach((sl, k) => {
+              let x, q;
+              if (t < b) { q = easeOut(clamp01((t - (b - 0.34) - k * 0.035) / 0.2)); x = 1400 * (1 - q); }
+              else { q = easeIn(clamp01((t - b - (3 - k) * 0.045) / 0.24)); x = -1420 * q; }
+              sl.style.transform = `translateX(${x.toFixed(1)}px)`;
+              cover += t < b ? q : 1 - q;
+            });
+            slate.style.opacity = clamp01((cover / 4 - 0.7) / 0.3).toFixed(3);
+            document.getElementById('sl-a').textContent = `SCENE ${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')} · ${scenes[i].type.toUpperCase()}`;
+            document.getElementById('sl-b').textContent = scenes[i].label || scenes[i].type;
+            document.getElementById('sl-c').textContent = `✂ CUT @ ${tc(b)}`;
+            cut.style.display = 'block'; shown = true; break;
+          }
+        }
+        if (!shown) cut.style.display = 'none';
+
+        stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        document.getElementById('scrubber').value = t.toFixed(2);
+        document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
+      }
+
+      // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
+      let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
+      const vid = document.getElementById('avatar-video');
+      function seek(t) {
+        cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
+        scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });
+        if (vid) { try { vid.currentTime = cur; } catch (_) {} }
+        if (playing) { t0 = performance.now(); tStart = cur; }
+      }
+      function loop() {
+        if (!playing) return;
+        const t = tStart + (performance.now() - t0) / 1000;
+        if (t >= DURATION) { pause(); seek(DURATION); return; }
+        cur = t; updateUI(t); raf = requestAnimationFrame(loop);
+      }
+      function play() { if (cur >= DURATION - 0.05) cur = 0; playing = true; t0 = performance.now(); tStart = cur; if (vid) vid.play().catch(() => {}); scenes.forEach((s) => s.comp.media && s.comp.media.play && s.comp.media.play().catch(() => {})); document.getElementById('btn-play').textContent = '⏸ 暂停'; raf = requestAnimationFrame(loop); }
+      function pause() { playing = false; cancelAnimationFrame(raf); if (vid) vid.pause(); scenes.forEach((s) => s.comp.media && s.comp.media.pause && s.comp.media.pause()); document.getElementById('btn-play').textContent = '▶ 连播 10 大句型'; }
+      function jumpTo(i) { seek(scenes[i].start + 0.45); }
+
+      document.getElementById('btn-play').addEventListener('click', () => playing ? pause() : play());
+      document.getElementById('btn-replay').addEventListener('click', () => { seek(0); play(); });
+      document.getElementById('scrubber').addEventListener('input', (e) => { pause(); seek(parseFloat(e.target.value)); });
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); }
+        else if (e.key === 'h' || e.key === 'H') document.getElementById('hud').classList.toggle('hidden');
+        else if (/^[0-9]$/.test(e.key)) { const k = e.key === '0' ? 9 : +e.key - 1; if (scenes[k]) jumpTo(k); }
+      });
+
+      window.__MH_ENGINE__ = { duration: DURATION, seek, scenes: scenes.map((s) => ({ type: s.type, start: s.start, dur: s.dur })) };
+      if (params.get('clean') === '1') document.getElementById('hud').classList.add('hidden');
+      seek(params.has('t') ? parseFloat(params.get('t')) : 0);
+    }
+    boot();
+  </script>
+</body>
+</html>

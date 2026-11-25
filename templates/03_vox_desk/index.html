@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vox Desk · 侦探大桌面组件展厅（风格包 03）</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="../../core/engine.css" />
+  <style>
+    :root {
+      --vx-font-cn: 'Noto Sans SC', 'Source Han Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+      --vx-font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', serif;
+      --vx-font-mono: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+      --vx-font-num: 'Bahnschrift', 'DIN Alternate', 'Arial Narrow', 'Arial', sans-serif;
+      --vx-desk: #EFE9DC; --vx-paper: #FCF9F2; --vx-yellow: #FFE14D; --vx-red: #D92B4B; --vx-ink: #231C15; --vx-muted: #6B5B4A;
+      --vx-shadow: 0 2px 3px rgba(46,30,12,0.12), 0 14px 26px -10px rgba(46,30,12,0.30), 0 30px 54px -26px rgba(46,30,12,0.30);
+      --vx-shadow-lg: 0 3px 4px rgba(46,30,12,0.12), 0 22px 40px -14px rgba(46,30,12,0.34), 0 50px 90px -36px rgba(46,30,12,0.38);
+    }
+    #viewport { background: var(--vx-desk); overflow: hidden; font-family: var(--vx-font-cn); color: var(--vx-ink); }
+    #avatar-morph-canvas { position: absolute; inset: 0; width: 1920px; height: 1080px; z-index: 32; pointer-events: none; }
+
+    /* 3D 侦探大桌面：暖亚麻切割垫方格 */
+    #camera-viewport { position: absolute; inset: 0; z-index: 10; overflow: hidden; perspective: 1500px; pointer-events: none;
+      background: radial-gradient(ellipse at 50% 45%, #F4EEE2 0%, #E6DCC8 70%, #D5C6AA 100%); }
+    #desk-world {
+      position: absolute; left: 0; top: 0; width: 20000px; height: 2400px; transform-style: preserve-3d; will-change: transform;
+      background-color: var(--vx-desk);
+      background-image:
+        linear-gradient(rgba(96,68,38,0.075) 1px, transparent 1px), linear-gradient(90deg, rgba(96,68,38,0.075) 1px, transparent 1px),
+        linear-gradient(rgba(96,68,38,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(96,68,38,0.035) 1px, transparent 1px);
+      background-size: 240px 240px, 240px 240px, 48px 48px, 48px 48px;
+    }
+    .desk-wm { position: absolute; font-family: var(--vx-font-mono); font-weight: 900; letter-spacing: 0.14em; color: rgba(84,56,28,0.07); white-space: nowrap; pointer-events: none; }
+    .desk-ex { position: absolute; display: flex; align-items: center; gap: 18px;
+      font-family: var(--vx-font-mono); font-size: 30px; font-weight: 900; letter-spacing: 0.22em; color: rgba(35,28,21,0.55); white-space: nowrap; }
+    .desk-ex b { padding: 8px 18px; border-radius: 4px; background: var(--vx-ink); color: #FFE499; }
+    #desk-links { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+    /* 台灯光晕 + 纸面颗粒（屏幕固定层） */
+    #desk-lamp { position: absolute; inset: 0; z-index: 20; pointer-events: none;
+      background: radial-gradient(ellipse 75% 70% at 38% 42%, rgba(255,246,222,0) 55%, rgba(72,46,20,0.20) 100%); }
+    #desk-grain {
+      position: absolute; inset: 0; z-index: 21; pointer-events: none; opacity: 0.45; mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.50  0 0 0 0 0.40  0 0 0 0 0.28  0 0 0 0.22 0'/></filter><rect width='260' height='260' filter='url(%23n)'/></svg>");
+    }
+
+    /* 屏幕层（全屏人像上的剪报） */
+    #screen-layer { position: absolute; inset: 0; z-index: 26; pointer-events: none; }
+
+    /* 顶部 10 段可点击句型标签（深墨编辑部条，兼作进度条） */
+    #vx-tabs { position: absolute; left: 40px; top: 22px; z-index: 45; display: flex; gap: 2px; background: var(--vx-ink); border-radius: 6px; box-shadow: 0 10px 24px rgba(35,28,21,0.28); padding: 7px 8px; }
+    .vx-tab { width: 118px; position: relative; padding: 2px 6px 10px; font-family: var(--vx-font-mono); font-size: 12px; font-weight: 800; color: rgba(252,249,242,0.42); cursor: pointer; white-space: nowrap; }
+    .vx-tab.on { color: #FCF9F2; }
+    .vx-tab .tr { position: absolute; left: 6px; right: 6px; bottom: 2px; height: 4px; border-radius: 2px; background: rgba(252,249,242,0.14); }
+    .vx-tab .fl { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 2px; background: var(--vx-yellow); }
+
+    /* 人像：宝丽来米白相框 + 剪影占位 */
+    #avatar-stage { border-style: solid !important; border-color: #FCF9F2 !important; background: #2A2219;
+      box-shadow: 0 0 0 1.5px rgba(120,92,58,0.30), 0 30px 64px rgba(42,28,14,0.34), 0 8px 18px rgba(42,28,14,0.16) !important; }
+    #avatar-stage.is-full { border-width: 0 !important; box-shadow: none !important; }
+    #avatar-silhouette { position: absolute; left: 50%; bottom: 0; height: 82%; transform: translateX(-50%); z-index: 2; pointer-events: none; }
+    #avatar-tag { background: var(--vx-ink) !important; color: #FFE499 !important; border: 0 !important; border-radius: 4px !important; font-family: var(--vx-font-mono) !important; font-weight: 800 !important; font-size: 14px !important; letter-spacing: 0.14em !important; padding: 8px 16px !important; box-shadow: 0 8px 18px rgba(0,0,0,0.3) !important; }
+    #avatar-tag i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--vx-yellow); margin-right: 10px; }
+
+    /* 高对比深墨纸条字幕：深墨底 + 左 8px 荧光黄竖条 + 米白粗体 + 黄色逐字高亮 */
+    #subtitle-bar {
+      bottom: 38px !important; background: #231C15 !important; border: 0 !important; border-left: 8px solid #FFE14D !important; border-radius: 4px !important;
+      backdrop-filter: none !important; box-shadow: 0 2px 3px rgba(35,28,21,0.2), 0 14px 28px -8px rgba(35,28,21,0.45) !important;
+      padding: 12px 34px 13px 28px !important; color: #FCF9F2 !important; font-family: var(--vx-font-cn) !important;
+      font-size: 40px !important; font-weight: 900 !important; letter-spacing: 0.03em !important;
+    }
+    #subtitle-bar .w { color: #FCF9F2; text-shadow: none; }
+    #subtitle-bar .w.passed { color: #FCF9F2 !important; text-shadow: none !important; }
+    #subtitle-bar .w.active { color: #FFE14D !important; text-shadow: none !important; }
+
+    #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; font-size: 28px; font-weight: 900; color: var(--vx-red); display: none; }
+  </style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="camera-viewport"><div id="desk-world"></div></div>
+    <div id="desk-lamp"></div>
+    <div id="desk-grain"></div>
+    <div id="screen-layer"></div>
+    <div id="vx-tabs"></div>
+
+    <div id="avatar-stage">
+      <img id="avatar-studio-bg" src="assets/studio_bg.png" alt="studio" />
+      <svg id="avatar-silhouette" viewBox="0 0 400 520" preserveAspectRatio="xMidYMax meet">
+        <circle cx="200" cy="150" r="92" fill="rgba(35,28,21,0.74)" />
+        <path d="M30 520 C40 340 110 270 200 270 C290 270 360 340 370 520 Z" fill="rgba(35,28,21,0.74)" />
+        <text x="200" y="430" text-anchor="middle" font-family="Consolas, monospace" font-size="20" font-weight="800" fill="#FFE499" letter-spacing="3">AVATAR · 人像占位</text>
+      </svg>
+      <div id="avatar-tag"><i></i><span id="avatar-tag-tx">YOUR NAME</span></div>
+    </div>
+
+    <canvas id="avatar-morph-canvas" width="1920" height="1080"></canvas>
+    <div id="subtitle-bar"></div>
+    <div id="load-error"></div>
+  </div>
+
+  <div id="hud">
+    <button id="btn-play" class="primary">▶ 连播 10 大句型</button>
+    <button id="btn-replay">↺ 重播</button>
+    <input id="scrubber" type="range" min="0" max="50" step="0.01" value="0" />
+    <span id="time-readout">0.00 / 0.00s</span>
+    <span class="hud-sep"></span>
+    <span class="hud-label">H 隐藏控制栏 · 1–9 / 0 切换句型 · 空格播放</span>
+  </div>
+
+  <script src="../../core/vendor/gsap.min.js"></script>
+  <script src="../../core/camera-rig.js"></script>
+  <script src="../../core/avatar-morph-fx.js"></script>
+  <script src="../../core/avatar.js"></script>
+  <script src="../../core/subtitle.js"></script>
+  <script src="components.js"></script>
+  <script>
+    const vp = document.getElementById('viewport');
+    function fit() {
+      const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      vp.style.transform = `scale(${s})`;
+      vp.style.left = `${(window.innerWidth - 1920 * s) / 2}px`;
+      vp.style.top = `${(window.innerHeight - 1080 * s) / 2}px`;
+    }
+    window.addEventListener('resize', fit); fit();
+
+    // 大桌面锯齿布局：相邻分区左右相隔 ZONE_GAP、上下错开 ZONE_DY，转场时摄影机斜向俯拍穿梭
+    const ZONE_GAP = 320, ZONE_Y = 140, ZONE_DY = 660, SX = 650, SY = 470;
+    // 组件局部安全区 x60–1340 / y100–980 → 屏幕 x≈115–1295（避开人像框 1328+）/ y≈100–910（避开字幕）
+    const CAM_DX = 60, CAM_ZOOM = 0.92;
+    // 转场飞行窗口：边界前 FLY_A 秒起飞，边界后 FLY_B 秒落定；途中拉远 + 抬高俯角
+    const FLY_A = 0.45, FLY_B = 0.55, FLY_DIP = 0.46, FLY_TILT = 9;
+    const params = new URLSearchParams(location.search);
+
+    /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
+    function buildWordData(scenes) {
+      const words = [], lines = [];
+      scenes.forEach((sc) => {
+        const subs = sc.sub || []; if (!subs.length) return;
+        const a0 = sc.start + 0.35, a1 = sc.start + sc.dur - 0.3, slot = (a1 - a0) / subs.length;
+        subs.forEach((line, li) => {
+          const toks = line.match(/[A-Za-z0-9.\-_/@#:+]+|\s+|./g) || [];
+          const real = toks.filter((x) => !/^\s+$/.test(x));
+          const s0 = a0 + li * slot, dt = (slot - 0.25) / Math.max(1, real.length);
+          const a = words.length, sp = [];
+          let k = 0;
+          toks.forEach((tk) => {
+            if (/^\s+$/.test(tk)) { if (words.length > a) sp.push(words.length - 1); return; }
+            words.push([tk, +(s0 + k * dt).toFixed(3), +(s0 + (k + 1) * dt).toFixed(3)]); k++;
+          });
+          if (words.length > a) lines.push({ a, b: words.length - 1, sp });
+        });
+      });
+      return { words, lines };
+    }
+
+    async function boot() {
+      let script;
+      try {
+        const src = params.get('data') || 'demo_data.json';
+        script = await (await fetch(src, { cache: 'no-store' })).json();
+      } catch (e) {
+        const el = document.getElementById('load-error');
+        el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
+        throw e;
+      }
+      const theme = script.theme || {};
+      const root = document.documentElement.style;
+      if (theme.desk) root.setProperty('--vx-desk', theme.desk);
+      if (theme.paper) root.setProperty('--vx-paper', theme.paper);
+      if (theme.yellow) root.setProperty('--vx-yellow', theme.yellow);
+      if (theme.red) root.setProperty('--vx-red', theme.red);
+      if (theme.ink) root.setProperty('--vx-ink', theme.ink);
+      VoxDesk.injectCSS();
+
+      // 人像：可选真人视频，否则用剪影占位
+      const meta = script.meta || {}, av = meta.avatar || {};
+      if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
+      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      if (av.video) {
+        const v = document.createElement('video');
+        v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
+        document.getElementById('avatar-stage').insertBefore(v, document.getElementById('avatar-tag'));
+        document.getElementById('avatar-silhouette').style.display = 'none';
+      }
+
+      // 组装场景（锯齿排布在大桌面上）
+      const world = document.getElementById('desk-world');
+      const scenes = []; let acc = 0, zoneX = 220;
+      (script.scenes || []).forEach((sc) => {
+        const factory = VoxDesk.COMPONENTS[sc.type];
+        if (!factory) { console.warn('unknown scene type', sc.type); return; }
+        const dur = sc.dur || 6;
+        const comp = factory.create(sc.data || {}, { dur });
+        const k = scenes.length;
+        const zx = zoneX, zy = ZONE_Y + (k % 2) * ZONE_DY, zw = comp.w || 1400; zoneX += zw + ZONE_GAP;
+        if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
+        else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
+        scenes.push({ ...sc, idx: k, start: acc, dur, comp, zx, zy, zw, avatar: sc.avatar || comp.avatar });
+        acc += dur;
+      });
+      const DURATION = acc;
+      const WW = zoneX + 600, WH = ZONE_Y + ZONE_DY + 1100 + 600;
+      world.style.width = `${WW}px`; world.style.height = `${WH}px`;
+      document.getElementById('scrubber').max = DURATION;
+
+      // 桌面陈设：分区间竖排证物编号、暗纹水印、咖啡渍、区与区之间的红色调查丝线
+      const NS = 'http://www.w3.org/2000/svg';
+      const links = document.createElementNS(NS, 'svg');
+      links.setAttribute('id', 'desk-links'); links.setAttribute('width', WW); links.setAttribute('height', WH);
+      let deco = '', ldefs = '';
+      const anchors = [];
+      scenes.forEach((s, i) => {
+        const no = String(i + 1).padStart(2, '0');
+        // 只在转场拉远俯拍时入画：证物编号贴在分区下方 / 上方的桌面空白处，常规机位下完全出画
+        deco += `<div class="desk-ex" style="left:${s.zx + 60}px;top:${s.zy + (i % 2 ? 1330 : -150)}px;"><b>EXHIBIT ${no}</b>${(s.type || '').toUpperCase()} · ${s.label || ''}</div>`;
+        deco += `<div class="desk-wm" style="left:${s.zx + 40}px;top:${s.zy + (i % 2 ? 1420 : -300)}px;font-size:96px;">CASE FILE // ${no} ${(s.type || '').toUpperCase()}</div>`;
+        deco += `<svg style="position:absolute;left:${s.zx + s.zw - 160}px;top:${s.zy + (i % 2 ? 1180 : -330)}px;" width="230" height="230" viewBox="0 0 220 220"><circle cx="110" cy="110" r="92" fill="none" stroke="rgba(132,86,38,.14)" stroke-width="10"/><path d="M30 140 A92 92 0 0 1 60 40" fill="none" stroke="rgba(132,86,38,.2)" stroke-width="5"/></svg>`;
+        anchors.push({ inX: s.zx + 20, inY: s.zy + 870, outX: s.zx + s.zw + 30, outY: s.zy + 870 });
+      });
+      const linkPaths = [];
+      for (let i = 1; i < scenes.length; i++) {
+        const a = anchors[i - 1], b = anchors[i];
+        const d = `M${a.outX} ${a.outY} Q${(a.outX + b.inX) / 2} ${Math.max(a.outY, b.inY) + 90} ${b.inX} ${b.inY}`;
+        ldefs += `<path d="${d}" pathLength="1" stroke-dasharray="1 1.05" stroke-dashoffset="1" fill="none" stroke-linecap="round" style="stroke:rgba(60,10,20,.22);stroke-width:6px" transform="translate(3 7)"/><path d="${d}" pathLength="1" stroke-dasharray="1 1.05" stroke-dashoffset="1" fill="none" stroke-linecap="round" style="stroke:var(--vx-red);stroke-width:4.5px"/>`;
+      }
+      links.innerHTML = ldefs;
+      world.insertAdjacentHTML('afterbegin', deco);
+      world.insertBefore(links, world.firstChild);
+      const lp = Array.from(links.querySelectorAll('path'));
+      for (let i = 1; i < scenes.length; i++) linkPaths[i] = lp.slice((i - 1) * 2, i * 2);
+      anchors.forEach((a, i) => {
+        if (i > 0) world.insertAdjacentHTML('beforeend', `<div class="vx-pin red" style="left:${a.inX}px;top:${a.inY}px;"></div>`);
+        if (i < anchors.length - 1) world.insertAdjacentHTML('beforeend', `<div class="vx-pin" style="left:${a.outX}px;top:${a.outY}px;"></div>`);
+      });
+
+      // 运镜关键帧：每段局部机位 → 世界坐标
+      const kfs = [];
+      scenes.forEach((s, i) => {
+        const cams = s.comp.cams && s.comp.cams.length ? s.comp.cams : [{ t: 0, x: 700, y: 500, zoom: 1 }];
+        cams.forEach((c, j) => {
+          let t = s.start + Math.min(c.t, s.dur);
+          if (j === cams.length - 1 && i < scenes.length - 1) t = s.start + s.dur - 0.002;
+          kfs.push({ t, x: s.zx + c.x - CAM_DX, y: s.zy + c.y, zoom: (c.zoom || 1) * CAM_ZOOM, rx: c.rx || 0, ry: c.ry || 0, rz: c.rz || 0, screenX: SX, screenY: SY });
+        });
+      });
+      const camRig = new MHEngine.CameraRig3D(document.getElementById('desk-world'), { viewW: 1920, viewH: 1080, handheld: 0.55 });
+      camRig.setKeyframes(kfs);
+      // Johnny Harris 式桌面穿梭：边界前后把两段机位做一次连续插值，途中拉远 + 抬高俯角 + 轻微摇镜（不改 core，仅包裹 sample）
+      const baseSample = camRig.sample.bind(camRig);
+      const smooth = (x) => { const t = Math.max(0, Math.min(1, x)); return t * t * t * (t * (t * 6 - 15) + 10); };
+      const KEYS = ['x', 'y', 'zoom', 'rx', 'ry', 'rz', 'screenX', 'screenY'];
+      camRig.sample = (t) => {
+        for (let i = 1; i < scenes.length; i++) {
+          const b = scenes[i].start;
+          if (t > b - FLY_A && t < b + FLY_B) {
+            const A = baseSample(b - FLY_A), B = baseSample(b + FLY_B);
+            const u = (t - (b - FLY_A)) / (FLY_A + FLY_B), p = smooth(u), arc = Math.sin(Math.PI * u);
+            const o = {}; KEYS.forEach((k) => { o[k] = A[k] + (B[k] - A[k]) * p; });
+            o.zoom *= 1 - FLY_DIP * arc;
+            o.rx += FLY_TILT * arc;
+            o.rz += (i % 2 ? 2.2 : -2.2) * arc;
+            return o;
+          }
+        }
+        return baseSample(t);
+      };
+
+      // 人像形态：card / pip / corner / full（4 种形态全部支持 core 点阵粒子散聚转场！）
+      const avatar = new MHEngine.AvatarController({
+        card:   { left: 1328, top: 82,  width: 540, height: 790, borderRadius: 6,   borderWidth: 12, tagOpacity: 1 },
+        pip:    { left: 1532, top: 642, width: 320, height: 320, borderRadius: 160, borderWidth: 8,  tagOpacity: 0 },
+        corner: { left: 1410, top: 530, width: 458, height: 342, borderRadius: 6,   borderWidth: 10, tagOpacity: 1 }
+      });
+      const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
+      const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
+      const tl = gsap.timeline({ paused: true });
+      avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
+      scenes.forEach((s, i) => {
+        if (i === 0) return;
+        const prev = mapAv(scenes[i - 1].avatar);
+        const cur = mapAv(s.avatar);
+        if (prev !== cur) {
+          avatarMorph.addMorph({ time: s.start + 0.02, duration: 0.5, fromMode: prev, toMode: cur, count: 1000, seed: 30300 + i });
+          avatar.animateOnTimeline(tl, cur, s.start + 0.06, 0.48);
+        }
+      });
+      tl.to({}, { duration: 0.05 }, DURATION);
+
+      // 字幕
+      const WORD_DATA = buildWordData(scenes);
+      window.WORD_DATA = WORD_DATA;
+      const subtitle = new MHEngine.SubtitleRenderer(document.getElementById('subtitle-bar'), WORD_DATA);
+
+      // 顶部句型标签
+      const tabsEl = document.getElementById('vx-tabs');
+      scenes.forEach((s, i) => {
+        const tb = document.createElement('div'); tb.className = 'vx-tab';
+        tb.innerHTML = `${String(i + 1).padStart(2, '0')} ${s.type.toUpperCase()}<div class="tr"><div class="fl"></div></div>`;
+        tb.addEventListener('click', () => jumpTo(i));
+        tabsEl.appendChild(tb); s.tab = tb;
+      });
+
+      const stageEl = document.getElementById('avatar-stage');
+      const camViewport = document.getElementById('camera-viewport');
+      const clamp01 = (x) => Math.max(0, Math.min(1, x));
+
+      function updateUI(t) {
+        tl.time(Math.min(t, DURATION));
+        camRig.render(t);
+        subtitle.render(t);
+        let cur = scenes.length - 1;
+        scenes.forEach((s, i) => { if (t >= s.start && t < s.start + s.dur) cur = i; });
+        scenes.forEach((s, i) => {
+          if (Math.abs(i - cur) <= 1) s.comp.update(t - s.start);
+          if (s.comp.layer === 'screen') s.comp.el.style.display = i === cur ? 'block' : 'none';
+          s.tab.classList.toggle('on', t >= s.start);
+          s.tab.querySelector('.fl').style.width = `${(clamp01((t - s.start) / s.dur) * 100).toFixed(1)}%`;
+        });
+        // 区间红线：起飞时从上一区图钉拉向下一区图钉
+        for (let i = 1; i < scenes.length; i++) {
+          const k = clamp01((t - (scenes[i].start - FLY_A)) / (FLY_A + FLY_B * 0.7));
+          const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+          linkPaths[i].forEach((p) => { p.setAttribute('stroke-dashoffset', (1 - e).toFixed(4)); p.style.opacity = e > 0.002 ? '1' : '0'; });
+        }
+        const S = scenes[cur];
+        const isFull = S.avatar === 'full';
+        stageEl.classList.toggle('is-full', isFull && t >= S.start + 0.2);
+        camViewport.style.opacity = isFull && t >= S.start + 0.15 && t < S.start + S.dur ? '0' : '1';
+
+        stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        document.getElementById('scrubber').value = t.toFixed(2);
+        document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
+      }
+
+      // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
+      let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
+      const vid = document.getElementById('avatar-video');
+      function seek(t) {
+        cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
+        scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });
+        if (vid) { try { vid.currentTime = cur; } catch (_) {} }
+        if (playing) { t0 = performance.now(); tStart = cur; }
+      }
+      function loop() {
+        if (!playing) return;
+        const t = tStart + (performance.now() - t0) / 1000;
+        if (t >= DURATION) { pause(); seek(DURATION); return; }
+        cur = t; updateUI(t); raf = requestAnimationFrame(loop);
+      }
+      function play() { if (cur >= DURATION - 0.05) cur = 0; playing = true; t0 = performance.now(); tStart = cur; if (vid) vid.play().catch(() => {}); scenes.forEach((s) => s.comp.media && s.comp.media.play && s.comp.media.play().catch(() => {})); document.getElementById('btn-play').textContent = '⏸ 暂停'; raf = requestAnimationFrame(loop); }
+      function pause() { playing = false; cancelAnimationFrame(raf); if (vid) vid.pause(); scenes.forEach((s) => s.comp.media && s.comp.media.pause && s.comp.media.pause()); document.getElementById('btn-play').textContent = '▶ 连播 10 大句型'; }
+      function jumpTo(i) { seek(scenes[i].start + 0.6); }
+
+      document.getElementById('btn-play').addEventListener('click', () => playing ? pause() : play());
+      document.getElementById('btn-replay').addEventListener('click', () => { seek(0); play(); });
+      document.getElementById('scrubber').addEventListener('input', (e) => { pause(); seek(parseFloat(e.target.value)); });
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); }
+        else if (e.key === 'h' || e.key === 'H') document.getElementById('hud').classList.toggle('hidden');
+        else if (/^[0-9]$/.test(e.key)) { const k = e.key === '0' ? 9 : +e.key - 1; if (scenes[k]) jumpTo(k); }
+      });
+
+      window.__MH_ENGINE__ = { duration: DURATION, seek, scenes: scenes.map((s) => ({ type: s.type, start: s.start, dur: s.dur })) };
+      if (params.get('clean') === '1') document.getElementById('hud').classList.add('hidden');
+      seek(params.has('t') ? parseFloat(params.get('t')) : 0);
+    }
+    boot();
+  </script>
+</body>
+</html>
