@@ -111,6 +111,7 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="components.js"></script>
+  <script src="themes.js"></script>
   <script>
     const vp = document.getElementById('viewport');
     function fit() {
@@ -162,6 +163,8 @@
       const root = document.documentElement.style;
       ['paper', 'ink', 'yellow', 'blue', 'mint', 'coral'].forEach((k) => { if (theme[k]) root.setProperty(`--nb-${k}`, theme[k]); });
       NeoBrutalism.injectCSS();
+      // 实时换肤：URL ?theme= ＞ 剧本 theme.preset ＞ zine（默认 zine 不注入任何覆盖，与原画面逐像素一致）
+      if (window.NeoBrutalismThemes) NeoBrutalismThemes.init(script);
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};

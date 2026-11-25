@@ -114,6 +114,7 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="components.js"></script>
+  <script src="themes.js"></script>
   <script>
     const vp = document.getElementById('viewport');
     function fit() {
@@ -168,6 +169,8 @@
       if (theme.red) root.setProperty('--sp-red', theme.red);
       if (theme.ink) root.setProperty('--sp-ink', theme.ink);
       SwissPrint.injectCSS();
+      // 换肤：URL ?theme= ＞ 剧本 theme.preset ＞ classic（classic = 不覆盖，无参数访问与原版逐像素一致）
+      if (window.SwissPrintThemes) SwissPrintThemes.init(script);
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};

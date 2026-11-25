@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "title": "Industrial 3D Gallery · 多版式布局变体",
+    "style": "01_industrial_3d",
+    "version": "1.2.0",
+    "fps": 30,
+    "size": [1920, 1080],
+    "avatar": { "video": "", "bg": "assets/studio_bg.png", "tag": "YOUR NAME · VARIANTS" },
+    "bgm": ""
+  },
+  "theme": {
+    "pearl": "#F4F5F7",
+    "steel": "#2B2F36",
+    "orange": "#FF5A1F",
+    "teal": "#00C2A8",
+    "ink": "#15181D"
+  },
+  "scenes": [
+    {
+      "type": "cover",
+      "variant": "blueprint",
+      "label": "蓝图封面",
+      "dur": 7,
+      "avatar": "card",
+      "sub": ["同一套句型", "这一期换四种全新的版式"],
+      "data": {
+        "kicker": "EPISODE 03 — 版式变体",
+        "title": "一套剧本\n四种版式",
+        "chapterLabel": "CHAPTER",
+        "chapter": "03",
+        "subtitle": "只加一个字段\n**variant** 换版式",
+        "dim": "W 270 · 1 份剧本",
+        "dimV": "H 270",
+        "callouts": ["MATERIAL · 拉丝钢 6061", "SCALE 1 : 1"],
+        "specs": [
+          { "k": "DWG NO.", "v": "MH-03" },
+          { "k": "LAYOUT", "v": "BLUEPRINT" },
+          { "k": "REV", "v": "B" },
+          { "k": "SHEET", "v": "01 / 04" }
+        ],
+        "stamp": "新版式",
+        "stampSmall": "VARIANT"
+      }
+    },
+    {
+      "type": "stat",
+      "variant": "gauge",
+      "label": "仪表数据",
+      "dur": 7,
+      "avatar": "card",
+      "sub": ["还是那组数字", "以前剪一条要三个小时", "现在用模板二十分钟出片"],
+      "data": {
+        "kicker": "BY THE NUMBERS — 仪表盘",
+        "title": "一条片要剪多久？",
+        "items": [
+          { "value": 180, "unit": "分钟", "label": "以前 · 手动剪辑", "bar": 1 },
+          { "value": 20, "unit": "分钟", "label": "现在 · 模板出片", "bar": 0.11 }
+        ],
+        "delta": "快 9 倍",
+        "deltaSmall": "×9 FASTER",
+        "note": "同一条 3 分钟口播实测"
+      }
+    },
+    {
+      "type": "steps",
+      "variant": "conveyor",
+      "label": "流水线",
+      "dur": 8,
+      "avatar": "card",
+      "sub": ["流程像一条流水线", "文案、录制、剪辑、发布", "每一站做完才进下一站"],
+      "data": {
+        "kicker": "PIPELINE — 流水线",
+        "title": "四个工位出一条片",
+        "dim": "4 STATIONS",
+        "folder": "MY_VIDEO_PROJECT /",
+        "folderBig": "FEED",
+        "items": [
+          { "title": "文案", "desc": "script.md" },
+          { "title": "录制", "desc": "raw/*.mp4" },
+          { "title": "剪辑", "desc": "timeline.json" },
+          { "title": "发布", "desc": "final.mp4" }
+        ],
+        "label": "逐站质检",
+        "labelSmall": "QC PASS"
+      }
+    },
+    {
+      "type": "compare",
+      "variant": "split",
+      "label": "双轨对比",
+      "dur": 7,
+      "avatar": "card",
+      "sub": ["文案长的时候用上下双轨", "上面是常见做法，下面是推荐做法"],
+      "data": {
+        "kicker": "BEFORE / AFTER — 双轨对比",
+        "title": "先立规矩，再开工",
+        "wrong": {
+          "label": "✕ 常见做法",
+          "title": "一上来\n直接开干",
+          "desc": "需求每次重新解释一遍，结果忽好忽坏，返工比做新的还慢。",
+          "stamp": "✕ 别这样"
+        },
+        "right": {
+          "label": "✓ 推荐做法",
+          "title": "先写规则\n再交给 AI",
+          "desc": "规则写进项目文件自动加载，每次都按同一套标准执行，可复查。"
+        },
+        "verdictLabel": "VERDICT",
+        "verdict": "规则写一次，**每次都生效**"
+      }
+    },
+    {
+      "type": "outro",
+      "label": "结尾",
+      "dur": 6,
+      "avatar": "card",
+      "sub": ["四个变体都在 variants.js", "剧本里加一行 variant 就能用"],
+      "data": {
+        "kicker": "HOW TO USE — 用法",
+        "title": "一行字段换版式",
+        "actions": [
+          { "tag": "COVER", "title": "variant: blueprint", "desc": "工程蓝图封面" },
+          { "tag": "STAT", "title": "variant: gauge", "desc": "机械仪表盘" },
+          { "tag": "STEPS", "title": "variant: conveyor", "desc": "流水线传送带" }
+        ],
+        "cta": {
+          "kicker": "LAYOUT VARIANTS",
+          "title": "版式变体",
+          "repo": "\"variant\": \"split\"",
+          "buttons": ["蓝图", "仪表", "双轨"],
+          "stamp": "GO",
+          "stampSmall": "试一试"
+        }
+      }
+    }
+  ]
+}

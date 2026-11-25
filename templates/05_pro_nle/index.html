@@ -215,6 +215,7 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="components.js"></script>
+  <script src="themes.js"></script>
   <script>
     const vp = document.getElementById('viewport');
     function fit() {
@@ -268,6 +269,10 @@
       const root = document.documentElement.style;
       ['bg', 'cyan', 'jade', 'amber', 'crimson', 'violet'].forEach((k) => { if (theme[k]) root.setProperty(`--pn-${k}`, theme[k]); });
       ProNLE.injectCSS();
+      // 换肤：URL ?theme= ＞ 剧本 theme.preset ＞ premiere（premiere = 不覆盖，无参数访问与原版逐像素一致）
+      if (window.ProNLEThemes) ProNLEThemes.init(script);
+      const CV0 = { scopeGrid: 'rgba(255,255,255,0.06)', scope: ['rgba(0,229,195,0.55)', 'rgba(56,189,248,0.5)', 'rgba(255,184,77,0.4)'], waveA1: 'rgba(196,181,253,0.85)', waveA2: 'rgba(255,200,120,0.6)' };
+      const CV = () => (window.ProNLEThemes && ProNLEThemes.canvas()) || CV0;
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
@@ -390,8 +395,11 @@
         const g = cv.getContext('2d'); g.fillStyle = color;
         for (let x = 2; x < W - 2; x += 3) { const a = fn(x / W * DURATION) * (H / 2 - 3); g.fillRect(x, H / 2 - a, 2, a * 2); }
       }
-      drawWave(document.getElementById('tl-a1'), envAt, 'rgba(196,181,253,0.85)');
-      drawWave(document.getElementById('tl-a2'), (t) => 0.22 + 0.12 * Math.sin(t * 2.1) * Math.sin(t * 0.37) + 0.08 * hash(Math.floor(t * 30)), 'rgba(255,200,120,0.6)');
+      const drawWaves = () => {
+        drawWave(document.getElementById('tl-a1'), envAt, CV().waveA1);
+        drawWave(document.getElementById('tl-a2'), (t) => 0.22 + 0.12 * Math.sin(t * 2.1) * Math.sin(t * 0.37) + 0.08 * hash(Math.floor(t * 30)), CV().waveA2);
+      };
+      drawWaves();
       const playhead = document.getElementById('tl-playhead'), played = document.getElementById('tl-played');
 
       // ========== Inspector ==========
@@ -402,9 +410,9 @@
       const vuL = document.getElementById('vu-l'), vuR = document.getElementById('vu-r');
       function drawScope(t, ci) {
         const W = 520, H = 118; scope.clearRect(0, 0, W, H);
-        scope.strokeStyle = 'rgba(255,255,255,0.06)'; scope.lineWidth = 1;
+        scope.strokeStyle = CV().scopeGrid; scope.lineWidth = 1;
         for (let k = 1; k < 4; k++) { scope.beginPath(); scope.moveTo(0, H * k / 4 + 0.5); scope.lineTo(W, H * k / 4 + 0.5); scope.stroke(); }
-        const cols = ['rgba(0,229,195,0.55)', 'rgba(56,189,248,0.5)', 'rgba(255,184,77,0.4)'];
+        const cols = CV().scope;
         for (let x = 0; x < W; x += 4) {
           const base = 0.5 + 0.28 * Math.sin(x * 0.018 + ci * 1.7 + t * 0.6) + 0.1 * Math.sin(x * 0.07 - t * 1.3);
           for (let k = 0; k < 6; k++) {
@@ -515,6 +523,9 @@
         else if (e.key === 'h' || e.key === 'H') document.getElementById('hud').classList.toggle('hidden');
         else if (/^[0-9]$/.test(e.key)) { const k = e.key === '0' ? 9 : +e.key - 1; if (scenes[k]) jumpTo(k); }
       });
+
+      // 换肤后：重绘声波 + 刷新当前帧（示波器等画布），无刷新生效
+      window.addEventListener('pn:themechange', () => { drawWaves(); updateUI(cur); });
 
       window.__MH_ENGINE__ = { duration: DURATION, seek, scenes: scenes.map((s) => ({ type: s.type, start: s.start, dur: s.dur })) };
       if (params.get('clean') === '1') document.getElementById('hud').classList.add('hidden');

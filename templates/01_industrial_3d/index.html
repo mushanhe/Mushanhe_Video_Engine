@@ -116,6 +116,9 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="components.js"></script>
+  <!-- v2 扩展（均为可选增强，缺失时宿主自动回退原组件）：换肤必须在 gallery-bg.js 之后；变体必须在 components.js 之后 -->
+  <script src="themes.js"></script>
+  <script src="variants.js"></script>
   <script>
     const vp = document.getElementById('viewport');
     function fit() {
@@ -169,6 +172,8 @@
       const root = document.documentElement.style;
       ['pearl', 'steel', 'orange', 'teal', 'ink'].forEach((k) => { if (theme[k]) root.setProperty(`--id-${k}`, theme[k]); });
       Industrial3D.injectCSS();
+      // 换肤：URL ?theme= ＞ 剧本 theme.preset ＞ pearl（pearl = 不覆盖，默认无参数访问与原版完全一致）
+      if (window.Industrial3DThemes) Industrial3DThemes.init(script);
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
@@ -186,8 +191,19 @@
 
       // 组装场景（每个 world 段配一个后退的展位）
       const scenes = []; let acc = 0, zoneX = 0;
+      // 组件查找：variant 变体 ＞ 原 10 大句型
+      const VARIANTS = window.Industrial3DVariants || {};
+      const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k) ? o[k] : null;
+      function findFactory(sc) {
+        if (sc.variant) {
+          const v = own(VARIANTS, `${sc.type}:${sc.variant}`);
+          if (v) return v;
+          console.warn('unknown variant, fallback to base type', `${sc.type}:${sc.variant}`);
+        }
+        return own(Industrial3D.COMPONENTS, sc.type);
+      }
       (script.scenes || []).forEach((sc, i) => {
-        const factory = Industrial3D.COMPONENTS[sc.type];
+        const factory = findFactory(sc);
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
         const comp = factory.create(sc.data || {}, { dur });
