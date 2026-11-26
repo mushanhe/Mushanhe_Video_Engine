@@ -132,6 +132,7 @@
   <script src="../../core/avatar-morph-fx.js"></script>
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
+  <script src="../../core/script-sync.js"></script>
   <script src="components.js"></script>
   <script>
     const vp = document.getElementById('viewport');
@@ -152,6 +153,7 @@
     function buildWordData(scenes) {
       const words = [], lines = [];
       scenes.forEach((sc) => {
+        if (MHEngine.ScriptSync.pushWords(sc, words, lines)) return; // 真实词级时间轴优先，否则均分
         const subs = sc.sub || []; if (!subs.length) return;
         const a0 = sc.start + 0.35, a1 = sc.start + sc.dur - 0.3, slot = (a1 - a0) / subs.length;
         subs.forEach((line, li) => {
@@ -236,10 +238,11 @@
       const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
       const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
       const tl = gsap.timeline({ paused: true });
+      const AVSEG = MHEngine.ScriptSync.avatarSegments(scenes); // 无 avatarCues 时与 scenes 一一对应
       avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
-      scenes.forEach((s, i) => {
+      AVSEG.forEach((s, i) => {
         if (i === 0) return;
-        const prev = mapAv(scenes[i - 1].avatar);
+        const prev = mapAv(AVSEG[i - 1].avatar);
         const cur = mapAv(s.avatar);
         if (prev !== cur) {
           avatarMorph.addMorph({ time: s.start + 0.02, duration: 0.5, fromMode: prev, toMode: cur, count: 1000, seed: 101000 + i });
@@ -273,6 +276,7 @@
       const fmtTC = (t) => `T+${String(Math.floor(t / 60)).padStart(2, '0')}:${(t % 60).toFixed(2).padStart(5, '0')}`;
 
       function updateUI(t) {
+        MHEngine.ScriptSync.renderCues(script, t);
         tl.time(Math.min(t, DURATION));
         camRig.render(t);
         subtitle.render(t);
@@ -291,9 +295,10 @@
           s.tab.querySelector('.fl').style.width = `${(clamp01((t - s.start) / s.dur) * 100).toFixed(1)}%`;
         });
         const S = scenes[cur];
-        const isFull = S.avatar === 'full';
-        stageEl.classList.toggle('is-full', isFull && t >= S.start + 0.2);
-        const hideWorld = isFull && t >= S.start + 0.15 && t < S.start + S.dur;
+        const AS = MHEngine.ScriptSync.avatarAt(AVSEG, t, S);
+        const isFull = AS.avatar === 'full';
+        stageEl.classList.toggle('is-full', isFull && t >= AS.start + 0.2);
+        const hideWorld = isFull && t >= AS.start + 0.15 && t < AS.start + AS.dur;
 
         // 标志转场：画面纵向压扁成一条亮白光束（b-0.30→b）→ 光束横向收束（b→b+0.14）→ 绿色扫描线自上而下刷出新画面（b+0.08→b+0.56）
         let txOn = false, sq = 1, bright = 1, clip = 0, sweepY = -1;
@@ -331,20 +336,21 @@
       // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
       let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
       const vid = document.getElementById('avatar-video');
+      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid }); // meta.avatar.offset + meta.audio
       function seek(t) {
         cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
         scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });
-        if (vid) { try { vid.currentTime = cur; } catch (_) {} }
+        CLOCK.seek(cur);
         if (playing) { t0 = performance.now(); tStart = cur; }
       }
       function loop() {
         if (!playing) return;
-        const t = tStart + (performance.now() - t0) / 1000;
+        const t = CLOCK.now(tStart + (performance.now() - t0) / 1000); CLOCK.follow(t);
         if (t >= DURATION) { pause(); seek(DURATION); return; }
         cur = t; updateUI(t); raf = requestAnimationFrame(loop);
       }
-      function play() { if (cur >= DURATION - 0.05) cur = 0; playing = true; t0 = performance.now(); tStart = cur; if (vid) vid.play().catch(() => {}); scenes.forEach((s) => s.comp.media && s.comp.media.play && s.comp.media.play().catch(() => {})); document.getElementById('btn-play').textContent = '⏸ 暂停'; raf = requestAnimationFrame(loop); }
-      function pause() { playing = false; cancelAnimationFrame(raf); if (vid) vid.pause(); scenes.forEach((s) => s.comp.media && s.comp.media.pause && s.comp.media.pause()); document.getElementById('btn-play').textContent = '▶ 连播 10 大句型'; }
+      function play() { if (cur >= DURATION - 0.05) cur = 0; playing = true; t0 = performance.now(); tStart = cur; CLOCK.play(cur); scenes.forEach((s) => s.comp.media && s.comp.media.play && s.comp.media.play().catch(() => {})); document.getElementById('btn-play').textContent = '⏸ 暂停'; raf = requestAnimationFrame(loop); }
+      function pause() { playing = false; cancelAnimationFrame(raf); CLOCK.pause(); scenes.forEach((s) => s.comp.media && s.comp.media.pause && s.comp.media.pause()); document.getElementById('btn-play').textContent = '▶ 连播 10 大句型'; }
       function jumpTo(i) { seek(scenes[i].start + 0.65); }
 
       document.getElementById('btn-play').addEventListener('click', () => playing ? pause() : play());
@@ -357,7 +363,7 @@
         else if (/^[0-9]$/.test(e.key)) { const k = e.key === '0' ? 9 : +e.key - 1; if (scenes[k]) jumpTo(k); }
       });
 
-      window.__MH_ENGINE__ = { duration: DURATION, seek, scenes: scenes.map((s) => ({ type: s.type, start: s.start, dur: s.dur })) };
+      window.__MH_ENGINE__ = { duration: DURATION, seek, play, pause, time: () => cur, isPlaying: () => playing, scenes: scenes.map((s) => ({ type: s.type, start: s.start, dur: s.dur })) };
       if (params.get('clean') === '1') document.getElementById('hud').classList.add('hidden');
       seek(params.has('t') ? parseFloat(params.get('t')) : 0);
     }

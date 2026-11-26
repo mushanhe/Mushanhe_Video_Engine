@@ -17,7 +17,15 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 
-class QuietHandler(http.server.SimpleHTTPRequestHandler):
+try:  # 复用 serve.py 的 HTTP 206 Range 处理器：大体积抠像 WebM / 人声 WAV 在无头浏览器里也能任意 seek
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from serve import RangeHTTPRequestHandler as _BaseHandler
+except Exception:  # pragma: no cover
+    _BaseHandler = http.server.SimpleHTTPRequestHandler
+
+
+class QuietHandler(_BaseHandler):
     def log_message(self, format, *args):
         pass
 
@@ -95,6 +103,14 @@ def main():
             for idx, t in enumerate(times, start=1):
                 page.evaluate("(sec) => window.__MH_ENGINE__.seek(sec)", t)
                 time.sleep(0.45)
+                try:  # 等人像视频真正解码到目标帧（真人抠像素材 seek 较慢）；整期主控台走 __MH_ENGINE__.ready()
+                    page.wait_for_function(
+                        "() => { const E = window.__MH_ENGINE__; if (E && typeof E.ready === 'function') return E.ready(); const v = document.getElementById('avatar-video'); return !v || (!v.seeking && v.readyState >= 2); }",
+                        timeout=8000,
+                    )
+                    time.sleep(0.15)
+                except Exception:
+                    pass
                 out_path = out_dir / f"frame_{idx:02d}_{t:.1f}s.png"
                 page.screenshot(path=str(out_path))
                 print(f"CAPTURED {out_path}")

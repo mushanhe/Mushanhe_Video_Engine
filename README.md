@@ -8,7 +8,7 @@
 
 1 套 `core/` 通用内核 · 10 大万能口播句型 · 4 种动态人像粒子变形 · **01–06 各 4 色实时换肤（24 套）+ 07–12 六大新流派**
 
-`v3.0` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 自带 AI Agent Skill（`SKILL.md`）
+`v3.2` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 右上角 01–12 一键切风格 · 一键导出 1080p / 4K MP4 · 自带 AI Agent Skill（`SKILL.md`）
 
 | 01 · 3D 工业实体画廊 | 02 · 瑞士印刷拼贴 |
 |---|---|
@@ -57,6 +57,9 @@ Mushanhe Video Engine 把口播视频拆成两层：
 | 🧑 **4 种人像形态** | `card` 侧栏画框 · `pip` 圆形/方形画中画 · `corner` 角落小窗 · `full` 全屏出镜，形态切换自带粒子散聚转场 |
 | 🎨 **12 大旗舰流派（v3.0）** | 3D 工业实体画廊 · 瑞士印刷拼贴 · Vox 侦探桌面 · ComfyUI 3D 节点图 · Pro NLE 多轨剪辑台 · Neo-Brutalism 撞色潮刊 · **学院黑板 · 宋韵水墨 · 日系胶片 · 复古 CRT · Keynote 暗黑流光 · 华尔街金融终端** |
 | 🌗 **30 套开箱皮肤** | 01–06 每包内置 4 套深浅配色实时皮肤（24 套），展厅右上角胶囊一点即换、`?theme=` 或剧本 `theme.preset` 也能指定；07–12 各自 1 套独立流派美术（6 套） |
+| 🎛 **01–12 一键切风格（v3.2）** | 12 套展厅右上角都有「🎨 切换风格」胶囊：鼠标一点跳到任意流派，**自动携带当前 `?data=` 剧本**（路径自动换算）和当前播放时间；按 `H` 同步隐藏，抽帧 / 导出时不出现 |
+| 🎬 **一键导出 MP4（v3.2）** | `core/tools/export_mp4.py`：无头浏览器逐帧确定性截图 → FFmpeg 多进程分块编码，1080p / 4K（2 倍矢量渲染）、BT.709 色彩、人声 / 背景乐混流 |
+| 🎙 **真实词级时间轴（v3.2）** | 剧本可选 `sc.words` 词级时间戳（字幕按真实语速逐字点亮）、`sc.avatarCues` 段内切人像、`meta.audio` 人声音轨做主时钟、`meta.themeCues` 按时间换肤；不写这些字段时画面与旧版逐帧一致 |
 | 🤖 **AI Agent Skill** | 根目录 `SKILL.md`：Claude Code / Antigravity / Cursor 读完就会在 12 套里推荐最对味的风格、写剧本、抽帧验货、交付预览 |
 
 ### 10 大万能口播句型
@@ -129,7 +132,9 @@ python core/tools/serve.py
 #    http://127.0.0.1:8765/
 ```
 
-展厅快捷键：`空格` 播放 / 暂停 · `1`–`9` / `0` 跳到第 1–10 段 · `H` 隐藏控制栏。
+展厅快捷键：`空格` 播放 / 暂停 · `1`–`9` / `0` 跳到第 1–10 段 · `H` 隐藏控制栏（右上角切换器同步隐藏）。
+
+想换风格？点展厅右上角「🎨 切换风格 01–12」，在 12 套之间一键跳转；当前用 `?data=` 加载的剧本会自动带过去，例如在 `01_industrial_3d/index.html?data=my_script.json` 切到 02，会打开 `02_swiss_print/index.html?data=../01_industrial_3d/my_script.json`。
 
 > 剧本 JSON 通过 `fetch` 加载，请用上面的本地服务打开，直接双击 HTML 会提示加载失败。
 
@@ -170,7 +175,7 @@ http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=my_script.json
 
 ## 作为 AI Agent Skill 使用
 
-仓库根目录的 [`SKILL.md`](SKILL.md) 是一份标准 Agent Skill：12 大流派 + 30 套皮肤索引、10 大句型速查、剧本规范和 4 步出片流程都在里面。把仓库交给 AI 编程助手后，直接说人话就能出片。
+仓库根目录的 [`SKILL.md`](SKILL.md) 是一份标准 Agent Skill：12 大流派 + 30 套皮肤索引、10 大句型速查、剧本规范、5 步出片流程（含一键导出 MP4）和「自动检查更新」规则都在里面。把仓库交给 AI 编程助手后，直接说人话就能出片。
 
 **Claude Code**：把 `SKILL.md` 复制到 `~/.claude/skills/mushanhe-video-engine/SKILL.md`（全局）或仓库内 `.claude/skills/mushanhe-video-engine/SKILL.md`，之后说到做口播视频时会自动调用；临时用也可以在对话里说“先读根目录 SKILL.md”。
 
@@ -186,7 +191,7 @@ http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=my_script.json
 >
 > 这是一期讲宋词的读书视频，你挑一个最对味的风格。
 
-AI 会按 4 步走：① 确认或推荐风格与皮肤 → ② 把口播稿写成 `{ meta, theme, scenes }` 剧本 → ③ 跑 `inspect_frames.py` 抽帧，确认 `ZERO_ERRORS` 并逐张检查 → ④ 启动 `serve.py` 交付预览链接。同一份剧本随时可以换成其他 11 套风格，01–06 还能换另外 3 套皮肤。
+AI 会按 5 步走：① 确认或推荐风格与皮肤 → ② 把口播稿写成 `{ meta, theme, scenes }` 剧本 → ③ 跑 `inspect_frames.py` 抽帧，确认 `ZERO_ERRORS` 并逐张检查 → ④ 启动 `serve.py` 交付预览链接 → ⑤ 确认后用 `export_mp4.py` 导出成片。同一份剧本随时可以换成其他 11 套风格，01–06 还能换另外 3 套皮肤。
 
 ## 无头抽帧验货
 
@@ -204,6 +209,44 @@ python core/tools/inspect_frames.py --template 01_industrial_3d --data demo_vari
 
 输出 `ZERO_ERRORS` 表示页面无报错，截图在 `--out` 指定的目录。
 
+## 一键导出 MP4（1080p / 4K）
+
+依赖：`pip install playwright`（本机装了 Edge / Chrome 就直接用，否则再 `playwright install chromium`）+ PATH 里有 [FFmpeg](https://ffmpeg.org/download.html)。
+
+```bash
+# 单模板默认展厅（时长自动读取剧本总长）
+python core/tools/export_mp4.py --template 01_industrial_3d --theme obsidian --out output/demo_obsidian.mp4
+
+# 自己的剧本 + 人声音轨（剧本里写了 meta.audio 时可省略 --audio）
+python core/tools/export_mp4.py --template 05_pro_nle --data my_script.json --theme davinci --audio my_voice.wav --out output/my_ep.mp4
+
+# 4K：同一 1920×1080 版式按 2 倍设备像素矢量渲染成 3840×2160，零坐标偏移
+python core/tools/export_mp4.py --template 08_song_ink --data my_script.json --res 4k --out output/my_ep_4k.mp4
+```
+
+| 参数 | 说明 |
+|---|---|
+| `--template` / `--file` / `--url-path` / `--data` / `--theme` | 与 `inspect_frames.py` 相同的页面入口，自动带 `clean=1`（不出现控制栏和切换器） |
+| `--res 1080p\|4k` · `--fps 30` | 输出 1920×1080 或 3840×2160，H.264 High · yuv420p · BT.709 |
+| `--start` / `--duration` | 只导出一段（冒烟测试很好用）；不填时长则读页面 `__MH_ENGINE__.duration` |
+| `--workers 4` · `--crf` · `--preset` | 多进程分块并行；CRF 默认 1080p = 18、4K = 16 |
+| `--audio` · `--bgm` · `--bgm-vol 0.10` | 外部人声 / 母带精准混流（默认用剧本 `meta.audio`），可选循环背景乐；AAC 48 kHz 320 kbps |
+
+原理：每帧 `seek(t)` → 等人像视频解码就绪 → 等 2 帧 `requestAnimationFrame` 落帧 → PNG 截图直接管道喂给 FFmpeg（不落盘），最后无损拼接分块并混流音频。结尾输出 `ZERO_ERRORS` 表示全程无页面报错。
+
+## 获取后续新风格与更新
+
+新流派、新皮肤和工具都会持续更新到 `main`。在仓库根目录：
+
+```bash
+git fetch origin main && git status -sb      # 显示 behind N 就说明有新版本
+git log --oneline HEAD..origin/main          # 看看更新了什么
+git pull --ff-only                           # 一键快进更新（不会合并、不会覆盖你的本地文件）
+```
+
+你自己的剧本建议另存为新文件（如 `my_script.json`），更新时不会被覆盖；如果改过仓库里的原文件导致 pull 提示冲突，先 `git stash` 再更新。
+用 AI 编程助手时，直接说「检查一下模板有没有更新」——`SKILL.md` 里写好了检查 → 提示 → 确认后 `git pull --ff-only` 的流程。
+
 ## 目录结构
 
 ```text
@@ -217,10 +260,11 @@ Mushanhe_Video_Engine/
 │   ├── avatar-morph-fx.js     # 点阵粒子散聚转场
 │   ├── subtitle.js            # 词级逐字高亮字幕
 │   ├── timeline.js            # 词级时间轴
+│   ├── script-sync.js         # 真实词级字幕 / 人声主时钟 / 按时换肤 · 右上角 01–12 风格切换器
 │   ├── engine.css             # 1920×1080 画幅、图层、HUD
 │   ├── …                      # 3D 模块、画廊背景、前景特效、活体光标、拟音等扩展模块
 │   ├── vendor/                # 第三方库：GSAP、CustomEase、three.js
-│   └── tools/                 # serve.py 预览服务 · inspect_frames.py 抽帧验货
+│   └── tools/                 # serve.py 预览服务 · inspect_frames.py 抽帧验货 · export_mp4.py 一键导出 MP4
 └── templates/
     ├── 01_industrial_3d/      # 旗舰包 #1 · 3D 工业实体画廊
     ├── 02_swiss_print/        # 旗舰包 #2 · 瑞士印刷拼贴
@@ -260,9 +304,10 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 - [x] **v2.5**：6 套风格包各内置 4 套实时皮肤（共 24 套）+ 01 工业 3D 的 4 个 `variant` 版式变体 + 统一 `SKILL.md` Agent Skill
 - [x] **v3.0**：12 大旗舰流派（新增学院黑板 / 宋韵水墨 / 日系胶片 / 复古 CRT / Keynote 暗黑流光 / 华尔街金融终端）+ 30 套开箱皮肤 + 12 张 2×2 预览拼图 + `SKILL.md` 12 套平权索引
 - [x] **v3.1**：`inspect_frames.py` 支持 `--data` / `--theme`，一行命令验任意皮肤与自定义剧本；`SKILL.md` 精简，轻量 Agent 也能直接调用
+- [x] **v3.2**：`export_mp4.py` 一键导出 1080p / 4K MP4（多进程分块 + BT.709 + 音频混流）· 12 套展厅右上角 01–12 风格切换器（自动携带 `?data=` 剧本）· `script-sync.js` 真实词级字幕 / 人声主时钟 / 按时换肤 · `SKILL.md` 新增导出与自动检查更新
 - [ ] **07–12 实时皮肤**：六大新流派各补 4 套 `themes.js` 实时皮肤
 - [ ] **更多变体与垂类组件**：其余风格包的 `variant` 布局变体 + 垂类组件（财经 / 编程 / 读书）
-- [ ] `export_mp4.py`：无头浏览器一键导出 MP4，自带人声响度与 BGM 闪避
+- [ ] BGM 自动闪避（人声段自动压低背景乐）
 - [ ] 剧本可视化编辑器
 
 👉 欢迎到 [Issues](https://github.com/mushanhe/Mushanhe_Video_Engine/issues) 提出你想要的新风格或新句型！

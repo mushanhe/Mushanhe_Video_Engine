@@ -3,10 +3,10 @@ name: mushanhe-video-engine
 description: 把口播文案或口播视频转成确定性、JSON 驱动的电影级口播视频。12 大电影级流派 × 30 套开箱皮肤，同一份 { meta, theme, scenes } 剧本随时换风格、换皮肤，并能按文案情绪在 12 套里自动推荐。用户说“做一条口播视频 / 把这段稿子做成视频 / 换个风格或配色 / 出片”时使用。
 ---
 
-# Mushanhe Video Engine · v3.1
+# Mushanhe Video Engine · v3.2
 
 纯 HTML/CSS/JS，零构建。`core/` 是共享内核（摄影机、字幕、人像、转场），`templates/01_*` ~ `templates/12_*` 是 12 套风格包。
-画面按时间确定性渲染：`?t=37.4` 一定是第 37.4 秒，可逐帧验货、可无头录制。
+画面按时间确定性渲染：`?t=37.4` 一定是第 37.4 秒，可逐帧验货、可一键导出 1080p / 4K MP4。
 
 ## 1. 12 大流派总索引（平权，按文案情绪主动推荐；01–06 各 4 套皮肤 + 07–12 各 1 套 = 30 套）
 
@@ -37,6 +37,8 @@ description: 把口播文案或口播视频转成确定性、JSON 驱动的电�
 - **推荐口诀**：先看题材匹配「适合题材」列，再看情绪：明亮理性 01/02/09 · 暗夜科技 04/05/10/11/12 · 叙事调查 03 · 年轻冲击 06 · 课堂 07 · 国风 08。
 
 皮肤优先级（01–06）：URL `?theme=` ＞ 剧本 `theme.preset` ＞ 默认皮肤。展厅右上角有换肤胶囊，点击无刷新切换并同步 URL；`H` 隐藏控制栏时一起隐藏。
+12 套预览页右上角都有「🎨 切换风格 01–12」一键切换器：自动带上当前 `?data=` 剧本（路径自动换算）和当前播放时间，不带 `?theme=`；
+`H` 隐藏控制栏时同步隐藏，`?clean=1`（抽帧 / 导出）与 iframe 嵌入时不出现。
 01 另有 4 个版式变体（场景里写 `"variant"`）：`cover:blueprint` · `stat:gauge` · `steps:conveyor` · `compare:split`，示例见 `templates/01_industrial_3d/demo_variants.json`。
 
 ## 2. 10 大万能口播句型（全部 12 套风格包通用）
@@ -71,9 +73,9 @@ description: 把口播文案或口播视频转成确定性、JSON 驱动的电�
 
 - `sub[]` 是这一段的字幕行（自动逐字高亮）；`**关键词**` 在标题里标高亮色；`dur` 单位秒。
 - 每种句型的完整 `data` 字段，照抄目标风格包 `demo_data.json` 里对应段落，不要自创字段。
-- 剧本放在风格包目录下，用 `?data=my_script.json` 加载；不同风格包字段一致，换风格只换目录。
+- 剧本放在风格包目录下，用 `?data=my_script.json` 加载；不同风格包字段一致，换风格只换目录（或点右上角切换器）。
 
-## 4. 标准 4 步工作流
+## 4. 标准 5 步工作流
 
 1. **定风格与皮肤**：问用户想要哪套；没指定就在全部 12 套里按第 1 节「适合题材 + 情绪」推荐 1 个风格（01–06 再配 1 套皮肤），并给出 1 个备选。
 2. **写 JSON 剧本**：按第 3 节把口播稿拆成 6–10 段，每段选最合适的句型和人像形态，字幕 `sub[]` 保留原话。
@@ -92,8 +94,22 @@ description: 把口播文案或口播视频转成确定性、JSON 驱动的电�
    给用户链接 `http://127.0.0.1:8765/templates/<风格包>/index.html?data=my_script.json&theme=<皮肤>`，
    并说明：同一份剧本可随时换成其他 11 套风格（换目录），01–06 还能换同风格的另外 3 套皮肤（换 `?theme=`）。
    在线版（仅 demo）：https://mushanhe.github.io/Mushanhe_Video_Engine/
+5. **一键导出 MP4**（用户确认画面后；依赖 `pip install playwright` + `playwright install chromium`（本机有 Edge / Chrome 可省）+ PATH 里有 `ffmpeg`）：
+   ```bash
+   python core/tools/export_mp4.py --template 05_pro_nle --data my_script.json --theme davinci --res 1080p --out output/my_ep.mp4
+   python core/tools/export_mp4.py --template 05_pro_nle --data my_script.json --res 4k --audio voice.wav --out output/my_ep_4k.mp4
+   ```
+   时长缺省读剧本总长；`--audio` 外部人声 / 母带（缺省自动用剧本 `meta.audio`），`--bgm bgm.mp3 --bgm-vol 0.1` 可选循环背景乐；
+   `--start` / `--duration` 只导一段做冒烟，`--workers` 并行分块。输出必须以 `ZERO_ERRORS` 结尾；成片放 `output/`，不提交。
 
-## 5. 铁律
+## 5. 自动检查与一键更新新版模板
+
+用户要更新模板 / 工具、或开启新项目时，先在仓库根目录执行 `git fetch origin main && git status -sb`：
+- 显示 `behind N`：告诉用户上游有新版本，可用 `git log --oneline HEAD..origin/main` 列出新增的风格包 / 工具，问用户是否更新；
+- 用户同意后执行 `git pull --ff-only`（只快进，不合并、不覆盖本地）。用户自建剧本放在新文件里（如 `my_script.json`），不会被覆盖；
+  若 pull 报本地改动冲突，先 `git stash` 并告知用户，切勿 `reset --hard`。
+
+## 6. 铁律
 
 - 剧本 JSON 用 `fetch` 加载，必须通过 `serve.py` 打开，不能双击 HTML。
 - 不改 `core/`；新需求优先写进剧本或风格包自己的 `themes.js` / 组件。
