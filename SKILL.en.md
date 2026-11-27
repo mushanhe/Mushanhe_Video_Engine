@@ -2,7 +2,7 @@
 >
 > This is the English reference copy of [`SKILL.md`](SKILL.md). It deliberately has no YAML frontmatter, so only `SKILL.md` registers as the `mushanhe-video-engine` Skill (no duplicate-name conflict). To use it as the Skill in an English setup, copy it to `SKILL.md` and paste the frontmatter block from `SKILL.md` on top.
 
-# Mushanhe Video Engine · v3.2.2
+# Mushanhe Video Engine · v3.3
 
 Plain HTML/CSS/JS, zero build step. `core/` is the shared kernel (camera, subtitles, avatar, transitions); `templates/01_*` ~ `templates/12_*` are the 12 style packs.
 Rendering is deterministic in time: `?t=37.4` is always second 37.4, so every frame can be inspected and the result exported to 1080p / 4K MP4 in one command.
@@ -14,7 +14,7 @@ Rendering is deterministic in time: `?t=37.4` is always second 37.4, so every fr
    - It goes online at most once a day (last check time stored in the local `.mh_update_pref`, ignored by `.gitignore`); `git fetch` runs with a 5-second timeout and `GIT_TERMINAL_PROMPT=0`, and a timeout / failure is also just `STATUS SKIP`.
    - Speak up only on `STATUS BEHIND N`: relay the update summary the script prints and **ask the user whether to update**; after they confirm, run `git pull --ff-only`.
      If it fails because of local changes, only tell the user to run `git stash` manually and retry — **never** `git reset`. There is no automatic update.
-2. **Environment self-check**: `python --version` and `ffmpeg -version` (ffmpeg is only needed for MP4 export);
+2. **Environment self-check**: `python --version` and `ffmpeg -version` (ffmpeg is only needed for MP4 export and `align.py`); when real voice-over needs aligning, also check `python -c "import faster_whisper"`;
    then run `python core/tools/smoke_test.py --packs 01_industrial_3d --times 3 --out scratch_verify/selfcheck`, which really launches a headless browser — `SMOKE PASS` means the Playwright engine is ready (if no browser is found: `pip install playwright` + `playwright install chromium`).
 
 ## 1. The 12 styles (equal rank; recommend by the script's mood — 01–06 have 4 skins each + 07–12 one each = 30 skins)
@@ -112,6 +112,18 @@ Since v3.2.2 packs 03 / 11 / 12 live in `03_investigative_desk` / `11_stage_glas
 1. **Pick style and skin**: ask the user which pack they want; if unspecified, recommend 1 style from all 12 using "Good for + mood" in section 1 (plus 1 skin for 01–06), and offer 1 alternative.
 2. **Write the JSON script**: following section 3, split the voice-over into 6–10 scenes, pick the best scene type and avatar mode for each, and keep the original wording in `sub[]`.
    One scene, one idea; keep on-screen text short — never cram in paragraphs of small text.
+   **When the user provides a real voice recording / video**, write the draft first, then let `align.py` fill in the real speech (each scene's `start` / `dur` / `words` / `sub` + `meta.audio`):
+   ```bash
+   python core/tools/align.py --input voice.wav --script script.txt --inject templates/06_neobrutalism/draft.json --out templates/06_neobrutalism/final.json
+   python core/tools/align.py --input voice.wav --script script.txt --out aligned.json      # word timings only: duration / audio / words / sub / corrections
+   ```
+   - Requirements: `pip install faster-whisper` (no PyTorch needed) + ffmpeg; optional `pip install pypinyin` (homophone fixes) and `opencc-python-reimplemented` or `zhconv` (Traditional→Simplified; a built-in table is used otherwise).
+     `--refine` adds optional stable-ts forced alignment via `pip install stable-ts`, which **pulls in PyTorch**; skipped automatically if missing. Video input also exports a 48 kHz stereo WAV for `meta.audio`.
+   - **Hard rule**: run it on the exact `meta.audio` track used for playback / export; after cutting pauses, changing speed or re-splicing, run it again or the whole timeline will drift.
+   - Draft text per scene comes from `sub` (then `text`, then `script`; none = no voice-over, duration kept and placed in sequence); unmatched scenes print a warning with scene number + text — fix them before moving on.
+   - `--script` only makes conservative fixes: one-for-one homophones, number spelling, English case / spelling; extra, skipped or rephrased words always follow what was actually said, and every change is listed in `corrections`.
+   - Measured (i5-14600KF, CPU int8, medium model 1.53 GB): a 3 min 04 s voice-over transcribes in about 85 s (~0.45× real time); against EP03's shipped subtitles: 99.4% text match,
+     per-character start error median 20 ms / P95 140 ms; `--refine` adds ~40 s and brings the median to 17 ms. `--model large-v3-turbo` is about 2× faster but its start-error median is 120 ms — not recommended for word highlighting.
 3. **Headless frame inspection** (mandatory):
    ```bash
    python core/tools/inspect_frames.py --template 05_pro_nle --data my_script.json --theme color_grade --times 3,9.5,17,25 --out scratch_verify/my_ep

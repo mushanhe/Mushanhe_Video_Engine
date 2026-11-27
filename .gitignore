@@ -1,6 +1,6 @@
 # ============================================================
-# Mushanhe Video Engine v3.2.2 — 开源仓库忽略规则
-# 开源范围：core/（含 tools/serve.py · inspect_frames.py · smoke_test.py · export_mp4.py · check_update.py）
+# Mushanhe Video Engine v3.3 — 开源仓库忽略规则
+# 开源范围：core/（含 tools/serve.py · inspect_frames.py · smoke_test.py · align.py · export_mp4.py · check_update.py）
 #           templates/01_industrial_3d/ ~ templates/12_fin_terminal/（12 套旗舰包）
 #           docs/ · index.html · README.md · README.en.md · SKILL.md · SKILL.en.md · LICENSE · .gitignore
 # 一律不入库：个人节目 episodes/、私有模板、音视频、渲染输出、验货截图、本地协作文档、本地更新检查记录

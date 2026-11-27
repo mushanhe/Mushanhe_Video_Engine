@@ -5,7 +5,7 @@ description: mushanhe 视频动效 Skill（Mushanhe Video Engine）——把口�
 
 > 🌐 **简体中文** | [English](SKILL.en.md)
 
-# Mushanhe Video Engine · v3.2.2
+# Mushanhe Video Engine · v3.3
 
 纯 HTML/CSS/JS，零构建。`core/` 是共享内核（摄影机、字幕、人像、转场），`templates/01_*` ~ `templates/12_*` 是 12 套风格包。
 画面按时间确定性渲染：`?t=37.4` 一定是第 37.4 秒，可逐帧验货、可一键导出 1080p / 4K MP4。
@@ -17,7 +17,7 @@ description: mushanhe 视频动效 Skill（Mushanhe Video Engine）——把口�
    - 一天最多真正联网一次（上次检查时间记在本地 `.mh_update_pref`，已被 `.gitignore` 忽略）；`git fetch` 带 5 秒超时和 `GIT_TERMINAL_PROMPT=0`，超时 / 失败也只输出 `STATUS SKIP`。
    - 只有输出 `STATUS BEHIND N` 时才开口：把脚本列出的更新摘要告诉用户，**问用户是否更新**；用户确认后执行 `git pull --ff-only`。
      若因本地改动导致失败，只提示用户手动 `git stash` 后再试，**严禁** `git reset`。不设自动更新。
-2. **环境自检**：`python --version` 与 `ffmpeg -version`（ffmpeg 只有导出 MP4 才需要）；
+2. **环境自检**：`python --version` 与 `ffmpeg -version`（ffmpeg 导出 MP4 和 `align.py` 才需要）；有真人口播要对齐时再查 `python -c "import faster_whisper"`；
    再跑 `python core/tools/smoke_test.py --packs 01_industrial_3d --times 3 --out scratch_verify/selfcheck`，真正启动一次无头浏览器，输出 `SMOKE PASS` 即 Playwright 内核就绪（报找不到浏览器时：`pip install playwright` + `playwright install chromium`）。
 
 ## 1. 12 大流派总索引（平权，按文案情绪主动推荐；01–06 各 4 套皮肤 + 07–12 各 1 套 = 30 套）
@@ -115,6 +115,18 @@ v3.2.2 起 03 / 11 / 12 目录改名为 `03_investigative_desk` / `11_stage_glas
 1. **定风格与皮肤**：问用户想要哪套；没指定就在全部 12 套里按第 1 节「适合题材 + 情绪」推荐 1 个风格（01–06 再配 1 套皮肤），并给出 1 个备选。
 2. **写 JSON 剧本**：按第 3 节把口播稿拆成 6–10 段，每段选最合适的句型和人像形态，字幕 `sub[]` 保留原话。
    一段只讲一件事，屏幕文字要短，严禁塞大段小字。
+   **用户给了真人录音 / 录像时**，草稿写好后用 `align.py` 把真实口播回填进去（每段 `start` / `dur` / `words` / `sub` + `meta.audio`）：
+   ```bash
+   python core/tools/align.py --input voice.wav --script script.txt --inject templates/06_neobrutalism/draft.json --out templates/06_neobrutalism/final.json
+   python core/tools/align.py --input voice.wav --script script.txt --out aligned.json      # 只要逐字时间：duration / audio / words / sub / corrections
+   ```
+   - 依赖：`pip install faster-whisper`（不需要 PyTorch）+ ffmpeg；可选 `pip install pypinyin`（同音错字修正）、`opencc-python-reimplemented` 或 `zhconv`（繁转简，没装用内置表）。
+     `--refine` 可选 stable-ts 强制对齐，需 `pip install stable-ts`，**会连带装 PyTorch**；没装自动跳过。视频输入会另存 48 kHz 立体声 WAV 当 `meta.audio`。
+   - **硬约束**：必须在最终播放 / 导出用的那条 `meta.audio` 音轨上跑；剪停顿、变速、重拼后要重跑，否则全片时间错位。
+   - 草稿每段文字取 `sub`（没有再取 `text`、`script`；都没有 = 无口播段，保持原时长顺延）；对不上的段会打印「段号 + 原文」警告，要处理掉再往下走。
+   - `--script` 只做保守纠错：一字对一字的同音错字、数字写法、英文大小写 / 拼写；多念、少念、改口一律以实际念的为准，全部记在 `corrections`。
+   - 实测（i5-14600KF，CPU int8，medium 模型 1.53 GB）：3 分 04 秒口播识别约 85 秒（约 0.45× 实时），对 EP03 上线字幕文字一致 99.4%、
+     每字起点误差中位 20 ms / P95 140 ms；`--refine` 多约 40 秒，中位降到 17 ms。`--model large-v3-turbo` 快约一倍但起点误差中位 120 ms，不推荐用于逐字高亮。
 3. **无头抽帧验货**（必做）：
    ```bash
    python core/tools/inspect_frames.py --template 05_pro_nle --data my_script.json --theme color_grade --times 3,9.5,17,25 --out scratch_verify/my_ep

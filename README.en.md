@@ -10,7 +10,7 @@
 
 1 shared `core/` kernel · 10 universal talking-head scene types · 4 animated avatar modes with particle morphs · **4 live skins each for 01–06 (24) + 6 new styles 07–12**
 
-`v3.2.2` · plain HTML / CSS / JS · zero build · seek to any moment and get the exact frame · one-click 01–12 style switcher (top-right) · one-click 1080p / 4K MP4 export · bilingual AI Agent Skill included (`SKILL.md` / `SKILL.en.md`)
+`v3.3` · plain HTML / CSS / JS · zero build · seek to any moment and get the exact frame · one-click 01–12 style switcher (top-right) · one-click 1080p / 4K MP4 export · bilingual AI Agent Skill included (`SKILL.md` / `SKILL.en.md`)
 
 | 01 · 3D Industrial Gallery | 02 · Swiss Print Collage |
 |---|---|
@@ -62,6 +62,7 @@ Every frame is rendered deterministically in time: scrub to second 37.4 and you 
 | 🎛 **One-click 01–12 style switching (v3.2)** | Every preview page has a "🎨 Switch style" capsule in the top-right: jump to any style with one click, **carrying the current `?data=` script** (path auto-rebased) and the current playback time; hides with `H`, never appears during frame inspection / export |
 | 🎬 **One-click MP4 export (v3.2)** | `core/tools/export_mp4.py`: deterministic per-frame headless screenshots → multi-process chunked FFmpeg encoding, 1080p / 4K (2× vector rendering), BT.709 color, voice / BGM mixing |
 | 🎙 **Real word-level timeline (v3.2)** | Optional script fields: `sc.words` word timestamps (subtitles light up at real speaking pace), `sc.avatarCues` avatar changes within a scene, `meta.audio` voice track as master clock, `meta.themeCues` timed skin changes; without these fields output is frame-identical to earlier versions |
+| 🗣 **One-command voice-over alignment (v3.3)** | `core/tools/align.py`: recording / video → same-source per-character `words` + subtitle `sub`, or fill each draft scene's timing and `meta.audio` directly; local faster-whisper, no PyTorch needed |
 | 🤖 **AI Agent Skill** | Root `SKILL.md` (Chinese) / `SKILL.en.md` (English): after reading it, Claude Code / Antigravity / Cursor can recommend the best-fitting of the 12 styles, write the script, inspect frames and deliver a preview |
 
 ### 10 universal scene types
@@ -191,6 +192,40 @@ All times are **absolute seconds on the whole-video timeline** (counted from the
 
 For the full fields of every scene type, look at `demo_data.json` in any style pack — all 10 scenes have examples.
 
+## One-command voice-over alignment (v3.3)
+
+With a real recording or video you no longer write `sc.words` by hand: `core/tools/align.py` transcribes the real speech with faster-whisper and produces **same-source** per-character `words` and subtitle lines `sub` (absolute seconds), using exactly the same line-splitting rules as `script-sync.js`.
+
+```bash
+pip install faster-whisper            # required (no PyTorch needed), plus ffmpeg on PATH
+pip install pypinyin                  # optional: homophone fixes together with --script
+pip install opencc-python-reimplemented   # optional (or zhconv): Traditional→Simplified; a built-in table is used otherwise
+
+# Mode A: word timings only → aligned.json (duration / audio / words / sub / corrections)
+python core/tools/align.py --input voice.wav --script script.txt --out aligned.json
+
+# Mode B: fill the real speech into a draft script (each scene's start / dur / words / sub + meta.audio), ready to render and export
+python core/tools/align.py --input voice.wav --script script.txt --inject templates/06_neobrutalism/draft.json --out templates/06_neobrutalism/final.json
+```
+
+- **Input**: `.wav` `.mp3` `.m4a` `.mp4` `.mkv` `.mov`. Video input also exports a 48 kHz stereo WAV for `meta.audio` (or set `--extract-audio`).
+- **Model**: `--model medium` by default; set the cache with `--model-dir` or `HF_HOME`, `--offline` uses local models only. CUDA → float16 automatically, otherwise (or when cuBLAS / cuDNN are missing) it falls back to CPU int8.
+- **Script `--script`**: the prompt carries one short sentence plus the script's proper nouns (Claude, WorkBuddy, JSON, Skill…), never the whole text; fixes are conservative — only one-for-one homophones, number spelling (十二→12) and English case / spelling. Extra, skipped or rephrased words always follow what was actually said; every change is listed in `corrections`.
+- **Mode B rules**: each scene's draft text comes from `sub` (then `text`, then `script`); scenes butt against each other with no gaps; scenes without voice-over (outro, visual-only) keep their duration and follow in sequence; unmatched scenes print a warning with scene number + text. `meta.audio` is written relative to the template page folder (use `--page-dir` if the script lives elsewhere).
+- **`--refine` (optional)**: adds stable-ts forced alignment on the final text; needs `pip install stable-ts`, which **pulls in PyTorch (~0.5–2 GB)**; skipped with a hint when not installed.
+
+> ⚠️ **Hard rule**: run align.py on the exact `meta.audio` track used for playback and export. After cutting pauses, changing speed or re-splicing, run it again — otherwise the whole timeline drifts.
+
+**Measured on this machine** (Intel i5-14600KF · CPU int8 · no GPU acceleration):
+
+| Model | Size | 11.8 s voice-over | 3 min 04 s voice-over | Text match¹ | Start error median / P95¹ |
+|---|---|---|---|---|---|
+| `medium` (default) | 1.53 GB | 7–10 s | ~85 s (0.45× real time) | 99.4% | 20 ms / 140 ms |
+| `medium` + `--refine` | same + PyTorch | ~16 s total | ~122 s total | 99.4% | 17 ms / 130 ms |
+| `large-v3-turbo` | ~1.6 GB | ~5 s | ~44 s (0.24× real time) | 99.1% | 120 ms / 350 ms |
+
+¹ Reference = EP03's shipped per-character timings (the 3 min 04 s part); all 12 `--script` fixes were correct. turbo is 2× faster but its word timings run noticeably late, so it is not suited to word highlighting — medium stays the default. First (cold) model load is ~50 s, later ~4 s.
+
 ## Use it as an AI Agent Skill
 
 [`SKILL.md`](SKILL.md) (Chinese) and [`SKILL.en.md`](SKILL.en.md) (English) in the repo root are a standard Agent Skill: the 12-style + 30-skin index, a 10-scene-type cheat sheet, the script schema, the 5-step production workflow (including one-click MP4 export) and the "update check before you start (asks you before updating)" step are all inside. Hand the repo to an AI coding assistant and just describe what you want in plain language.
@@ -285,7 +320,7 @@ Mushanhe_Video_Engine/
 │   ├── engine.css             # 1920×1080 canvas, layers, HUD
 │   ├── …                      # 3D modules, gallery backgrounds, foreground FX, live cursors, foley and other extensions
 │   ├── vendor/                # Third-party libraries: GSAP, CustomEase, three.js
-│   └── tools/                 # serve.py preview server · inspect_frames.py frame inspection · smoke_test.py 12-pack smoke regression · export_mp4.py MP4 export · check_update.py update check
+│   └── tools/                 # serve.py preview server · inspect_frames.py frame inspection · smoke_test.py 12-pack smoke regression · align.py voice-over alignment · export_mp4.py MP4 export · check_update.py update check
 └── templates/
     ├── 01_industrial_3d/      # Flagship #1 · 3D Industrial Gallery
     ├── 02_swiss_print/        # Flagship #2 · Swiss Print Collage
@@ -330,6 +365,7 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 - [x] **v3.2.2**: trademark-free naming (packs 03 / 11 / 12 and the 05 skins renamed, old skin names still accepted) · `smoke_test.py` 12-pack smoke test + pixel baseline regression · subtitle lines aligned to `sub[]` character by character (extra / skipped / rephrased words) + out-of-range warnings for relative seconds · `SKILL` pre-flight update check (asks first) and environment self-check
 - [ ] **Live skins for 07–12**: 4 `themes.js` live skins for each of the six new styles
 - [ ] **More variants and vertical components**: `variant` layouts for the other packs + vertical components (finance / programming / reading)
+- [x] **v3.3**: `align.py` voice-over alignment (faster-whisper; mode A standalone output / mode B fills the script; same-source words + sub; conservative script fixes; optional `--refine` stable-ts forced alignment)
 - [ ] Automatic BGM ducking (lower background music under speech)
 - [ ] Visual script editor
 

@@ -10,7 +10,7 @@
 
 1 套 `core/` 通用内核 · 10 大万能口播句型 · 4 种动态人像粒子变形 · **01–06 各 4 色实时换肤（24 套）+ 07–12 六大新流派**
 
-`v3.2.2` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 右上角 01–12 一键切风格 · 一键导出 1080p / 4K MP4 · 自带中英双语 AI Agent Skill（`SKILL.md` / `SKILL.en.md`）
+`v3.3` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 右上角 01–12 一键切风格 · 一键导出 1080p / 4K MP4 · 自带中英双语 AI Agent Skill（`SKILL.md` / `SKILL.en.md`）
 
 | 01 · 3D 工业实体画廊 | 02 · 瑞士印刷拼贴 |
 |---|---|
@@ -62,6 +62,7 @@ Mushanhe Video Engine 把口播视频拆成两层：
 | 🎛 **01–12 一键切风格（v3.2）** | 12 套展厅右上角都有「🎨 切换风格」胶囊：鼠标一点跳到任意流派，**自动携带当前 `?data=` 剧本**（路径自动换算）和当前播放时间；按 `H` 同步隐藏，抽帧 / 导出时不出现 |
 | 🎬 **一键导出 MP4（v3.2）** | `core/tools/export_mp4.py`：无头浏览器逐帧确定性截图 → FFmpeg 多进程分块编码，1080p / 4K（2 倍矢量渲染）、BT.709 色彩、人声 / 背景乐混流 |
 | 🎙 **真实词级时间轴（v3.2）** | 剧本可选 `sc.words` 词级时间戳（字幕按真实语速逐字点亮）、`sc.avatarCues` 段内切人像、`meta.audio` 人声音轨做主时钟、`meta.themeCues` 按时间换肤；不写这些字段时画面与旧版逐帧一致 |
+| 🗣 **口播一键对齐（v3.3）** | `core/tools/align.py`：录音 / 录像 → 同源逐字 `words` + 字幕 `sub`，或直接回填草稿剧本的每段时长与 `meta.audio`；faster-whisper 本地识别，不需要 PyTorch |
 | 🤖 **AI Agent Skill** | 根目录 `SKILL.md`（English：`SKILL.en.md`）：Claude Code / Antigravity / Cursor 读完就会在 12 套里推荐最对味的风格、写剧本、抽帧验货、交付预览 |
 
 ### 10 大万能口播句型
@@ -191,6 +192,40 @@ http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=my_script.json
 
 每种句型的完整字段，直接看任意风格包里的 `demo_data.json`，10 段全部都有示例。
 
+## 真人口播一键对齐（v3.3）
+
+有录音或录像时，不用手写 `sc.words`：`core/tools/align.py` 用 faster-whisper 听写真实口播，产出**同源**的逐字时间 `words` 和字幕行 `sub`（全片绝对秒），字幕切行规则与 `script-sync.js` 完全一致。
+
+```bash
+pip install faster-whisper            # 必需（不依赖 PyTorch），另需 PATH 里有 ffmpeg
+pip install pypinyin                  # 可选：配合 --script 修正同音错字
+pip install opencc-python-reimplemented   # 可选（或 zhconv）：繁转简；没装用内置高频表兜底
+
+# 模式 A：只要逐字时间 → aligned.json（duration / audio / words / sub / corrections）
+python core/tools/align.py --input voice.wav --script script.txt --out aligned.json
+
+# 模式 B：把真实口播回填进草稿剧本（每段 start / dur / words / sub + meta.audio），直接能渲染、能导出
+python core/tools/align.py --input voice.wav --script script.txt --inject templates/06_neobrutalism/draft.json --out templates/06_neobrutalism/final.json
+```
+
+- **输入**：`.wav` `.mp3` `.m4a` `.mp4` `.mkv` `.mov`。视频输入会另存一份 48 kHz 立体声 WAV 作为 `meta.audio`（也可 `--extract-audio` 指定路径）。
+- **模型**：默认 `--model medium`；`--model-dir` 或 `HF_HOME` 指定缓存位置，`--offline` 只用本地模型。有 CUDA 自动用 float16，否则（或缺 cuBLAS / cuDNN）自动退回 CPU int8。
+- **文稿 `--script`**：提示词只放一句说明 + 文稿里的专有名词（Claude、WorkBuddy、JSON、Skill…），不塞全文；纠错很保守——只改一字对一字的同音错字、数字写法（十二→12）、英文大小写 / 拼写，多念、少念、改口一律以实际念的为准，每处都记进 `corrections`。
+- **模式 B 规则**：每段草稿文字取 `sub`（没有再取 `text`、`script`）；段与段首尾衔接无空隙；没有口播的段（片尾、纯画面）保持原时长顺延；对不上的段打印「段号 + 原文」警告。`meta.audio` 按模板页面目录写相对路径（剧本不在风格包目录时用 `--page-dir` 指定）。
+- **`--refine`（可选）**：再用 stable-ts 按最终文字强制对齐，需 `pip install stable-ts`，**会连带安装 PyTorch（约 0.5–2 GB）**；没装就自动跳过并提示。
+
+> ⚠️ **硬约束**：align.py 必须跑在最终用于播放和导出的那条 `meta.audio` 音轨上。后期剪掉停顿、变速或重新拼接后，必须重新跑一次，否则全片时间会整体错位。
+
+**本机实测**（Intel i5-14600KF · CPU int8 · 无 GPU 加速）：
+
+| 模型 | 体积 | 11.8 秒口播 | 3 分 04 秒口播 | 文字一致率¹ | 每字起点误差 中位 / P95¹ |
+|---|---|---|---|---|---|
+| `medium`（默认） | 1.53 GB | 识别 7–10 s | 识别约 85 s（0.45× 实时） | 99.4% | 20 ms / 140 ms |
+| `medium` + `--refine` | 同上 + PyTorch | 全程约 16 s | 全程约 122 s | 99.4% | 17 ms / 130 ms |
+| `large-v3-turbo` | 约 1.6 GB | 识别约 5 s | 识别约 44 s（0.24× 实时） | 99.1% | 120 ms / 350 ms |
+
+¹ 以 EP03 正式上线的逐字时间为标准答案（3 分 04 秒那段）；`--script` 纠错 12 处全部改对。turbo 快一倍但逐字时间明显偏晚，不适合逐字高亮，所以默认用 medium。模型首次加载（冷启动）约 50 s，之后约 4 s。
+
 ## 作为 AI Agent Skill 使用
 
 仓库根目录的 [`SKILL.md`](SKILL.md)（英文版 [`SKILL.en.md`](SKILL.en.md)）是一份标准 Agent Skill：12 大流派 + 30 套皮肤索引、10 大句型速查、剧本规范、5 步出片流程（含一键导出 MP4）和「开工前更新检查（先问你再更新）」都在里面。把仓库交给 AI 编程助手后，直接说人话就能出片。
@@ -285,7 +320,7 @@ Mushanhe_Video_Engine/
 │   ├── engine.css             # 1920×1080 画幅、图层、HUD
 │   ├── …                      # 3D 模块、画廊背景、前景特效、活体光标、拟音等扩展模块
 │   ├── vendor/                # 第三方库：GSAP、CustomEase、three.js
-│   └── tools/                 # serve.py 预览服务 · inspect_frames.py 抽帧验货 · smoke_test.py 12 套冒烟回归 · export_mp4.py 一键导出 MP4 · check_update.py 更新检查
+│   └── tools/                 # serve.py 预览服务 · inspect_frames.py 抽帧验货 · smoke_test.py 12 套冒烟回归 · align.py 口播对齐 · export_mp4.py 一键导出 MP4 · check_update.py 更新检查
 └── templates/
     ├── 01_industrial_3d/      # 旗舰包 #1 · 3D 工业实体画廊
     ├── 02_swiss_print/        # 旗舰包 #2 · 瑞士印刷拼贴
@@ -330,6 +365,7 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 - [x] **v3.2.2**：彻底去商标化（03 / 11 / 12 目录与 05 皮肤改中性名，旧皮肤名自动兼容）· `smoke_test.py` 12 套冒烟 + 逐像素基线回归 · 字幕按 `sub[]` 逐字比对分行（多念 / 少念 / 改口不串行）+ 相对秒越界告警 · `SKILL` 开工前更新检查（先问再更新）与环境自检
 - [ ] **07–12 实时皮肤**：六大新流派各补 4 套 `themes.js` 实时皮肤
 - [ ] **更多变体与垂类组件**：其余风格包的 `variant` 布局变体 + 垂类组件（财经 / 编程 / 读书）
+- [x] **v3.3**：`align.py` 口播对齐（faster-whisper，模式 A 独立输出 / 模式 B 回填剧本，同源 words + sub，文稿保守纠错，可选 `--refine` stable-ts 强制对齐）
 - [ ] BGM 自动闪避（人声段自动压低背景乐）
 - [ ] 剧本可视化编辑器
 
