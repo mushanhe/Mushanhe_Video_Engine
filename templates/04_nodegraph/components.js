@@ -1,5 +1,5 @@
 /**
- * Mushanhe Video Engine — 风格包 04 · ComfyUI 3D 节点流水线（Node Graph）
+ * Mushanhe Video Engine — 风格包 04 · 3D 节点工作流（Node Graph）
  * ---------------------------------------------------------------------------
  * 与 02_swiss_print / 06_neobrutalism 完全相同的组件签名与 { meta, theme, scenes } 剧本格式，10 大句型：
  * cover · steps · checklist · compare · showcase[code|terminal|doc|image|video|product] · quote · outro · stat · timeline · diagram
@@ -99,7 +99,7 @@
     return true;
   }
 
-  // ============================== ComfyUI 直角节点 ==============================
+  // ============================== 直角工作流节点 ==============================
   function node(x, y, w, color, id, body, opt = {}) {
     const e = h('div', `ng-node${opt.cls ? ' ' + opt.cls : ''}`, `left:${x}px;top:${y}px;width:${w}px;${opt.h ? `height:${opt.h}px;` : ''}--nc:${color};${opt.style || ''}`,
       `<div class="nh"><span class="id">${esc(id)}</span><b class="st">${esc(opt.st || 'IDLE')}</b><i></i></div><div class="nb">${body || ''}</div>`);
@@ -117,7 +117,7 @@
 
   // ============================== 贝塞尔电缆层（发光 + 流动信号光球） ==============================
   const bez = (p0, c1, c2, p1, u) => { const m = 1 - u; return { x: m * m * m * p0.x + 3 * m * m * u * c1.x + 3 * m * u * u * c2.x + u * u * u * p1.x, y: m * m * m * p0.y + 3 * m * m * u * c1.y + 3 * m * u * u * c2.y + u * u * u * p1.y }; };
-  /** 水平出线（ComfyUI 端口在左右两侧） */
+  /** 水平出线（节点端口在左右两侧） */
   const hPath = (p0, p1) => { const k = Math.max(46, Math.abs(p1.x - p0.x) * 0.5); return [p0, { x: p0.x + k, y: p0.y }, { x: p1.x - k, y: p1.y }, p1]; };
   /** 垂直出线（上下端口） */
   const vPath = (p0, p1) => { const s = Math.sign(p1.y - p0.y) || 1, k = Math.max(30, Math.abs(p1.y - p0.y) * 0.5); return [p0, { x: p0.x, y: p0.y + s * k }, { x: p1.x, y: p1.y - s * k }, p1]; };

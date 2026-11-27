@@ -1,6 +1,6 @@
 /**
  * Mushanhe Video Engine — 3D Spatial Virtual Camera Rig (core/camera-rig.js)
- * 专为 Vox 真实文档聚焦 × Johnny Harris 侦探大桌面运镜打造的通用 3D 空间摄影机内核：
+ * 专为真实文档聚焦 × 深度调查桌面运镜打造的通用 3D 空间摄影机内核：
  *   - 支持 6 自由度确定性运镜关键帧：x, y (凝视桌面坐标), zoom (推拉倍率), rx/ry/rz (俯仰/侧倾/摇镜角度)
  *   - 自动将当前凝视点精准对准视口安全中心（支持按时间偏移视口焦点，如避开右侧人像框）
  *   - 内置电影级平滑插值 (smootherstep) + 微量有机手持呼吸感（100% 确定性，拖拽与导出完全一致）

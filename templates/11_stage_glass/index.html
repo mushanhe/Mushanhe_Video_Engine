@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Keynote Glass 暗黑流光 · 组件展厅（风格包 11）</title>
+  <title>Stage Glass 发布会流光玻璃 · 组件展厅（风格包 11）</title>
   <link rel="icon" href="data:," />
   <link rel="stylesheet" href="../../core/engine.css" />
   <style>
@@ -170,7 +170,7 @@
       const theme = script.theme || {};
       const root = document.documentElement.style;
       ['bg', 'white', 'silver', 'blue', 'violet', 'cyan', 'accent'].forEach((k) => { if (theme[k]) root.setProperty(`--kg-${k}`, theme[k]); });
-      KeynoteGlass.injectCSS();
+      StageGlass.injectCSS();
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
@@ -187,7 +187,7 @@
       const world = document.getElementById('kg-world');
       const scenes = []; let acc = 0, zoneX = 0;
       (script.scenes || []).forEach((sc, i) => {
-        const factory = KeynoteGlass.COMPONENTS[sc.type];
+        const factory = StageGlass.COMPONENTS[sc.type];
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
         const comp = factory.create(sc.data || {}, { dur });

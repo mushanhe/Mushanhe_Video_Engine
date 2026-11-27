@@ -1,9 +1,9 @@
 # ============================================================
-# Mushanhe Video Engine v3.2 — 开源仓库忽略规则
-# 开源范围：core/（含 tools/serve.py · inspect_frames.py · export_mp4.py）
-#           templates/01_industrial_3d/ ~ templates/12_bloomberg_fin/（12 套旗舰包）
-#           docs/ · index.html · README.md · SKILL.md · LICENSE · .gitignore
-# 一律不入库：个人节目 episodes/、私有模板、音视频、渲染输出、验货截图、本地协作文档
+# Mushanhe Video Engine v3.2.2 — 开源仓库忽略规则
+# 开源范围：core/（含 tools/serve.py · inspect_frames.py · smoke_test.py · export_mp4.py · check_update.py）
+#           templates/01_industrial_3d/ ~ templates/12_fin_terminal/（12 套旗舰包）
+#           docs/ · index.html · README.md · README.en.md · SKILL.md · SKILL.en.md · LICENSE · .gitignore
+# 一律不入库：个人节目 episodes/、私有模板、音视频、渲染输出、验货截图、本地协作文档、本地更新检查记录
 # ============================================================
 
 # ---------- 音视频（个人录制 / 第三方 BGM），任何目录都不进仓库 ----------
@@ -34,6 +34,8 @@ background image/
 CLAUDE.md
 PROJECT_STATE.md
 *启动预览服务命令*.txt
+# SKILL Step 0 更新检查的本地记录（只存上次检查时间）
+.mh_update_pref
 # 个人整期素材预处理脚本（内含本机私有素材路径）
 core/tools/prep_full_episode.py
 

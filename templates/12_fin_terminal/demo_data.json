@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "华尔街金融终端 · 财经研报风 · 组件展厅",
-    "style": "12_bloomberg_fin",
+    "title": "金融数据终端 · 财经研报风 · 组件展厅",
+    "style": "12_fin_terminal",
     "version": "1.0.0",
     "fps": 30,
     "size": [

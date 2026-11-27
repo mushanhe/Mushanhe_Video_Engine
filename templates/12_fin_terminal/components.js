@@ -1,10 +1,10 @@
 /**
- * Mushanhe Video Engine — 风格包 12 · 华尔街金融终端 / 财经研报风（BloombergFin）
+ * Mushanhe Video Engine — 风格包 12 · 金融数据终端 / 财经研报风（FinTerminal）
  * ---------------------------------------------------------------------------
  * 与 02_swiss_print / 06_neobrutalism 完全相同的组件签名与 { meta, theme, scenes } 剧本格式，10 大句型：
  * cover · stat · steps · checklist · compare · timeline · diagram · showcase[code|terminal|doc|image|video|product] · quote · outro
  *
- *   const comp = BloombergFin.COMPONENTS[type].create(data, ctx)
+ *   const comp = FinTerminal.COMPONENTS[type].create(data, ctx)
  *     data : 剧本 JSON 中 scene.data（业务文案全部来自这里）
  *     ctx  : { dur }  本段时长（秒）
  *   返回   : { el, layer:'world'|'screen', avatar, cams:[{t,x,y,zoom,rx,ry,rz}], update(localT), w?, media? }
@@ -765,7 +765,7 @@
       cams: [CAM(0, 700, 570, 1.12, 1.5, -2.5, -0.4), CAM(1.2, 700, 518, 1.0, 1, -1, 0), CAM(D, 708, 512, 1.02, 0.5, 1, 0.2)] };
   }
 
-  global.BloombergFin = {
+  global.FinTerminal = {
     version: '1.0.0',
     PROPS, Animator, EASE, injectCSS,
     COMPONENTS: {

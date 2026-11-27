@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vox Desk · 侦探大桌面组件展厅（风格包 03）</title>
+  <title>Investigative Desk · 深度调查桌面组件展厅（风格包 03）</title>
   <link rel="icon" href="data:," />
   <link rel="stylesheet" href="../../core/engine.css" />
   <style>
@@ -173,9 +173,9 @@
       if (theme.yellow) root.setProperty('--vx-yellow', theme.yellow);
       if (theme.red) root.setProperty('--vx-red', theme.red);
       if (theme.ink) root.setProperty('--vx-ink', theme.ink);
-      VoxDesk.injectCSS();
+      InvestigativeDesk.injectCSS();
       // 换肤：URL ?theme= ＞ 剧本 theme.preset ＞ linen（linen = 不覆盖，无参数访问与原版逐像素一致）
-      if (window.VoxDeskThemes) VoxDeskThemes.init(script);
+      if (window.InvestigativeDeskThemes) InvestigativeDeskThemes.init(script);
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
@@ -192,7 +192,7 @@
       const world = document.getElementById('desk-world');
       const scenes = []; let acc = 0, zoneX = 220;
       (script.scenes || []).forEach((sc) => {
-        const factory = VoxDesk.COMPONENTS[sc.type];
+        const factory = InvestigativeDesk.COMPONENTS[sc.type];
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
         const comp = factory.create(sc.data || {}, { dur });
@@ -250,7 +250,7 @@
       });
       const camRig = new MHEngine.CameraRig3D(document.getElementById('desk-world'), { viewW: 1920, viewH: 1080, handheld: 0.55 });
       camRig.setKeyframes(kfs);
-      // Johnny Harris 式桌面穿梭：边界前后把两段机位做一次连续插值，途中拉远 + 抬高俯角 + 轻微摇镜（不改 core，仅包裹 sample）
+      // 调查纪录片式桌面穿梭：边界前后把两段机位做一次连续插值，途中拉远 + 抬高俯角 + 轻微摇镜（不改 core，仅包裹 sample）
       const baseSample = camRig.sample.bind(camRig);
       const smooth = (x) => { const t = Math.max(0, Math.min(1, x)); return t * t * t * (t * (t * 6 - 15) + 10); };
       const KEYS = ['x', 'y', 'zoom', 'rx', 'ry', 'rz', 'screenX', 'screenY'];

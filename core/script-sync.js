@@ -2,8 +2,13 @@
  * Mushanhe Video Engine — ScriptSync：剧本 ↔ 真人素材同步小工具（templates/01–12 共用，零依赖）
  *
  * 全部能力都是「剧本里有才生效」，剧本里没有对应字段时模板行为与原版逐帧一致：
- *   1. sc.words      [["字或词", start, end], ...]（全片绝对秒；误传本段相对秒会自动叠加 sc.start 并 warn）→ 真实词级字幕；
- *                    分行优先按 sc.sub 的每一行，否则按停顿 ≥0.3s / 每行 ≤14 字自动切分。
+ *   1. sc.words      [["字或词", start, end], ...]（规范：全片绝对秒）→ 真实词级字幕。
+ *                    相对秒自动纠正只在一种情况下发生：sc.start > 0、首词早于段首 0.5s 以上，且整体叠加 sc.start 后
+ *                    全部落在本段容差区间 [start-1.0, start+dur+1.0] 内 → 整体平移并 console.warn（全页一次）。
+ *                    第 1 段（start = 0）相对秒与绝对秒本来相同，无需纠正；其余情况不改时间，
+ *                    但只要仍有词落在该区间之外，就按「段号 + 词序号」逐段 console.warn，不再静默错位。
+ *                    分行：有 sc.sub 时按字 LCS 把每行断点映射到实际念出的词上（多念归入最近一行、少念跳过），
+ *                    映射后某行宽度超过 14 再按停顿 ≥0.3s / 最大宽度拆开；没有 sub 时按停顿 ≥0.3s / 每行 ≤14 字自动切分。
  *   2. sc.avatarCues [[t, "card|pip|corner|full"], ...]（本页秒数）→ 一段之内按词级时间连续切人像形态。
  *   3. meta.avatar.offset  人像 <video> 对齐：video.currentTime = offset + t。
  *   4. meta.audio    "voice.wav" 或 { src, offset, volume } → 挂载 <audio id="voice-audio">，
@@ -18,41 +23,109 @@
   const norm = (s) => String(s == null ? '' : s).replace(STRIP, '');
   const width = (tk) => (LATIN.test(tk) ? Math.max(1, Math.round(tk.length * 0.55)) : norm(tk).length);
 
-  /** 把一段 sc.words 按行推进 WORD_DATA；返回 true 表示已处理（调用方跳过均分逻辑） */
-  function pushWords(sc, words, lines) {
-    let W = (sc && Array.isArray(sc.words) ? sc.words : []).filter((w) => Array.isArray(w) && w.length >= 3 && String(w[0]).trim());
-    if (!W.length) return false;
-    // 容错：规范要求全片绝对秒；若明显传成了本段相对秒（整体落在 0~dur 且首词早于段首），整体叠加 sc.start
-    const st = +sc.start || 0, du = +sc.dur || 0;
-    if (st > 0) {
-      const maxEnd = Math.max(...W.map((w) => +w[2] || 0)), minStart = Math.min(...W.map((w) => +w[1] || 0));
-      if (maxEnd <= du + 0.5 && minStart < st - 0.5) {
-        W = W.map((w) => [w[0], +w[1] + st, +w[2] + st]);
-        if (!pushWords._warned) {
-          pushWords._warned = true;
-          console.warn('[MHEngine.ScriptSync] sc.words 疑似使用本段相对秒，已自动叠加 sc.start；规范要求使用全片绝对秒。');
-        }
-      }
-    }
-    const groups = [];
-    const subs = (sc.sub || []).map(norm).filter(Boolean);
-    let k = 0;
-    if (subs.length) {
-      subs.forEach((line) => {
-        const g = []; let n = 0;
-        while (k < W.length && n < line.length) { g.push(W[k]); n += norm(W[k][0]).length || 1; k++; }
-        if (g.length) groups.push(g);
-      });
-    }
-    // 剩余（或没有 sub）：按停顿 / 每行 ≤14 字自动切
+  const chars = (s) => Array.from(norm(s).toLowerCase());
+  const segCount = new WeakMap();   // words 数组 → 已处理段数（推算段号用）
+
+  /** 自动切行：遇停顿 ≥0.3s 或本行宽度（width() 口径）将超 14 就换行。没有 sub 时就是这条逻辑（与 v3.2.1 逐字一致） */
+  function autoSplit(list, groups) {
     let g = [], n = 0;
-    for (; k < W.length; k++) {
-      const w = W[k], wd = width(w[0]);
+    for (let k = 0; k < list.length; k++) {
+      const w = list[k], wd = width(w[0]);
       const gap = g.length ? w[1] - g[g.length - 1][2] : 0;
       if (g.length && (gap >= 0.3 || n + wd > 14)) { groups.push(g); g = []; n = 0; }
       g.push(w); n += wd;
     }
     if (g.length) groups.push(g);
+    return groups;
+  }
+
+  /**
+   * 不照稿念时的分行兜底：按字做 LCS，把 sc.sub 每行的断点映射到实际念出的 words 上。
+   * 返回每个词的行号（单调不减）；多念的词归入时间上最近的已对齐词所在行，少念的字自然跳过；
+   * 完全对不上（或规模过大）时返回 null，由调用方退回自动切行。
+   */
+  function mapLines(subs, W) {
+    const S = [], SL = [], C = [], CW = [];
+    subs.forEach((line, li) => chars(line).forEach((c) => { S.push(c); SL.push(li); }));
+    W.forEach((w, wi) => chars(w[0]).forEach((c) => { C.push(c); CW.push(wi); }));
+    const n = S.length, m = C.length;
+    if (!n || !m || n * m > 4e6) return null;
+    const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = S[i] === C[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    if (!dp[0][0]) return null;
+    const votes = W.map(() => ({}));
+    for (let i = 0, j = 0; i < n && j < m;) {
+      if (S[i] === C[j]) { const v = votes[CW[j]]; v[SL[i]] = (v[SL[i]] || 0) + 1; i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+      else j++;
+    }
+    const L = votes.map((v) => {
+      let best = -1, cnt = 0;
+      Object.keys(v).forEach((k) => { if (v[k] > cnt || (v[k] === cnt && +k < best)) { best = +k; cnt = v[k]; } });
+      return best;
+    });
+    for (let i = 0, run = -1; i < L.length; i++) if (L[i] >= 0) { if (L[i] < run) L[i] = run; run = L[i]; }   // 强制单调
+    for (let i = 0; i < L.length; i++) {
+      if (L[i] >= 0) continue;
+      let p = i - 1, q = i + 1;
+      while (p >= 0 && L[p] < 0) p--;
+      while (q < L.length && L[q] < 0) q++;
+      const gp = p >= 0 ? W[i][1] - W[p][2] : Infinity, gq = q < L.length ? W[q][1] - W[i][2] : Infinity;
+      L[i] = gp <= gq ? L[p] : L[q];   // 多念的词：归入时间上更近的一行（左边优先）
+    }
+    return L;
+  }
+
+  /** 把一段 sc.words 按行推进 WORD_DATA；返回 true 表示已处理（调用方跳过均分逻辑）。idx（可选）= 段号，从 0 起 */
+  function pushWords(sc, words, lines, idx) {
+    // 段号：调用方没传时按同一份 words 数组上的调用次数推算（模板对每一段都会调用一次）
+    let seg = segCount.get(words) || 0;
+    segCount.set(words, seg + 1);
+    if (Number.isInteger(idx)) seg = idx;
+    const raw = sc && Array.isArray(sc.words) ? sc.words : [];
+    const NO = [];
+    let W = raw.filter((w, i) => (Array.isArray(w) && w.length >= 3 && String(w[0]).trim() ? (NO.push(i + 1), true) : false));
+    if (!W.length) return false;
+    // sc.words 规范：全片绝对秒。若首词早于段首 0.5s 以上，且整体叠加 sc.start 后能落进本段容差区间
+    // [start-1.0, start+dur+1.0]，判定为误传本段相对秒 → 自动平移（全页只 warn 一次）
+    const st = +sc.start || 0, du = +sc.dur || 0, lo = st - 1.0, hi = st + du + 1.0;
+    const inside = (w) => +w[1] >= lo && +w[2] <= hi;
+    if (st > 0) {
+      const minStart = Math.min(...W.map((w) => +w[1] || 0));
+      if (minStart < st - 0.5) {
+        const shifted = W.map((w) => [w[0], +w[1] + st, +w[2] + st]);
+        if (shifted.every(inside)) {
+          W = shifted;
+          if (!pushWords._warned) {
+            pushWords._warned = true;
+            console.warn('[MHEngine.ScriptSync] sc.words 疑似使用本段相对秒，已自动叠加 sc.start；规范要求使用全片绝对秒。');
+          }
+        }
+      }
+    }
+    // 平移与否，最终仍有词落在本段容差区间之外 → 一律报警（不再静默错字 / 消失）
+    const bad = [];
+    W.forEach((w, i) => { if (!inside(w)) bad.push(NO[i]); });
+    if (bad.length) {
+      console.warn(`[MHEngine.ScriptSync] 第 ${seg + 1} 段（start=${st}s, dur=${du}s）有 ${bad.length} 个词落在容差区间 [${lo.toFixed(2)}s, ${hi.toFixed(2)}s] 之外，词序号（从 1 起）：${bad.join(', ')}。请确认 sc.words 使用全片绝对秒。`);
+    }
+
+    const groups = [];
+    const subs = (sc.sub || []).map(norm).filter(Boolean);
+    const L = subs.length ? mapLines(subs, W) : null;
+    if (L) {
+      // 按映射出的行号分组；某行宽度超过 14（width() 口径）时再按停顿 / 最大宽度拆开
+      let g = [];
+      const flush = () => {
+        if (!g.length) return;
+        if (g.reduce((n, w) => n + width(w[0]), 0) > 14) autoSplit(g, groups); else groups.push(g);
+        g = [];
+      };
+      W.forEach((w, i) => { if (i && L[i] !== L[i - 1]) flush(); g.push(w); });
+      flush();
+    } else {
+      autoSplit(W, groups);
+    }
 
     groups.forEach((grp) => {
       const a = words.length, sp = [];
@@ -161,7 +234,9 @@
     const sorted = cues.filter((c) => Array.isArray(c)).slice().sort((a, b) => a[0] - b[0]);
     let cur = null;
     sorted.forEach((c) => { if (t >= c[0]) cur = c; });
-    const name = cur ? cur[1] : st.base;
+    // 皮肤名先走风格包自己的 normalize()（大小写 / 连字符 / 旧皮肤名 → 新名），再查 PRESETS，旧名时角标不会为空
+    const canon = (n) => (n && typeof st.T.normalize === 'function' && st.T.normalize(n)) || n;
+    const name = canon(cur ? cur[1] : st.base);
     if (name && name !== st.name) { st.T.apply(name, { syncUrl: false }); st.name = name; }
     // 角标：切换后 1.6s 内显示（确定性淡入淡出）
     const dt = cur ? t - cur[0] : 99;
@@ -184,16 +259,16 @@
   const PACKS = [
     ['01', '01_industrial_3d', '工业3D', '#FF5A1F'],
     ['02', '02_swiss_print', '瑞士印刷', '#D92323'],
-    ['03', '03_vox_desk', 'Vox 侦探', '#FFD60A'],
-    ['04', '04_nodegraph', 'ComfyUI 节点', '#00E5C3'],
+    ['03', '03_investigative_desk', '深度调查桌面', '#FFD60A'],
+    ['04', '04_nodegraph', '3D 节点工作流', '#00E5C3'],
     ['05', '05_pro_nle', 'Pro NLE 剪辑台', '#3B82F6'],
     ['06', '06_neobrutalism', '撞色潮刊', '#FF4D6D'],
     ['07', '07_chalkboard', '学院黑板', '#7BC47F'],
     ['08', '08_song_ink', '宋韵水墨', '#B82925'],
     ['09', '09_analog_film', '日系胶片', '#E8A838'],
     ['10', '10_retro_crt', '复古 CRT', '#33FF66'],
-    ['11', '11_keynote_glass', 'Keynote 流光', '#8B7BFF'],
-    ['12', '12_bloomberg_fin', '华尔街金融', '#F59E0B']
+    ['11', '11_stage_glass', '发布会流光', '#8B7BFF'],
+    ['12', '12_fin_terminal', '金融终端', '#F59E0B']
   ];
   const SW_ID = 'mh-style-switcher';
   const SW_CSS = `

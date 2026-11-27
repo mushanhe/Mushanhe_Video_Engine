@@ -1,26 +1,28 @@
 /**
  * Mushanhe Video Engine — 风格包 05 · Pro NLE 多轨剪辑台 · 零代码换肤系统（templates/05_pro_nle/themes.js）
  * ---------------------------------------------------------------------------
- *   window.ProNLEThemes = { PRESETS, init(script), apply(name, opts?), mountSwitcher(container?), resolve(script?), current(), list(), canvas() }
+ *   window.ProNLEThemes = { PRESETS, init(script), apply(name, opts?), mountSwitcher(container?), resolve(script?), normalize(name), current(), list(), canvas() }
  *
- *   - PRESETS        : 4 套皮肤（premiere 默认 / davinci / fcp_silver / broadcast），每套含 label、色点、CSS 变量与面板参数
+ *   - PRESETS        : 4 套皮肤（studio_dark 默认 / color_grade / light_silver / broadcast），每套含 label、色点、CSS 变量与面板参数
  *   - apply(name)    : 切换皮肤（幂等）。写 <html data-pn-theme>，注入/更新 <style id="pn-theme-override">，
- *                      派发 'pn:themechange' 事件（宿主页据此重绘画布：A1/A2 声波、Lumetri 示波器），
+ *                      派发 'pn:themechange' 事件（宿主页据此重绘画布：A1/A2 声波、视频示波器），
  *                      并把 ?theme=xxx 同步进地址栏（history.replaceState，不刷新）
  *   - mountSwitcher(): 挂在 Program Monitor 标题栏正中的「DISPLAY LUT」4 色胶囊换肤器；跟随 #hud 显隐（H 键 / ?clean=1）
- *   - resolve(script): 启动皮肤名：URL ?theme= ＞ 剧本 theme.preset ＞ 'premiere'
+ *   - resolve(script): 启动皮肤名：URL ?theme= ＞ 剧本 theme.preset ＞ 'studio_dark'
+ *   - normalize(name): 皮肤名规范化（大小写 / 连字符 / v3.2.1 及更早的旧皮肤名 → 新名）；apply / resolve / themeCues 全部经过它
  *   - init(script)   : apply(resolve(script), { syncUrl:false }) + mountSwitcher()，供宿主页 boot() 一行接入
- *   - canvas()       : 当前皮肤的画布配色 { scopeGrid, scope:[3], waveA1, waveA2 }（premiere = 原版取值）
+ *   - canvas()       : 当前皮肤的画布配色 { scopeGrid, scope:[3], waveA1, waveA2 }（studio_dark = 原版取值）
  *
  * 兼容约定：
- *   - premiere = 不注入任何覆盖规则、不改 CSS 变量、画布取原版颜色，即与现有页面逐像素一致。
+ *   - studio_dark（默认）= 不注入任何覆盖规则、不改 CSS 变量、画布取原版颜色，即与现有页面逐像素一致。
+ *   - 旧皮肤名兼容（至少保留到 v4.x）：见下方 LEGACY，?theme= / 剧本 theme.preset / meta.themeCues 写旧名都会自动换成新名。
  *   - 其余皮肤的 CSS 变量用 !important 声明在 :root[data-pn-theme="x"] 上，能压过宿主 boot() 按剧本 theme 写入的内联变量。
  *   - 只依赖 DOM；建议在 components.js 之后引入。
  */
 (function (global) {
   'use strict';
 
-  const DEFAULT = 'premiere';
+  const DEFAULT = 'studio_dark';
   const STYLE_ID = 'pn-theme-override';
   const SWITCHER_ID = 'pn-theme-switcher';
   const ATTR = 'data-pn-theme';
@@ -30,22 +32,22 @@
 
   // ============================== 4 套皮肤 ==============================
   /**
-   * vars   : --pn-* 主题变量（premiere 为 null = 不覆盖）
+   * vars   : --pn-* 主题变量（studio_dark 为 null = 不覆盖）
    * 角色    : cyan = 主 UI 点缀（标签/播放进度/光标）· jade = 高亮/通过 · amber = 备注/裁决 · crimson = 播放头/录制/错误 · violet = 人声轨
    * L(a)   : 细线/描边/底纹（暗皮肤 = 白色透明，浅皮肤 = 墨蓝透明）
    * hi..faint : 文字灰阶（由亮到暗 / 由深到浅），保证在各自面板上高对比
    */
   const PRESETS = {
-    premiere: {
-      label: '深蓝黑', en: 'PREMIERE', dots: ['#0A0D12', '#38BDF8'], dark: true,
+    studio_dark: {
+      label: '深蓝黑', en: 'STUDIO DARK', dots: ['#0A0D12', '#38BDF8'], dark: true,
       desc: '默认·深蓝黑非编：#0A0D12 演播室底 + 青 / 翡翠 / 琥珀 / 玫红',
       vars: null,
       canvas: { scopeGrid: 'rgba(255,255,255,0.06)', scope: ['rgba(0,229,195,0.55)', 'rgba(56,189,248,0.5)', 'rgba(255,184,77,0.4)'], waveA1: 'rgba(196,181,253,0.85)', waveA2: 'rgba(255,200,120,0.6)' }
     },
 
-    davinci: {
-      label: '达芬奇', en: 'DAVINCI', dots: ['#0B0B0D', '#FF7A00'], dark: true,
-      desc: '达芬奇调色台：曜石黑 + 电影橙 + 青蓝 + 胶片金',
+    color_grade: {
+      label: '调色台', en: 'COLOR GRADE', dots: ['#0B0B0D', '#FF7A00'], dark: true,
+      desc: '电影调色台：曜石黑 + 电影橙 + 青蓝 + 胶片金',
       vars: { bg: '#0B0B0D', text: '#ECE8E2', cyan: '#FF7A00', jade: '#00C2D1', amber: '#E8B84A', crimson: '#FF4040', violet: '#B79CFF', border: 'rgba(255,255,255,0.10)' },
       L: (a) => `rgba(255,255,255,${a})`,
       hi: '#FFFFFF', text: '#ECE8E2', soft: '#D6D0C8', mute: '#A39C93', dim: '#7D776F', faint: '#58534D',
@@ -61,9 +63,9 @@
       canvas: { scopeGrid: 'rgba(255,255,255,0.06)', scope: ['rgba(0,194,209,0.55)', 'rgba(255,122,0,0.5)', 'rgba(232,184,74,0.42)'], waveA1: 'rgba(205,190,255,0.85)', waveA2: 'rgba(240,200,110,0.62)' }
     },
 
-    fcp_silver: {
-      label: '浅银', en: 'FCP SILVER', dots: ['#E5E7EB', '#007AFF'], dark: false,
-      desc: '浅银工作站：浅银灰金属台面 + 洁白面板与清晰时间线 + 苹果蓝 + 珊瑚红游标',
+    light_silver: {
+      label: '浅银', en: 'LIGHT SILVER', dots: ['#E5E7EB', '#007AFF'], dark: false,
+      desc: '浅银工作站：浅银灰金属台面 + 洁白面板与清晰时间线 + 系统蓝 + 珊瑚红游标',
       vars: { bg: '#E5E7EB', text: '#1E293B', cyan: '#007AFF', jade: '#15803D', amber: '#B45309', crimson: '#F0483E', violet: '#7C3AED', border: 'rgba(15,23,42,0.14)' },
       L: (a) => `rgba(15,23,42,${Math.min(0.32, +(a * 1.25).toFixed(3))})`,
       hi: '#0B1220', text: '#1E293B', soft: '#334155', mute: '#475569', dim: '#5B6676', faint: '#8A94A3',
@@ -278,8 +280,12 @@ ${dark ? '' : `${P} .pn-ck{stroke:#FFFFFF}`}
   // ============================== apply ==============================
   const state = { name: null, switcher: null, observer: null, keyBound: false };
 
+  // v3.2.2 去商标化改名：旧皮肤名 → 新皮肤名（旧 URL / 旧剧本 / 旧 themeCues 继续可用，至少保留一个大版本）
+  const LEGACY = { premiere: 'studio_dark', davinci: 'color_grade', fcp_silver: 'light_silver' };
+
   function normalize(name) {
-    const k = String(name == null ? '' : name).trim().toLowerCase().replace(/-/g, '_');
+    let k = String(name == null ? '' : name).trim().toLowerCase().replace(/-/g, '_');
+    if (Object.prototype.hasOwnProperty.call(LEGACY, k)) k = LEGACY[k];
     return Object.prototype.hasOwnProperty.call(PRESETS, k) ? k : null;
   }
 
@@ -301,9 +307,9 @@ ${dark ? '' : `${P} .pn-ck{stroke:#FFFFFF}`}
   }
 
   /**
-   * 切换皮肤。未知名称回退到 premiere。
-   * @param {string} name   premiere | davinci | fcp_silver | broadcast
-   * @param {object} [opts] { syncUrl?: boolean } 默认 true；premiere 且地址栏原本没有 ?theme= 时不写参数
+   * 切换皮肤。先经 normalize()（旧名自动换新名），未知名称回退到 studio_dark。
+   * @param {string} name   studio_dark | color_grade | light_silver | broadcast
+   * @param {object} [opts] { syncUrl?: boolean } 默认 true；studio_dark 且地址栏原本没有 ?theme= 时不写参数
    */
   function apply(name, opts) {
     const o = opts || {};
@@ -328,7 +334,7 @@ ${dark ? '' : `${P} .pn-ck{stroke:#FFFFFF}`}
     return key;
   }
 
-  /** 启动皮肤：URL ?theme= ＞ 剧本 theme.preset ＞ premiere */
+  /** 启动皮肤：URL ?theme= ＞ 剧本 theme.preset ＞ studio_dark（两处都先经 normalize） */
   function resolve(script) {
     let fromUrl = null;
     try { fromUrl = normalize(new URL(global.location.href).searchParams.get('theme')); } catch (_) {}
@@ -439,7 +445,7 @@ ${dark ? '' : `${P} .pn-ck{stroke:#FFFFFF}`}
   }
 
   global.ProNLEThemes = {
-    PRESETS, apply, mountSwitcher, resolve, init, canvas,
+    PRESETS, apply, mountSwitcher, resolve, init, canvas, normalize,
     current: () => state.name || DEFAULT,
     list: () => Object.keys(PRESETS)
   };

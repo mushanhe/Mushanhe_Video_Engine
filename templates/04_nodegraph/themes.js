@@ -1,5 +1,5 @@
 /**
- * Mushanhe Video Engine — 风格包 04 · ComfyUI 3D 节点流水线 · 实时换肤系统（templates/04_nodegraph/themes.js）
+ * Mushanhe Video Engine — 风格包 04 · 3D 节点工作流 · 实时换肤系统（templates/04_nodegraph/themes.js）
  * ---------------------------------------------------------------------------
  *   window.NodeGraphThemes = { PRESETS, init(script?, opts?), apply(name, opts?), mountSwitcher(container?), resolve(script?), current(), list() }
  *

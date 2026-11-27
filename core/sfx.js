@@ -83,7 +83,7 @@
         osc.start(now);
         osc.stop(now + 0.17);
       } else if (type === 'click') {
-        // 干净的苹果触控板式点击声
+        // 干净的触控板式点击声
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';

@@ -1,7 +1,7 @@
 /**
- * Mushanhe Video Engine — 风格包 03 · Vox 侦探大桌面 · 实时换肤系统（templates/03_vox_desk/themes.js）
+ * Mushanhe Video Engine — 风格包 03 · 深度调查桌面 · 实时换肤系统（templates/03_investigative_desk/themes.js）
  * ---------------------------------------------------------------------------
- *   window.VoxDeskThemes = { PRESETS, init(script), apply(name, opts?), mountSwitcher(container?), resolve(script?), current(), list() }
+ *   window.InvestigativeDeskThemes = { PRESETS, init(script), apply(name, opts?), mountSwitcher(container?), resolve(script?), current(), list() }
  *
  *   - PRESETS        : 4 套皮肤（linen 默认 / night_desk / blueprint / newsprint）
  *   - apply(name)    : 切换皮肤（幂等、无刷新）。写 <html data-vx-theme>，注入/更新 <style id="vx-theme-override">，
@@ -126,7 +126,7 @@
     const V = T.vars;
     const out = [];
     const r = (s) => out.push(s);
-    r(`/* ====== VoxDeskThemes · ${name} ====== */`);
+    r(`/* ====== InvestigativeDeskThemes · ${name} ====== */`);
     r(`${P}{--vx-desk:${V.desk} !important;--vx-paper:${V.paper} !important;--vx-yellow:${V.yellow} !important;--vx-red:${V.red} !important;--vx-ink:${V.ink} !important;--vx-muted:${V.muted} !important;--vx-string:${T.string};--vx-shadow:${T.shadow} !important;--vx-shadow-lg:${T.shadowLg} !important;color-scheme:${T.dark ? 'dark' : 'light'}}`);
     // —— 桌面 ——
     r(`${P} #camera-viewport{background:${T.cam}}`);
@@ -356,7 +356,7 @@
     return name;
   }
 
-  global.VoxDeskThemes = {
+  global.InvestigativeDeskThemes = {
     PRESETS, apply, mountSwitcher, resolve, init,
     current: () => state.name,
     list: () => Object.keys(PRESETS)

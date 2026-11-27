@@ -1,10 +1,10 @@
 /**
- * Mushanhe Video Engine — 风格包 03 · Vox 真实文档 × Johnny Harris 3D 侦探大桌面（Vox Desk）
+ * Mushanhe Video Engine — 风格包 03 · 真实文档 × 3D 深度调查桌面（Investigative Desk）
  * ---------------------------------------------------------------------------
  * 10 大万能口播句型参数化组件（cover · steps · checklist · compare · showcase[code|terminal|doc|image|video|product] · quote · outro · stat · timeline · diagram），
  * 全部由 JSON 驱动、按时间确定性渲染（任意 seek 可还原）。字段与 02_swiss_print / 06_neobrutalism 100% 一致。
  *
- *   const comp = VoxDesk.COMPONENTS[type].create(data, ctx)
+ *   const comp = InvestigativeDesk.COMPONENTS[type].create(data, ctx)
  *     data : 剧本 JSON 中 scene.data        ctx : { dur }
  *   返回   : { el, layer:'world'|'screen', avatar, cams:[{t,x,y,zoom,rx,ry,rz}], update(localT), w?, media? }
  *
@@ -801,7 +801,7 @@
       cams: [CAM(0, 700, 560, 1.1, 3, -2, 0), CAM(1.2, 700, 515, 1.0, 1.5, -1, 0), CAM(D, 705, 515, 1.03, 1, 1, 0)] };
   }
 
-  global.VoxDesk = {
+  global.InvestigativeDesk = {
     version: '1.1.0',
     PROPS, Animator, EASE, injectCSS,
     COMPONENTS: {

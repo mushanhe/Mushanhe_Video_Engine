@@ -1,8 +1,8 @@
 {
   "meta": {
-    "title": "Keynote Glass 暗黑流光 · 组件展厅",
-    "style": "11_keynote_glass",
-    "version": "1.0.0",
+    "title": "Investigative Desk · 深度调查桌面组件展厅",
+    "style": "03_investigative_desk",
+    "version": "1.1.0",
     "fps": 30,
     "size": [
       1920,
@@ -11,18 +11,16 @@
     "avatar": {
       "video": "",
       "bg": "assets/studio_bg.png",
-      "tag": "YOUR NAME · CH01"
+      "tag": "YOUR NAME · CH02"
     },
     "bgm": ""
   },
   "theme": {
-    "bg": "#050507",
-    "blue": "#2563EB",
-    "violet": "#7C3AED",
-    "cyan": "#22D3EE",
-    "white": "#F8FAFC",
-    "silver": "#94A3B8",
-    "accent": "#60A5FA"
+    "desk": "#EFE9DC",
+    "paper": "#FCF9F2",
+    "yellow": "#FFE14D",
+    "red": "#D92B4B",
+    "ink": "#231C15"
   },
   "scenes": [
     {
@@ -35,14 +33,14 @@
         "怎样用一套模板稳定做出口播视频"
       ],
       "data": {
-        "kicker": "EPISODE 02 · 开场",
+        "kicker": "CASE 02 — 开场调查",
         "title": "口播视频\n模板化",
         "chapterLabel": "CHAPTER",
         "chapter": "01",
         "subtitle": "从文案到成片\n一套 **JSON** 剧本驱动",
         "dim": "1 份剧本 = 1 条视频",
-        "stamp": "开工",
-        "stampSmall": "START"
+        "stamp": "立案",
+        "stampSmall": "CASE OPEN"
       }
     },
     {
@@ -56,8 +54,8 @@
         "现在用模板二十分钟出片"
       ],
       "data": {
-        "kicker": "BY THE NUMBERS",
-        "title": "一条片要剪多久？",
+        "kicker": "EVIDENCE A — 数据",
+        "title": "一条片要剪**多久**？",
         "items": [
           {
             "value": 180,
@@ -88,8 +86,8 @@
         "每一步的产物都放进同一个文件夹"
       ],
       "data": {
-        "kicker": "STEP BY STEP",
-        "title": "四步做完一条视频",
+        "kicker": "EVIDENCE B — 流程",
+        "title": "**四步**做完一条视频",
         "dim": "4 STEPS",
         "folder": "MY_VIDEO_PROJECT /",
         "folderBig": "EP02",
@@ -129,7 +127,7 @@
       "data": {
         "kicker": "PROJECT ROOT / 工作说明",
         "title": "RULES.md",
-        "subtitle": "这个项目的执行规则",
+        "subtitle": "这个项目的**执行规则**",
         "items": [
           {
             "k": "工作范围",
@@ -162,13 +160,13 @@
         "更好的做法是先把规矩讲清楚"
       ],
       "data": {
-        "kicker": "BEFORE / AFTER",
-        "title": "先立规矩，再开工",
+        "kicker": "EVIDENCE C — 对比",
+        "title": "先**立规矩**，再开工",
         "wrong": {
           "label": "✕ 常见做法",
           "title": "一上来\n直接开干",
           "desc": "需求每次重新解释，结果忽好忽坏。",
-          "stamp": "不推荐"
+          "stamp": "✕ 别这样"
         },
         "right": {
           "label": "✓ 推荐做法",
@@ -190,8 +188,8 @@
         "再到现在一份脚本直接出片"
       ],
       "data": {
-        "kicker": "TIMELINE",
-        "title": "口播剪辑的五个阶段",
+        "kicker": "EVIDENCE D — 演进",
+        "title": "口播剪辑的**五个阶段**",
         "nodes": [
           {
             "time": "2019",
@@ -235,8 +233,8 @@
         "展厅把它们拼起来再录成视频"
       ],
       "data": {
-        "kicker": "HOW IT WORKS",
-        "title": "一份剧本怎么变成视频",
+        "kicker": "EVIDENCE E — 原理",
+        "title": "一份剧本怎么**变成视频**",
         "nodes": [
           {
             "id": "script",
@@ -324,8 +322,8 @@
         "几行就能把设备参数写清楚"
       ],
       "data": {
-        "kicker": "SHOWCASE",
-        "title": "一份真实的配置脚本",
+        "kicker": "EVIDENCE F — 实物",
+        "title": "一份**真实**的配置脚本",
         "kind": "code",
         "file": "setup.py",
         "lines": [
@@ -379,13 +377,13 @@
         "工具会变，流程才是你的资产"
       ],
       "data": {
-        "kicker": "KEY TAKEAWAY",
+        "kicker": "KEY TAKEAWAY · 剪报",
         "text": "工具会变，\n**流程**才是\n你的资产。",
         "by": "— 本期金句",
         "stamp": "划重点",
         "stampSmall": "MUST READ",
         "pos": "left",
-        "stampTop": 690
+        "stampTop": 700
       }
     },
     {
@@ -399,8 +397,8 @@
         "觉得有用记得一键三连"
       ],
       "data": {
-        "kicker": "WHAT'S NEXT",
-        "title": "现在就动手试试",
+        "kicker": "WHAT'S NEXT — 行动",
+        "title": "现在就**动手**试试",
         "actions": [
           {
             "tag": "CLONE",
@@ -420,7 +418,7 @@
         ],
         "cta": {
           "kicker": "OPEN SOURCE",
-          "title": "模板已开源",
+          "title": "模板已**开源**",
           "repo": "github.com/your-name/your-repo",
           "buttons": [
             "点赞",

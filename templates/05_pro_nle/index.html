@@ -164,7 +164,7 @@
     </div>
 
     <div id="pn-inspector">
-      <div class="ins-hdr"><span>INSPECTOR · LUMETRI SCOPES</span><span id="ins-ch">CH 01</span></div>
+      <div class="ins-hdr"><span>INSPECTOR · VIDEO SCOPES</span><span id="ins-ch">CH 01</span></div>
       <canvas id="ins-scope" width="520" height="118"></canvas>
       <div class="ins-vu" style="top:178px"><b>L</b><i id="vu-l"></i></div>
       <div class="ins-vu" style="top:198px"><b>R</b><i id="vu-r"></i></div>
@@ -271,7 +271,7 @@
       const root = document.documentElement.style;
       ['bg', 'cyan', 'jade', 'amber', 'crimson', 'violet'].forEach((k) => { if (theme[k]) root.setProperty(`--pn-${k}`, theme[k]); });
       ProNLE.injectCSS();
-      // 换肤：URL ?theme= ＞ 剧本 theme.preset ＞ premiere（premiere = 不覆盖，无参数访问与原版逐像素一致）
+      // 换肤：URL ?theme= ＞ 剧本 theme.preset ＞ studio_dark（studio_dark = 不覆盖，无参数访问与原版逐像素一致；旧皮肤名经 normalize 自动兼容）
       if (window.ProNLEThemes) ProNLEThemes.init(script);
       const CV0 = { scopeGrid: 'rgba(255,255,255,0.06)', scope: ['rgba(0,229,195,0.55)', 'rgba(56,189,248,0.5)', 'rgba(255,184,77,0.4)'], waveA1: 'rgba(196,181,253,0.85)', waveA2: 'rgba(255,200,120,0.6)' };
       const CV = () => (window.ProNLEThemes && ProNLEThemes.canvas()) || CV0;

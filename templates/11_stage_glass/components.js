@@ -1,10 +1,10 @@
 /**
- * Mushanhe Video Engine — 风格包 11 · Keynote Glass 发布会暗黑流光风
+ * Mushanhe Video Engine — 风格包 11 · Stage Glass 发布会流光玻璃风
  * ---------------------------------------------------------------------------
  * 与 02_swiss_print / 06_neobrutalism 完全相同的组件签名与 { meta, theme, scenes } 剧本格式，10 大句型：
  * cover · stat · steps · checklist · compare · timeline · diagram · showcase[code|terminal|doc|image|video|product] · quote · outro
  *
- *   const comp = KeynoteGlass.COMPONENTS[type].create(data, ctx)
+ *   const comp = StageGlass.COMPONENTS[type].create(data, ctx)
  *     data : 剧本 JSON 中 scene.data（业务文案全部来自这里）
  *     ctx  : { dur }  本段时长（秒）
  *   返回   : { el, layer:'world'|'screen', avatar, cams:[{t,x,y,zoom,rx,ry,rz}], update(localT), w? }
@@ -21,7 +21,7 @@
   const EASE = {
     linear: (x) => x,
     out: (x) => 1 - Math.pow(1 - x, 3),
-    /** Keynote 式柔和减速（quint out） */
+    /** 发布会式柔和减速（quint out） */
     soft: (x) => 1 - Math.pow(1 - x, 5),
     inOut: (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2),
     in: (x) => x * x * x,
@@ -67,7 +67,7 @@
       this.fns.forEach((f) => f(t));
     }
   }
-  /** 标准 Keynote 入场：上浮 + 景深模糊 → 清晰 */
+  /** 标准发布会入场：上浮 + 景深模糊 → 清晰 */
   const rise = (A, el, at, d = 0.7, dy = 36, b = 14) => A.add(el, at, d, { y: dy, o: 0, b }, { y: 0, o: 1, b: 0 }, 'soft');
   /** 由远及近：轻微放大 + 模糊 → 清晰 */
   const focusIn = (A, el, at, d = 0.8, s0 = 0.94, b = 18) => A.add(el, at, d, { s: s0, o: 0, b }, { s: 1, o: 1, b: 0 }, 'soft');
@@ -737,7 +737,7 @@
       cams: [CAM(0, 700, 545, 1.08, 0, -1.2, 0), CAM(1.3, 700, 510, 1.0, 0, -0.4, 0), CAM(D, 704, 506, 0.99, 0, 0.5, 0)] };
   }
 
-  global.KeynoteGlass = {
+  global.StageGlass = {
     version: '1.0.0',
     PROPS, Animator, EASE, injectCSS,
     COMPONENTS: {

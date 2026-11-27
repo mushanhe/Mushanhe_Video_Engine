@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mushanhe Video Engine · v3.0</title>
+  <title>Mushanhe Video Engine · v3.2.2</title>
   <link rel="icon" href="data:," />
   <style>
     :root {
       --ink: #141414; --paper: #F2EEE4; --muted: #6B665C;
       --ind-bg: #F3F5F8; --ind-steel: #1E232A; --ind-orange: #FF5500; --ind-teal: #00D4AA;
       --sp-sheet: #F7F4EC; --sp-red: #D92323;
-      --vox-bg: #EFE9DC; --vox-yellow: #FFE14D; --vox-red: #D92B3A;
+      --inv-bg: #EFE9DC; --inv-yellow: #FFE14D; --inv-red: #D92B3A;
       --ng-bg: #0A0D14; --ng-cyan: #38BDF8; --ng-jade: #10B981; --ng-violet: #A78BFA;
       --nle-bg: #0A0D12; --nle-cyan: #22D3EE; --nle-amber: #F59E0B; --nle-rose: #F43F5E;
       --nb-ink: #111111; --nb-yellow: #FFE500; --nb-blue: #3B82F6; --nb-mint: #00E599; --nb-coral: #FF4D6D;
@@ -76,21 +76,21 @@
     .swiss .go { background: var(--ink); color: var(--sp-sheet); }
     .swiss:hover { transform: translateY(-4px) rotate(-.3deg); }
 
-    /* 03 Vox 侦探桌面 */
-    .vox {
-      background: var(--vox-bg); border: 2px solid #C8BEA8;
+    /* 03 深度调查桌面 */
+    .inv {
+      background: var(--inv-bg); border: 2px solid #C8BEA8;
       box-shadow: 0 14px 28px -14px rgba(45,35,20,.38);
       background-image: linear-gradient(rgba(90,75,50,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(90,75,50,.07) 1px, transparent 1px);
       background-size: 26px 26px;
     }
-    .vox .thumb { border: 3px solid #fff; box-shadow: 0 6px 16px rgba(0,0,0,.18); }
-    .vox .no { background: var(--vox-yellow); padding: 2px 8px; color: var(--ink); }
-    .vox .en { color: var(--vox-red); }
-    .vox ul li::before { content: '✦ '; color: var(--vox-red); }
-    .vox .go { background: var(--ink); color: var(--vox-yellow); border-left: 5px solid var(--vox-yellow); }
-    .vox:hover { transform: translateY(-4px) rotate(.3deg); }
+    .inv .thumb { border: 3px solid #fff; box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+    .inv .no { background: var(--inv-yellow); padding: 2px 8px; color: var(--ink); }
+    .inv .en { color: var(--inv-red); }
+    .inv ul li::before { content: '✦ '; color: var(--inv-red); }
+    .inv .go { background: var(--ink); color: var(--inv-yellow); border-left: 5px solid var(--inv-yellow); }
+    .inv:hover { transform: translateY(-4px) rotate(.3deg); }
 
-    /* 04 ComfyUI 3D 节点图 */
+    /* 04 3D 节点工作流 */
     .pack.ng {
       background: var(--ng-bg); color: #F8FAFC; border: 1.5px solid rgba(56,189,248,.45);
       box-shadow: 0 16px 36px -14px rgba(2,6,23,.75), inset 0 0 24px rgba(56,189,248,.07);
@@ -218,7 +218,7 @@
     .crt .stk { background: #FF3344; color: #fff; }
     .pack.crt:hover { transform: translateY(-4px); box-shadow: 0 0 0 1px #14532D, 0 0 40px rgba(51,255,102,.38); }
 
-    /* 11 Keynote Glass · 纯黑舞台 + 极光渐变亮边玻璃 */
+    /* 11 Stage Glass · 纯黑舞台 + 极光渐变亮边玻璃 */
     .pack.kg {
       color: #F8FAFC; border: 1px solid transparent; border-radius: 28px;
       background: linear-gradient(160deg, rgba(37,99,235,.2), rgba(5,5,7,0) 45%) padding-box, linear-gradient(#050507, #0B0B14) padding-box,
@@ -236,23 +236,23 @@
     .kg .dna span.c { border-radius: 999px; }
     .pack.kg:hover { transform: translateY(-4px); }
 
-    /* 12 华尔街金融终端 · 藏青面板 + 琥珀功能键条 */
-    .pack.bbg {
+    /* 12 金融数据终端 · 藏青面板 + 琥珀功能键条 */
+    .pack.fin {
       background: #0B1220; color: #F1F5F9; border: 1px solid #1E293B; border-top: 26px solid #F59E0B; border-radius: 2px;
       box-shadow: 0 18px 36px -16px rgba(2,6,23,.8);
       background-image: linear-gradient(rgba(30,41,59,.55) 1px, transparent 1px), linear-gradient(90deg, rgba(30,41,59,.55) 1px, transparent 1px);
       background-size: 32px 32px;
     }
-    .pack.bbg::before { content: 'MVE <GO>  ▲ +9.0x  ▼ -82.4%'; position: absolute; top: -20px; left: 12px; font: 900 11px/14px var(--mono); color: #0B1220; letter-spacing: .06em; white-space: nowrap; overflow: hidden; max-width: calc(100% - 90px); }
-    .bbg .thumb { border: 1px solid #334155; }
-    .bbg .no { color: #F59E0B; font-variant-numeric: tabular-nums; }
-    .bbg .en { color: #10B981; }
-    .bbg h2 { color: #FFFFFF; }
-    .bbg ul { color: #CBD5E1; }
-    .bbg ul li::before { content: '▲ '; color: #10B981; font-size: 11px; }
-    .bbg .go { background: #F59E0B; color: #0B1220; border-radius: 2px; }
-    .bbg .stk { top: -22px; right: 10px; background: #EF4444; color: #fff; }
-    .pack.bbg:hover { transform: translateY(-4px); border-color: #F59E0B; }
+    .pack.fin::before { content: 'MVE MARKET  ▲ +9.0x  ▼ -82.4%'; position: absolute; top: -20px; left: 12px; font: 900 11px/14px var(--mono); color: #0B1220; letter-spacing: .06em; white-space: nowrap; overflow: hidden; max-width: calc(100% - 90px); }
+    .fin .thumb { border: 1px solid #334155; }
+    .fin .no { color: #F59E0B; font-variant-numeric: tabular-nums; }
+    .fin .en { color: #10B981; }
+    .fin h2 { color: #FFFFFF; }
+    .fin ul { color: #CBD5E1; }
+    .fin ul li::before { content: '▲ '; color: #10B981; font-size: 11px; }
+    .fin .go { background: #F59E0B; color: #0B1220; border-radius: 2px; }
+    .fin .stk { top: -22px; right: 10px; background: #EF4444; color: #fff; }
+    .pack.fin:hover { transform: translateY(-4px); border-color: #F59E0B; }
 
     section.how { margin-top: 52px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 16px; }
     .how div { padding: 18px 20px; background: #fff; border: 2px solid var(--ink); }
@@ -265,7 +265,7 @@
 <body>
   <div class="wrap">
     <header>
-      <span class="tag">MUSHANHE VIDEO ENGINE · v3.0 · 12 FLAGSHIP PACKS</span>
+      <span class="tag">MUSHANHE VIDEO ENGINE · v3.2.2 · 12 FLAGSHIP PACKS</span>
       <h1>一份 JSON，<br />十二套电影级口播画风。</h1>
       <p>1 套 <b>core/</b> 通用内核 + 统一 <b>{ meta, theme, scenes }</b> 剧本标准。同一份剧本，在 <b>12 大旗舰流派 · 30 套开箱皮肤</b>（01–06 各 4 色实时换肤 + 07–12 六大新流派）之间一键切换，文案一个字不用改。点 01–06 卡片上的色点，直接进入对应皮肤。</p>
       <div class="chips">
@@ -312,10 +312,10 @@
         <div class="foot"><a class="go" href="templates/02_swiss_print/index.html">进入展厅 →</a></div>
       </article>
 
-      <article class="pack vox">
-        <img class="thumb" src="docs/preview_vox.png" alt="03 Vox 侦探桌面预览" loading="lazy" />
-        <div class="head"><div class="no">03</div><div class="en">VOX DETECTIVE DESK</div></div>
-        <h2>Vox 侦探桌面</h2>
+      <article class="pack inv">
+        <img class="thumb" src="docs/preview_investigative_desk.png" alt="03 深度调查桌面预览" loading="lazy" />
+        <div class="head"><div class="no">03</div><div class="en">INVESTIGATIVE DESK</div></div>
+        <h2>深度调查桌面</h2>
         <ul>
           <li>暖亚麻切割垫 · 荧光黄马克笔 · 红笔手绘圈勾</li>
           <li>红色调查丝线 · 牛皮纸胶带 · 撕边剪报</li>
@@ -323,18 +323,18 @@
         </ul>
                 <div class="skins">
           <span class="sk-tag">4 套实时皮肤</span>
-          <a class="sk" href="templates/03_vox_desk/index.html?theme=linen" title="亚麻 · ?theme=linen · 默认"><i style="background:conic-gradient(#EFE9DC 0deg 120deg,#FFE14D 120deg 240deg,#D92B4B 240deg 360deg)"></i>亚麻</a>
-          <a class="sk" href="templates/03_vox_desk/index.html?theme=night_desk" title="台灯夜 · ?theme=night_desk"><i style="background:conic-gradient(#181614 0deg 120deg,#FFD166 120deg 240deg,#F43F5E 240deg 360deg)"></i>台灯夜</a>
-          <a class="sk" href="templates/03_vox_desk/index.html?theme=blueprint" title="蓝图 · ?theme=blueprint"><i style="background:conic-gradient(#10243E 0deg 120deg,#38BDF8 120deg 240deg,#FACC15 240deg 360deg)"></i>蓝图</a>
-          <a class="sk" href="templates/03_vox_desk/index.html?theme=newsprint" title="新闻纸 · ?theme=newsprint"><i style="background:conic-gradient(#E5E5E0 0deg 120deg,#34D399 120deg 240deg,#B91C1C 240deg 360deg)"></i>新闻纸</a>
+          <a class="sk" href="templates/03_investigative_desk/index.html?theme=linen" title="亚麻 · ?theme=linen · 默认"><i style="background:conic-gradient(#EFE9DC 0deg 120deg,#FFE14D 120deg 240deg,#D92B4B 240deg 360deg)"></i>亚麻</a>
+          <a class="sk" href="templates/03_investigative_desk/index.html?theme=night_desk" title="台灯夜 · ?theme=night_desk"><i style="background:conic-gradient(#181614 0deg 120deg,#FFD166 120deg 240deg,#F43F5E 240deg 360deg)"></i>台灯夜</a>
+          <a class="sk" href="templates/03_investigative_desk/index.html?theme=blueprint" title="蓝图 · ?theme=blueprint"><i style="background:conic-gradient(#10243E 0deg 120deg,#38BDF8 120deg 240deg,#FACC15 240deg 360deg)"></i>蓝图</a>
+          <a class="sk" href="templates/03_investigative_desk/index.html?theme=newsprint" title="新闻纸 · ?theme=newsprint"><i style="background:conic-gradient(#E5E5E0 0deg 120deg,#34D399 120deg 240deg,#B91C1C 240deg 360deg)"></i>新闻纸</a>
         </div>
-        <div class="foot"><a class="go" href="templates/03_vox_desk/index.html">进入展厅 →</a></div>
+        <div class="foot"><a class="go" href="templates/03_investigative_desk/index.html">进入展厅 →</a></div>
       </article>
 
       <article class="pack ng">
-        <img class="thumb" src="docs/preview_nodegraph.png" alt="04 ComfyUI 3D 节点图预览" loading="lazy" />
-        <div class="head"><div class="no">04</div><div class="en">COMFYUI 3D NODEGRAPH</div></div>
-        <h2>ComfyUI 3D 节点图</h2>
+        <img class="thumb" src="docs/preview_nodegraph.png" alt="04 3D 节点工作流预览" loading="lazy" />
+        <div class="head"><div class="no">04</div><div class="en">3D NODE GRAPH</div></div>
+        <h2>3D 节点工作流</h2>
         <ul>
           <li>深空蓝黑网格 · 发光贝塞尔信号线与脉冲光点</li>
           <li>内置示波器 · 环形通过率仪表 · 激光线框展柜</li>
@@ -356,14 +356,14 @@
         <h2>Pro NLE 多轨剪辑台</h2>
         <ul>
           <li>真 4 轨实时时间线 · 逐字语音波形 · 实时时码</li>
-          <li>PiP / Corner 模式自动显露右侧 Lumetri 示波器</li>
+          <li>PiP / Corner 模式自动显露右侧视频示波器</li>
           <li>开机自检打字 · 手风琴清单 · 四色色条场记转场</li>
         </ul>
                 <div class="skins">
           <span class="sk-tag">4 套实时皮肤</span>
-          <a class="sk" href="templates/05_pro_nle/index.html?theme=premiere" title="深蓝黑 · ?theme=premiere · 默认"><i style="background:conic-gradient(#0A0D12 0deg 180deg,#38BDF8 180deg 360deg)"></i>深蓝黑</a>
-          <a class="sk" href="templates/05_pro_nle/index.html?theme=davinci" title="达芬奇 · ?theme=davinci"><i style="background:conic-gradient(#0B0B0D 0deg 180deg,#FF7A00 180deg 360deg)"></i>达芬奇</a>
-          <a class="sk" href="templates/05_pro_nle/index.html?theme=fcp_silver" title="浅银 · ?theme=fcp_silver"><i style="background:conic-gradient(#E5E7EB 0deg 180deg,#007AFF 180deg 360deg)"></i>浅银</a>
+          <a class="sk" href="templates/05_pro_nle/index.html?theme=studio_dark" title="深蓝黑 · ?theme=studio_dark · 默认"><i style="background:conic-gradient(#0A0D12 0deg 180deg,#38BDF8 180deg 360deg)"></i>深蓝黑</a>
+          <a class="sk" href="templates/05_pro_nle/index.html?theme=color_grade" title="调色台 · ?theme=color_grade"><i style="background:conic-gradient(#0B0B0D 0deg 180deg,#FF7A00 180deg 360deg)"></i>调色台</a>
+          <a class="sk" href="templates/05_pro_nle/index.html?theme=light_silver" title="浅银 · ?theme=light_silver"><i style="background:conic-gradient(#E5E7EB 0deg 180deg,#007AFF 180deg 360deg)"></i>浅银</a>
           <a class="sk" href="templates/05_pro_nle/index.html?theme=broadcast" title="导播台 · ?theme=broadcast"><i style="background:conic-gradient(#09111F 0deg 180deg,#EC4899 180deg 360deg)"></i>导播台</a>
         </div>
         <div class="foot"><a class="go" href="templates/05_pro_nle/index.html">进入展厅 →</a></div>
@@ -471,9 +471,9 @@
 
       <article class="pack kg">
         <span class="stk new">NEW!</span>
-        <img class="thumb" src="docs/preview_keynote_glass.png" alt="11 Keynote 暗黑流光预览" loading="lazy" />
-        <div class="head"><div class="no">11</div><div class="en">KEYNOTE GLASS</div></div>
-        <h2>Keynote 暗黑流光</h2>
+        <img class="thumb" src="docs/preview_stage_glass.png" alt="11 发布会流光玻璃预览" loading="lazy" />
+        <div class="head"><div class="no">11</div><div class="en">STAGE GLASS</div></div>
+        <h2>发布会流光玻璃</h2>
         <ul>
           <li>纯黑舞台 · 1px 亮边液态毛玻璃 Bento</li>
           <li>钛金属渐变超大标题 · 28px 大圆角</li>
@@ -486,14 +486,14 @@
           <span class="c"><i style="background:#A78BFA"></i>极光紫</span>
           <span class="c"><i style="background:#22D3EE"></i>极光青</span>
         </div>
-        <div class="foot"><a class="go" href="templates/11_keynote_glass/index.html"><span>进入展厅 →</span></a></div>
+        <div class="foot"><a class="go" href="templates/11_stage_glass/index.html"><span>进入展厅 →</span></a></div>
       </article>
 
-      <article class="pack bbg">
+      <article class="pack fin">
         <span class="stk new">NEW!</span>
-        <img class="thumb" src="docs/preview_bloomberg.png" alt="12 华尔街金融终端预览" loading="lazy" />
-        <div class="head"><div class="no">12</div><div class="en">WALL ST. TERMINAL</div></div>
-        <h2>华尔街金融终端</h2>
+        <img class="thumb" src="docs/preview_fin_terminal.png" alt="12 金融数据终端预览" loading="lazy" />
+        <div class="head"><div class="no">12</div><div class="en">FIN TERMINAL</div></div>
+        <h2>金融数据终端</h2>
         <ul>
           <li>深海藏青终端面板 · 钢蓝细框 · 等宽数字</li>
           <li>确定性 K 线 / sparkline / 滚动行情条</li>
@@ -506,7 +506,7 @@
           <span class="c"><i style="background:#10B981"></i>涨</span>
           <span class="c"><i style="background:#EF4444"></i>跌</span>
         </div>
-        <div class="foot"><a class="go" href="templates/12_bloomberg_fin/index.html"><span>进入展厅 →</span></a></div>
+        <div class="foot"><a class="go" href="templates/12_fin_terminal/index.html"><span>进入展厅 →</span></a></div>
       </article>
     </div>
 
