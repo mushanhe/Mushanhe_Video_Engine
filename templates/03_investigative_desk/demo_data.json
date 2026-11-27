@@ -3,11 +3,6 @@
     "title": "Investigative Desk · 深度调查桌面组件展厅",
     "style": "03_investigative_desk",
     "version": "1.1.0",
-    "fps": 30,
-    "size": [
-      1920,
-      1080
-    ],
     "avatar": {
       "video": "",
       "bg": "assets/studio_bg.png",

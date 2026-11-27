@@ -10,7 +10,7 @@
 
 1 shared `core/` kernel · 10 universal talking-head scene types · 4 animated avatar modes with particle morphs · **4 live skins each for 01–06 (24) + 6 new styles 07–12**
 
-`v3.3` · plain HTML / CSS / JS · zero build · seek to any moment and get the exact frame · one-click 01–12 style switcher (top-right) · one-click 1080p / 4K MP4 export · bilingual AI Agent Skill included (`SKILL.md` / `SKILL.en.md`)
+`v3.3.1` · plain HTML / CSS / JS · zero build · seek to any moment and get the exact frame · one-click 01–12 style switcher (top-right) · one-click 1080p / 4K MP4 export · bilingual AI Agent Skill included (`SKILL.md` / `SKILL.en.md`)
 
 | 01 · 3D Industrial Gallery | 02 · Swiss Print Collage |
 |---|---|
@@ -176,6 +176,7 @@ Script structure (excerpt):
 - `avatar`: `card` / `pip` / `corner` / `full`.
 - `**keyword**`: marks the accent color in titles and subtitles.
 - `meta.avatar.video`: set it to your keyed (alpha) presenter video to replace the silhouette placeholder.
+- The canvas is fixed at 1920×1080 (`core/engine.css`); export resolution and frame rate come from `export_mp4.py --res` / `--fps`, not from the script.
 
 ### Real-footage sync fields (v3.2, optional)
 
@@ -211,7 +212,7 @@ python core/tools/align.py --input voice.wav --script script.txt --inject templa
 - **Input**: `.wav` `.mp3` `.m4a` `.mp4` `.mkv` `.mov`. Video input also exports a 48 kHz stereo WAV for `meta.audio` (or set `--extract-audio`).
 - **Model**: `--model medium` by default; set the cache with `--model-dir` or `HF_HOME`, `--offline` uses local models only. CUDA → float16 automatically, otherwise (or when cuBLAS / cuDNN are missing) it falls back to CPU int8.
 - **Script `--script`**: the prompt carries one short sentence plus the script's proper nouns (Claude, WorkBuddy, JSON, Skill…), never the whole text; fixes are conservative — only one-for-one homophones, number spelling (十二→12) and English case / spelling. Extra, skipped or rephrased words always follow what was actually said; every change is listed in `corrections`.
-- **Mode B rules**: each scene's draft text comes from `sub` (then `text`, then `script`); scenes butt against each other with no gaps; scenes without voice-over (outro, visual-only) keep their duration and follow in sequence; unmatched scenes print a warning with scene number + text. `meta.audio` is written relative to the template page folder (use `--page-dir` if the script lives elsewhere).
+- **Mode B rules**: each scene's draft text comes from `sub` (then `text`, then `script`); scenes butt against each other with no gaps; scenes without voice-over (outro, visual-only) keep their duration and follow in sequence; long scripts (about 2,000+ characters / 7+ minutes) are aligned scene by scene automatically. Read the last lines for the result: `STATUS OK` / `STATUS PARTIAL` (some scenes not filled or far from the recording, with a warning list) / `STATUS FAIL too-large|mismatch|io` (exit code 1, no regular output, only `<out>.failed.json` for troubleshooting). `meta.audio` is written relative to the template page folder (use `--page-dir` if the script lives elsewhere).
 - **`--refine` (optional)**: adds stable-ts forced alignment on the final text; needs `pip install stable-ts`, which **pulls in PyTorch (~0.5–2 GB)**; skipped with a hint when not installed.
 
 > ⚠️ **Hard rule**: run align.py on the exact `meta.audio` track used for playback and export. After cutting pauses, changing speed or re-splicing, run it again — otherwise the whole timeline drifts.
@@ -301,6 +302,9 @@ git pull --ff-only                           # only after you decide to update: 
 Save your own scripts as new files (e.g. `my_script.json`) so updates never overwrite them; if you edited files from the repo and the pull fails, run `git stash` manually first, then update (do not use `git reset`).
 With an AI coding assistant, step 0 of `SKILL.md` / `SKILL.en.md` checks silently when work starts (at most once a day, 5-second timeout), asks you when a new version exists, and runs `git pull --ff-only` only after you agree — it never updates automatically.
 
+> **Upgrading from v3.2.1 or earlier**: with `git pull`, the old folders renamed in v3.2.2 (`03_vox_desk`, `11_keynote_glass`, `12_bloomberg_fin`) are removed automatically; they only remain if you put your own files inside — move your files out and delete the old folders (`check_update.py` prints an extra hint when it finds them; it only reports, never deletes).
+> If you upgrade by extracting a downloaded zip over the old copy, **delete these 3 old folders first**, otherwise old and new packs show up side by side (15 templates).
+
 ## Directory structure
 
 ```text
@@ -366,6 +370,7 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 - [ ] **Live skins for 07–12**: 4 `themes.js` live skins for each of the six new styles
 - [ ] **More variants and vertical components**: `variant` layouts for the other packs + vertical components (finance / programming / reading)
 - [x] **v3.3**: `align.py` voice-over alignment (faster-whisper; mode A standalone output / mode B fills the script; same-source words + sub; conservative script fixes; optional `--refine` stable-ts forced alignment)
+- [x] **v3.3.1**: fix: segmented alignment for long scripts (2,000+ characters no longer fail as a whole), explicit failure status (`STATUS OK / PARTIAL / FAIL`), update check reuses today's local result, upgrade note on cleaning up renamed folders
 - [ ] Automatic BGM ducking (lower background music under speech)
 - [ ] Visual script editor
 

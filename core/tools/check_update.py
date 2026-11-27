@@ -6,9 +6,10 @@ Mushanhe Video Engine — 模板更新检查（SKILL.md Step 0 调用；只检�
   python core/tools/check_update.py --force    # 忽略「一天一次」限制，立即检查
 
 输出（第一行固定以 STATUS 开头，便于 AI Agent 解析）:
-  STATUS SKIP <原因>     非 git 目录 / detached HEAD / 没有上游分支 / 今天已查过 / 联网失败或超时 → 静默跳过，不打扰用户
+  STATUS SKIP <原因>     非 git 目录 / detached HEAD / 没有上游分支 / 今天已查过且本地已是最新 / 联网失败或超时 → 静默跳过，不打扰用户
   STATUS UP_TO_DATE      已是最新
   STATUS BEHIND <N>      上游有 N 个新提交，随后列出更新摘要；由 Agent 询问用户，用户确认后再执行 git pull --ff-only
+                         （今天已联网查过时不再联网，用上次下载到本地的上游信息重算 N；--force 立即复查）
 
 约束：当前分支与上游分支动态获取（不写死 origin/main）；联网只做一次 git fetch，5 秒超时，
 GIT_TERMINAL_PROMPT=0 + SSH BatchMode，绝不弹出账号密码输入；本脚本从不修改工作区。
@@ -24,6 +25,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 PREF = REPO / ".mh_update_pref"
 DAY = 24 * 3600
+OLD_DIRS = ("03_vox_desk", "11_keynote_glass", "12_bloomberg_fin")   # v3.2.2 改名前的旧目录
 
 
 def git(*args, timeout=5):
@@ -60,6 +62,17 @@ def skip(reason):
     sys.exit(0)
 
 
+def report_behind(n, branch, upstream, note=""):
+    print(f"STATUS BEHIND {n} {branch} ← {upstream}" + note)
+    _, log = git("log", "--oneline", "--no-decorate", "-n", "20", f"HEAD..{upstream}")
+    print(log)
+    left = [d for d in OLD_DIRS if (REPO / "templates" / d).is_dir()]
+    if left:
+        print(f"NOTE 本地还留着 v3.2.2 改名前的旧目录：{'、'.join('templates/' + d for d in left)}。"
+              "里面若有自己的文件，请挪走后删掉旧目录（本脚本不删除任何文件）。")
+    print("NEXT 询问用户是否更新；同意后执行 git pull --ff-only。若因本地改动失败，只提示用户手动 git stash 后重试，严禁 reset。")
+
+
 def main():
     for stream in (sys.stdout, sys.stderr):
         try:
@@ -92,6 +105,11 @@ def main():
     except Exception:
         pass
     if not args.force and time.time() - last < DAY:
+        # 今天已联网查过：不再联网，只用上次 fetch 下来的本地上游信息重算一次落后数
+        code, n = git("rev-list", "--count", f"HEAD..{upstream}")
+        if code == 0 and int(n or 0) > 0:
+            report_behind(n, branch, upstream, " （今日已联网查过，以下为本地记录；--force 立即复查）")
+            return
         skip("checked-today")
     try:  # 先记时间：无论联网成败，一天只打扰网络一次
         PREF.write_text(json.dumps({"last_check": time.time()}), encoding="utf-8")
@@ -110,10 +128,7 @@ def main():
     if int(n or 0) == 0:
         print(f"STATUS UP_TO_DATE {branch} ← {upstream}")
         return
-    print(f"STATUS BEHIND {n} {branch} ← {upstream}")
-    _, log = git("log", "--oneline", "--no-decorate", "-n", "20", f"HEAD..{upstream}")
-    print(log)
-    print("NEXT 询问用户是否更新；同意后执行 git pull --ff-only。若因本地改动失败，只提示用户手动 git stash 后重试，严禁 reset。")
+    report_behind(n, branch, upstream)
 
 
 if __name__ == "__main__":

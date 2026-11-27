@@ -246,7 +246,7 @@ def main():
             print("  -", f)
         sys.exit(1)
     n_allow = sum(1 for r in report if r[3] == "ALLOW")
-    print(f"SMOKE PASS · ZERO_ERRORS" + (f" · 基线比对通过（{n_allow} 格为已确认的允许差异）" if base_root else ""))
+    print("SMOKE PASS · ZERO_ERRORS" + (f" · 基线比对通过（{n_allow} 格为已确认的允许差异）" if base_root else ""))
 
 
 if __name__ == "__main__":

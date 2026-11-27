@@ -10,7 +10,7 @@
 
 1 套 `core/` 通用内核 · 10 大万能口播句型 · 4 种动态人像粒子变形 · **01–06 各 4 色实时换肤（24 套）+ 07–12 六大新流派**
 
-`v3.3` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 右上角 01–12 一键切风格 · 一键导出 1080p / 4K MP4 · 自带中英双语 AI Agent Skill（`SKILL.md` / `SKILL.en.md`）
+`v3.3.1` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 右上角 01–12 一键切风格 · 一键导出 1080p / 4K MP4 · 自带中英双语 AI Agent Skill（`SKILL.md` / `SKILL.en.md`）
 
 | 01 · 3D 工业实体画廊 | 02 · 瑞士印刷拼贴 |
 |---|---|
@@ -176,6 +176,7 @@ http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=my_script.json
 - `avatar`：`card` / `pip` / `corner` / `full`。
 - `**关键词**`：在标题、副标题里标出高亮色。
 - `meta.avatar.video`：填入你的抠像视频路径，就会替换剪影占位。
+- 画幅固定 1920×1080（`core/engine.css`），导出分辨率和帧率由 `export_mp4.py` 的 `--res` / `--fps` 决定，剧本不控制。
 
 ### 真人素材同步字段（v3.2，可选）
 
@@ -211,7 +212,7 @@ python core/tools/align.py --input voice.wav --script script.txt --inject templa
 - **输入**：`.wav` `.mp3` `.m4a` `.mp4` `.mkv` `.mov`。视频输入会另存一份 48 kHz 立体声 WAV 作为 `meta.audio`（也可 `--extract-audio` 指定路径）。
 - **模型**：默认 `--model medium`；`--model-dir` 或 `HF_HOME` 指定缓存位置，`--offline` 只用本地模型。有 CUDA 自动用 float16，否则（或缺 cuBLAS / cuDNN）自动退回 CPU int8。
 - **文稿 `--script`**：提示词只放一句说明 + 文稿里的专有名词（Claude、WorkBuddy、JSON、Skill…），不塞全文；纠错很保守——只改一字对一字的同音错字、数字写法（十二→12）、英文大小写 / 拼写，多念、少念、改口一律以实际念的为准，每处都记进 `corrections`。
-- **模式 B 规则**：每段草稿文字取 `sub`（没有再取 `text`、`script`）；段与段首尾衔接无空隙；没有口播的段（片尾、纯画面）保持原时长顺延；对不上的段打印「段号 + 原文」警告。`meta.audio` 按模板页面目录写相对路径（剧本不在风格包目录时用 `--page-dir` 指定）。
+- **模式 B 规则**：每段草稿文字取 `sub`（没有再取 `text`、`script`）；段与段首尾衔接无空隙；没有口播的段（片尾、纯画面）保持原时长顺延；长稿（约 2000 字 / 7 分钟以上）自动逐段顺序对齐。结果看最后几行：`STATUS OK` / `STATUS PARTIAL`（有段没回填或差异较大，列出警告清单）/ `STATUS FAIL too-large|mismatch|io`（退出码 1，不写正式输出，只写 `<out>.failed.json` 便于排查）。`meta.audio` 按模板页面目录写相对路径（剧本不在风格包目录时用 `--page-dir` 指定）。
 - **`--refine`（可选）**：再用 stable-ts 按最终文字强制对齐，需 `pip install stable-ts`，**会连带安装 PyTorch（约 0.5–2 GB）**；没装就自动跳过并提示。
 
 > ⚠️ **硬约束**：align.py 必须跑在最终用于播放和导出的那条 `meta.audio` 音轨上。后期剪掉停顿、变速或重新拼接后，必须重新跑一次，否则全片时间会整体错位。
@@ -301,6 +302,9 @@ git pull --ff-only                           # 确认要更新再执行：只快
 你自己的剧本建议另存为新文件（如 `my_script.json`），更新时不会被覆盖；如果改过仓库里的原文件导致 pull 失败，先手动 `git stash` 再更新（不要用 `git reset`）。
 用 AI 编程助手时，`SKILL.md` 第 0 步会在开工时静默检查（一天最多一次、5 秒超时），发现新版先问你，你同意才 `git pull --ff-only`，从不自动更新。
 
+> **从 v3.2.1 及更早版本升级**：用 `git pull` 升级时，v3.2.2 改名的旧目录（`03_vox_desk`、`11_keynote_glass`、`12_bloomberg_fin`）会被自动删除；只有旧目录里放了你自己的文件时才会残留，残留的请把自己的文件挪走后删掉旧目录（`check_update.py` 发现时会多打一行提示，只提示不删除）。
+> 用下载压缩包覆盖升级的，**必须先删掉这 3 个旧目录**，否则本地会同时出现新旧 15 套模板。
+
 ## 目录结构
 
 ```text
@@ -366,6 +370,7 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 - [ ] **07–12 实时皮肤**：六大新流派各补 4 套 `themes.js` 实时皮肤
 - [ ] **更多变体与垂类组件**：其余风格包的 `variant` 布局变体 + 垂类组件（财经 / 编程 / 读书）
 - [x] **v3.3**：`align.py` 口播对齐（faster-whisper，模式 A 独立输出 / 模式 B 回填剧本，同源 words + sub，文稿保守纠错，可选 `--refine` stable-ts 强制对齐）
+- [x] **v3.3.1**：fix：长稿分段对齐（>2000 字不再整片失败）、失败显式报错（`STATUS OK / PARTIAL / FAIL`）、更新检查复用本地结果、升级说明补旧目录清理
 - [ ] BGM 自动闪避（人声段自动压低背景乐）
 - [ ] 剧本可视化编辑器
 

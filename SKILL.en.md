@@ -2,7 +2,7 @@
 >
 > This is the English reference copy of [`SKILL.md`](SKILL.md). It deliberately has no YAML frontmatter, so only `SKILL.md` registers as the `mushanhe-video-engine` Skill (no duplicate-name conflict). To use it as the Skill in an English setup, copy it to `SKILL.md` and paste the frontmatter block from `SKILL.md` on top.
 
-# Mushanhe Video Engine · v3.3
+# Mushanhe Video Engine · v3.3.1
 
 Plain HTML/CSS/JS, zero build step. `core/` is the shared kernel (camera, subtitles, avatar, transitions); `templates/01_*` ~ `templates/12_*` are the 12 style packs.
 Rendering is deterministic in time: `?t=37.4` is always second 37.4, so every frame can be inspected and the result exported to 1080p / 4K MP4 in one command.
@@ -14,6 +14,9 @@ Rendering is deterministic in time: `?t=37.4` is always second 37.4, so every fr
    - It goes online at most once a day (last check time stored in the local `.mh_update_pref`, ignored by `.gitignore`); `git fetch` runs with a 5-second timeout and `GIT_TERMINAL_PROMPT=0`, and a timeout / failure is also just `STATUS SKIP`.
    - Speak up only on `STATUS BEHIND N`: relay the update summary the script prints and **ask the user whether to update**; after they confirm, run `git pull --ff-only`.
      If it fails because of local changes, only tell the user to run `git stash` manually and retry — **never** `git reset`. There is no automatic update.
+   - If it already went online today it stays offline and recounts from the upstream info already downloaded: still behind → `STATUS BEHIND N` as usual (marked "already checked online today"); already updated → `STATUS SKIP checked-today`.
+   - Upgrade note: with `git pull`, the old folders renamed in v3.2.2 (`03_vox_desk`, `11_keynote_glass`, `12_bloomberg_fin`) are removed automatically; they only remain if the user put their own files inside (the script prints an extra `NOTE` line — it only reports, never deletes) — have the user move their files out and delete the old folders;
+     when upgrading by extracting a downloaded zip over the old copy, delete these 3 old folders first, otherwise old and new packs show up side by side (15 templates).
 2. **Environment self-check**: `python --version` and `ffmpeg -version` (ffmpeg is only needed for MP4 export and `align.py`); when real voice-over needs aligning, also check `python -c "import faster_whisper"`;
    then run `python core/tools/smoke_test.py --packs 01_industrial_3d --times 3 --out scratch_verify/selfcheck`, which really launches a headless browser — `SMOKE PASS` means the Playwright engine is ready (if no browser is found: `pip install playwright` + `playwright install chromium`).
 
@@ -84,6 +87,7 @@ Since v3.2.2 packs 03 / 11 / 12 live in `03_investigative_desk` / `11_stage_glas
 - `sub[]` holds this scene's subtitle lines (auto highlighted word by word); `**keyword**` in titles gets the accent color; `dur` is in seconds.
 - For each scene type's full `data` fields, copy the matching scene from the target pack's `demo_data.json`; do not invent fields.
 - Put the script in the style-pack folder and load it with `?data=my_script.json`; all packs share the same fields, so switching style only means switching folder (or using the top-right switcher).
+- The canvas is fixed at 1920×1080 (`core/engine.css`); export resolution and frame rate come from `export_mp4.py --res` / `--fps`, not from the script (do not put `fps` / `size` in `meta`).
 
 **Real-footage sync fields (v3.2, all optional; without them output is frame-identical to the original)** — all times are **absolute seconds on the whole-video timeline** (counted from the start of scene 1, not seconds relative to the scene):
 - `sc.words`: `[["word", absStart, absEnd], ...]` → real word-level subtitle highlighting; if omitted, falls back to spreading `sub[]` evenly.
@@ -120,7 +124,9 @@ Since v3.2.2 packs 03 / 11 / 12 live in `03_investigative_desk` / `11_stage_glas
    - Requirements: `pip install faster-whisper` (no PyTorch needed) + ffmpeg; optional `pip install pypinyin` (homophone fixes) and `opencc-python-reimplemented` or `zhconv` (Traditional→Simplified; a built-in table is used otherwise).
      `--refine` adds optional stable-ts forced alignment via `pip install stable-ts`, which **pulls in PyTorch**; skipped automatically if missing. Video input also exports a 48 kHz stereo WAV for `meta.audio`.
    - **Hard rule**: run it on the exact `meta.audio` track used for playback / export; after cutting pauses, changing speed or re-splicing, run it again or the whole timeline will drift.
-   - Draft text per scene comes from `sub` (then `text`, then `script`; none = no voice-over, duration kept and placed in sequence); unmatched scenes print a warning with scene number + text — fix them before moving on.
+   - Draft text per scene comes from `sub` (then `text`, then `script`; none = no voice-over, duration kept and placed in sequence); long scripts (about 2,000+ characters / 7+ minutes) are aligned scene by scene automatically.
+   - Read the last lines for the result: `STATUS OK`; `STATUS PARTIAL` (some scenes not filled or far from the recording, with a warning list — fix them before moving on);
+     `STATUS FAIL too-large|mismatch|io` (exit code 1, `--out` is not written, only `<out>.failed.json`) — **never carry on as if it succeeded**; first check the script and the recording are the same version.
    - `--script` only makes conservative fixes: one-for-one homophones, number spelling, English case / spelling; extra, skipped or rephrased words always follow what was actually said, and every change is listed in `corrections`.
    - Measured (i5-14600KF, CPU int8, medium model 1.53 GB): a 3 min 04 s voice-over transcribes in about 85 s (~0.45× real time); against EP03's shipped subtitles: 99.4% text match,
      per-character start error median 20 ms / P95 140 ms; `--refine` adds ~40 s and brings the median to 17 ms. `--model large-v3-turbo` is about 2× faster but its start-error median is 120 ms — not recommended for word highlighting.

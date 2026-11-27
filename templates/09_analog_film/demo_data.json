@@ -3,11 +3,6 @@
     "title": "Analog Film 日系胶片杂志 · 组件展厅",
     "style": "09_analog_film",
     "version": "1.0.0",
-    "fps": 30,
-    "size": [
-      1920,
-      1080
-    ],
     "avatar": {
       "video": "",
       "bg": "assets/studio_bg.png",

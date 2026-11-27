@@ -3,11 +3,6 @@
     "title": "Industrial 3D Gallery · 组件展厅",
     "style": "01_industrial_3d",
     "version": "1.1.0",
-    "fps": 30,
-    "size": [
-      1920,
-      1080
-    ],
     "avatar": {
       "video": "",
       "bg": "assets/studio_bg.png",

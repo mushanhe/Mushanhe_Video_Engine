@@ -20,11 +20,19 @@ Mushanhe Video Engine — 口播对齐工具：音/视频 → 同源 words（逐
 硬约束：必须在「最终用于播放和导出的那条音轨」上运行（即 meta.audio 指向的文件）。
         后期剪掉停顿、变速、重新拼接后，请重新跑一次 align.py，否则全片时间会整体错位。
 
+结果（最后几行固定格式，便于 AI Agent 解析）：
+  STATUS OK                              → ALIGN_DONE，退出码 0
+  STATUS PARTIAL + 警告清单              → ALIGN_DONE，退出码 0（有段没回填 / 与录音差异较大）
+  STATUS FAIL <too-large|mismatch|io>   → 不写 --out，只写 <out>.failed.json 便于排查，退出码 1
+  参数错误 / 缺依赖：退出码 2
+长稿（全片草稿字数 × 口播字数 > 4e6，约 2000 字 / 7 分钟以上）自动改为逐段顺序对齐，不再整片失败。
+
 时间一律是全片绝对秒（音轨第 0 秒 = 剧本第 0 秒）。words 与 sub 由同一次识别产出，sub 的切行规则与
 core/script-sync.js 完全一致（有草稿 sub 时按字 LCS 映射断点；没有时按停顿 ≥0.3s / 每行宽度 ≤14 切）。
 """
 import argparse
 import difflib
+import importlib.util
 import json
 import os
 import re
@@ -36,7 +44,7 @@ import time
 import wave
 from pathlib import Path
 
-VERSION = "3.3"
+VERSION = "3.3.1"
 
 # ============================== 与 core/script-sync.js 同口径的切行规则 ==============================
 LATIN = re.compile(r"^[A-Za-z0-9.\-_/@#:+%]+$")
@@ -702,28 +710,224 @@ def key_chars(s):
     return out
 
 
+LCS_CAP = 4e6        # 与 map_lines 相同的按字 LCS 计算量上限（草稿字数 × 口播字数）
+COV_OK, COV_MIN = 0.50, 0.15   # 每段覆盖率：≥0.50 正常；0.15–0.50 回填并警告；<0.15 不回填
+
+
+def lcs_pairs(S, C):
+    """按字 LCS（与 map_lines 同一套 DP 与回溯），返回对上的 (草稿字序号, 口播字序号)。"""
+    n, m = len(S), len(C)
+    if not n or not m:
+        return []
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(n - 1, -1, -1):
+        row, nxt, si = dp[i], dp[i + 1], S[i]
+        for j in range(m - 1, -1, -1):
+            row[j] = nxt[j + 1] + 1 if si == C[j] else (nxt[j] if nxt[j] >= row[j + 1] else row[j + 1])
+    pairs, i, j = [], 0, 0
+    while i < n and j < m:
+        if S[i] == C[j]:
+            pairs.append((i, j))
+            i += 1
+            j += 1
+        elif dp[i + 1][j] >= dp[i][j + 1]:
+            i += 1
+        else:
+            j += 1
+    return pairs
+
+
+def dense_pairs(pairs, n):
+    """只认「成片」对上的字：草稿 ≥8 字时要求连续 ≥3 字都对上，4–7 字要求连续 ≥2 字（散落的单字、常用双字词多半是巧合）；
+    再按缺口（口播缺口 > 2×草稿缺口 + 8）切块，丢掉离主体很远的零碎小块（< min(6, 10% 本段字数)，最大块始终保留）。"""
+    run = 3 if n >= 8 else 2 if n >= 4 else 1
+    if run > 1:
+        keep, k = [], 0
+        while k < len(pairs):
+            e = k
+            while e + 1 < len(pairs) and pairs[e + 1] == (pairs[e][0] + 1, pairs[e][1] + 1):
+                e += 1
+            if e - k + 1 >= run:
+                keep += pairs[k:e + 1]
+            k = e + 1
+        pairs = keep
+    if not pairs:
+        return []
+    blocks = [[pairs[0]]]
+    for a, b in zip(pairs, pairs[1:]):
+        if (b[1] - a[1] - 1) > 2 * (b[0] - a[0] - 1) + 8:
+            blocks.append([])
+        blocks[-1].append(b)
+    floor = min(max(len(b) for b in blocks), max(2, min(6, 0.1 * n)))
+    return [p for b in blocks if len(b) >= floor for p in b]
+
+
+def coverage(S, words):
+    """本段草稿字 S 与一串口播词的覆盖率 = 成片对上的字数 / 本段草稿字数。"""
+    C = [k for w in words for k in key_chars(w[0])]
+    return len(dense_pairs(lcs_pairs(S, C), len(S))) / len(S) if S and C else 0.0
+
+
+def fill_gaps(L, W):
+    """没归属的词（-1）按时间间隔归到前后更近的一段（与 map_lines 规则一致）。"""
+    for i in range(len(L)):
+        if L[i] >= 0:
+            continue
+        p, q = i - 1, i + 1
+        while p >= 0 and L[p] < 0:
+            p -= 1
+        while q < len(L) and L[q] < 0:
+            q += 1
+        if p < 0 and q >= len(L):
+            return L
+        gp = W[i][1] - W[p][2] if p >= 0 else float("inf")
+        gq = W[q][1] - W[i][2] if q < len(L) else float("inf")
+        L[i] = L[p] if gp <= gq else L[q]
+    return L
+
+
+def seg_blocks(lines, S, wchars):
+    """单段草稿字数 × 窗口字数 > 4e6（单段 2000 字以上）时，按 sub 行拼成 ≤800 字的几块依次对齐；单行过长再按 800 字切。"""
+    if len(S) * wchars <= LCS_CAP:
+        return [S]
+    blocks, cur = [], []
+    for ln in lines:
+        ks = key_chars(ln)
+        while len(ks) > 800:
+            if cur:
+                blocks.append(cur)
+                cur = []
+            blocks.append(ks[:800])
+            ks = ks[800:]
+        if cur and len(cur) + len(ks) > 800:
+            blocks.append(cur)
+            cur = []
+        cur += ks
+    if cur:
+        blocks.append(cur)
+    return blocks
+
+
+def map_lines_seq(segs, W):
+    """长稿分段顺序对齐（全片 n × m > 4e6 时用）：segs = [(段号, 草稿行列表)]，返回 (每个词的段号, 每段信息)。
+    游标 cur 从 0 开始逐段往后：先在 W[cur : cur+win] 里找（win = max(120, round(1.8 × 本段字数))），
+    对不上再在 W[cur:] 剩下的全部词里按窗口滑动找一次（只往后、不回头）；还对不上就不回填，游标原地不动。"""
+    WK = [key_chars(w[0]) for w in W]
+    nW = len(W)
+
+    def match(S, a, b):
+        C, CW = [], []
+        for wi in range(a, b):
+            C += WK[wi]
+            CW += [wi] * len(WK[wi])
+        if len(S) * len(C) > LCS_CAP:
+            return None
+        keep = dense_pairs(lcs_pairs(S, C), len(S))
+        return (len(keep), CW[keep[0][1]], CW[keep[-1][1]]) if keep else (0, None, None)
+
+    def search(S, cur):
+        win = max(120, round(1.8 * len(S)))
+        r = match(S, cur, min(nW, cur + win))
+        if r is None or r[0] >= COV_MIN * len(S) or cur + win >= nW:
+            return r, False
+        best, step = r, max(1, win // 2)
+        a = cur + step
+        while a < nW:
+            rr = match(S, a, min(nW, a + win))
+            if rr is None:
+                break
+            if rr[0] > best[0]:
+                best = rr
+            if rr[0] >= COV_OK * len(S) or a + win >= nW:
+                break
+            a += step
+        return best, True
+
+    L, info, cur = [-1] * nW, {}, 0
+    for si, lines in segs:
+        S = key_chars(" ".join(lines))
+        if not S:
+            info[si] = {"cov": 0.0, "widened": False, "why": "mismatch"}
+            continue
+        win = max(120, round(1.8 * len(S)))
+        blocks = seg_blocks(lines, S, sum(len(WK[k]) for k in range(cur, min(nW, cur + win))))
+        got, seen, first, last, bc, widened, too_large = 0, 0, None, None, cur, False, False
+        for blk in blocks:
+            r, wid = search(blk, bc)
+            widened |= wid
+            if r is None:
+                too_large = True
+                continue
+            seen += r[0]
+            if r[0] >= COV_MIN * len(blk):
+                got += r[0]
+                first = r[1] if first is None else first
+                last, bc = r[2], r[2] + 1
+        ok = first is not None and got >= COV_MIN * len(S)
+        info[si] = {"cov": (got if ok else seen) / len(S), "widened": widened, "blocks": len(blocks),
+                    "why": None if ok else ("too-large" if too_large and not got else "mismatch")}
+        if ok:
+            for k in range(first, last + 1):
+                L[k] = si
+            cur = last + 1
+    return fill_gaps(L, W), info
+
+
 def inject(draft, words, audio_rel, duration, warn):
+    """回填草稿。返回 (draft, 音轨末字毫秒, report)；report 给 main 判 STATUS OK / PARTIAL / FAIL。"""
     scenes = draft.get("scenes") or []
     texts = [scene_text(sc) for sc in scenes]
     voiced = [i for i, (_, t) in enumerate(texts) if t]
     W = [list(w) for w in words]
     assign = {i: [] for i in range(len(scenes))}
+    info, path = {i: {"cov": 0.0, "widened": False} for i in voiced}, "full"
     if voiced and W:
-        L = map_lines([" ".join(texts[i][1]) for i in voiced], W, key=key_chars)
-        if L is None:
-            warn("全片草稿文字与识别结果完全对不上，未回填任何段")
+        joined = [" ".join(texts[i][1]) for i in voiced]
+        n, m = sum(len(key_chars(s)) for s in joined), sum(len(key_chars(w[0])) for w in W)
+        if n * m <= LCS_CAP:
+            # 全片单次比对（v3.3 原路径；正常稿子结果逐字段不变）
+            L = map_lines(joined, W, key=key_chars)
+            if L is not None:
+                for wi, li in enumerate(L):
+                    assign[voiced[li]].append(W[wi])
+                for i in voiced:
+                    info[i]["cov"] = coverage(key_chars(" ".join(texts[i][1])), assign[i])
+                bad = {i for i in voiced if info[i]["cov"] < COV_MIN and assign[i]}
+                if bad and len(bad) < len(voiced):
+                    # 差异过大的段不回填：它名下的词按时间归到前后更近的段（正常稿子不会走到这里）
+                    L2 = fill_gaps([-1 if voiced[li] in bad else voiced[li] for li in L], W)
+                    assign = {i: [] for i in range(len(scenes))}
+                    for wi, si in enumerate(L2):
+                        if si >= 0:
+                            assign[si].append(W[wi])
+                    for i in voiced:
+                        if i not in bad and assign[i]:
+                            info[i]["cov"] = coverage(key_chars(" ".join(texts[i][1])), assign[i])
         else:
-            for wi, li in enumerate(L):
-                assign[voiced[li]].append(W[wi])
-    # 对不上的段：打印段号 + 原文
+            # 长稿（约 2000 字 / 7 分钟以上）：分段顺序对齐
+            path = "seq"
+            L, info = map_lines_seq([(i, texts[i][1]) for i in voiced], W)
+            for wi, si in enumerate(L):
+                if si >= 0:
+                    assign[si].append(W[wi])
+    # 覆盖率判定：<0.15 不回填；0.15–0.50 回填并警告
+    failed, weak = [], []
     for i in voiced:
-        src = " ".join(texts[i][1])
-        sk, wk = key_chars(src), [k for w in assign[i] for k in key_chars(w[0])]
-        ratio = difflib.SequenceMatcher(None, sk, wk, autojunk=False).ratio() if sk and wk else 0.0
-        if not assign[i]:
-            warn(f"第 {i + 1} 段草稿文字在口播里找不到，保持原时长：{src[:40]}")
-        elif ratio < 0.6:
-            warn(f"第 {i + 1} 段草稿与实际念的差异较大（相似度 {ratio:.2f}）：草稿「{src[:30]}」/ 实际「{display([w[0] for w in assign[i]])[:30]}」")
+        src, cov = " ".join(texts[i][1]), info[i]["cov"]
+        if cov < COV_MIN:
+            info[i]["why"] = info[i].get("why") or "mismatch"
+            failed.append(i)
+            assign[i] = []
+            if info[i]["why"] == "too-large":
+                warn(f"第 {i + 1} 段太长，按字比对算不动（{len(key_chars(src))} 字），未回填、保持原时长：{src[:40]}")
+            else:
+                warn(f"第 {i + 1} 段草稿文字与录音对不上（cov {cov:.0%}），未回填、保持原时长：{src[:40]}")
+        elif cov < COV_OK:
+            weak.append(i)
+            warn(f"第 {i + 1} 段与录音差异较大（cov {cov:.0%}）：草稿「{src[:30]}」/ 实际「{display([w[0] for w in assign[i]])[:30]}」")
+    widened = [i for i in voiced if info[i].get("widened")]
+    if voiced and len(widened) > 0.3 * len(voiced):
+        warn(f"多处需要扩大搜索（{len(widened)}/{len(voiced)} 段），稿子与录音可能不是同一版")
     ms = lambda t: int(round(t * 1000))
     has = [i for i in range(len(scenes)) if assign[i]]
     total = ms(max(w[2] for w in W)) if W else 0
@@ -763,7 +967,12 @@ def inject(draft, words, audio_rel, duration, warn):
     meta["audio"] = audio_rel
     if old and (old if isinstance(old, str) else old.get("src")) != audio_rel:
         warn(f"meta.audio 由 {old} 改为 {audio_rel}")
-    return draft, total
+    report = {"path": path, "voiced": len(voiced), "words": len(W), "filled": [i for i in voiced if assign[i]],
+              "failed": failed, "weak": weak, "widened": widened,
+              "segments": [{"scene": i + 1, "cov": round(info[i]["cov"], 3), "widened": bool(info[i].get("widened")),
+                            "filled": bool(assign[i]), "why": info[i].get("why") if i in failed else None,
+                            "text": " ".join(texts[i][1])[:60]} for i in voiced]}
+    return draft, total, report
 
 
 # ============================== 输出 ==============================
@@ -791,6 +1000,46 @@ def rel_url(target, base_dir):
         return os.path.relpath(Path(target).resolve(), Path(base_dir).resolve()).replace("\\", "/")
     except ValueError:   # 不同盘符
         return Path(target).resolve().as_posix()
+
+
+def judge(report):
+    """模式 B 结果分级：OK / PARTIAL / FAIL。回填 0 段一律 FAIL；有口播段里 ≥80% 没回填也 FAIL mismatch。"""
+    V, F = report["voiced"], len(report["filled"])
+    if not V:
+        return "FAIL", "mismatch", "草稿里没有可对齐的口播文字（各段 sub / text / script 都为空）"
+    if not report["words"]:
+        return "FAIL", "mismatch", "录音里没识别出任何字（静音 / 音轨不对 / 语言参数不对？）"
+    whys = [s["why"] for s in report["segments"] if s["why"]]
+    if F == 0 and whys and all(w == "too-large" for w in whys):
+        return "FAIL", "too-large", f"草稿太长，按字比对算不动（{V} 个口播段都超出单次比对上限），未回填任何段"
+    if F == 0 or (V - F) / V >= 0.8:
+        return "FAIL", "mismatch", f"草稿文字与录音对不上：{V} 个口播段里 {V - F} 段没对上（≥80%），请确认稿子和录音是同一版"
+    if report["failed"] or report["weak"] or len(report["widened"]) > 0.3 * V:
+        return "PARTIAL", None, None
+    return "OK", None, None
+
+
+def fail(reason, msg, failed_path, debug):
+    """失败：不写正式输出，只写 <out>.failed.json 便于排查；打印 STATUS FAIL <原因>，退出码 1。"""
+    try:
+        dump_json(dict({"status": "FAIL", "reason": reason, "message": msg, "tool": f"core/tools/align.py v{VERSION}"}, **debug), failed_path)
+        where = f"（排查信息：{failed_path}）"
+    except OSError:
+        where = ""
+    print(f"[align][失败] {msg}{where}", flush=True)
+    print(f"STATUS FAIL {reason} {msg}")
+    sys.exit(1)
+
+
+def write_out(obj, out, failed_path, debug):
+    try:
+        dump_json(obj, out)
+    except OSError as e:
+        fail("io", f"写不了输出文件 {out}：{e}", failed_path, debug)
+    try:
+        failed_path.unlink()   # 清掉上一次失败留下的排查文件
+    except OSError:
+        pass
 
 
 def main():
@@ -821,10 +1070,7 @@ def main():
     if not shutil.which("ffmpeg"):
         print("[align] 需要 ffmpeg：请安装后加入 PATH（https://ffmpeg.org/download.html）")
         sys.exit(2)
-    try:
-        import faster_whisper  # noqa: F401
-        import numpy  # noqa: F401
-    except Exception:
+    if not (importlib.util.find_spec("faster_whisper") and importlib.util.find_spec("numpy")):
         print("[align] 需要 faster-whisper：pip install faster-whisper")
         sys.exit(2)
 
@@ -834,6 +1080,15 @@ def main():
         sys.exit(2)
     out = Path(args.out)
     page_dir = Path(args.page_dir) if args.page_dir else out.parent
+    failed_path = out.with_name(out.name + ".failed.json")
+    draft = None
+    if args.inject:   # 先读草稿再识别：草稿坏了不用白等几分钟
+        try:
+            draft = json.loads(Path(args.inject).read_text(encoding="utf-8"))
+            if not isinstance(draft, dict):
+                raise ValueError("顶层不是 JSON 对象")
+        except (OSError, ValueError) as e:
+            fail("io", f"读不了草稿剧本 {args.inject}：{e}", failed_path, {"input": str(src), "inject": args.inject})
     t2s, t2s_name = make_t2s()
     homophone, has_py = make_homophone()
     t_all = time.time()
@@ -892,24 +1147,38 @@ def main():
         warnings.append(msg)
         print(f"[align][警告] {msg}", flush=True)
 
+    debug = {"input": str(src), "inject": args.inject, "model": args.model, "duration": round(duration, 3), "words": words}
+    status = "OK"
     if args.inject:
-        draft = json.loads(Path(args.inject).read_text(encoding="utf-8"))
         audio_rel = rel_url(play_audio, page_dir)
-        final, _ = inject(draft, words, audio_rel, duration, warn)
+        final, _, report = inject(draft, words, audio_rel, duration, warn)
+        state, reason, msg = judge(report)
+        if state == "FAIL":
+            fail(reason, msg, failed_path, dict(debug, report=report, warnings=warnings))
+        status = state
         final.setdefault("meta", {})["align"] = {"tool": f"core/tools/align.py v{VERSION}", "model": args.model,
                                                   "duration": round(duration, 3), "corrections": corrections}
-        dump_json(final, out)
+        write_out(final, out, failed_path, debug)
         n_sc = sum(1 for sc in final.get("scenes", []) if sc.get("words"))
-        print(f"[align] 模式 B：回填 {n_sc}/{len(final.get('scenes', []))} 段，meta.audio = {audio_rel}（相对页面目录 {page_dir}）", flush=True)
+        print(f"[align] 模式 B：回填 {n_sc}/{len(final.get('scenes', []))} 段（口播段 {len(report['filled'])}/{report['voiced']}，"
+              f"{'全片单次比对' if report['path'] == 'full' else '长稿分段顺序对齐'}），meta.audio = {audio_rel}（相对页面目录 {page_dir}）", flush=True)
     else:
+        if not words:
+            fail("mismatch", "录音里没识别出任何字（静音 / 音轨不对 / 语言参数不对？）", failed_path, debug)
         groups = auto_split([list(w) for w in words], [])
         sub = [display([w[0] for w in g]) for g in groups]
-        dump_json({"version": VERSION, "duration": round(duration, 3), "audio": audio_rel_out, "language": args.language,
-                   "stats": stats, "prompt": prompt, "corrections": corrections, "sub": sub, "words": words}, out)
+        write_out({"version": VERSION, "duration": round(duration, 3), "audio": audio_rel_out, "language": args.language,
+                   "stats": stats, "prompt": prompt, "corrections": corrections, "sub": sub, "words": words}, out, failed_path, debug)
         print(f"[align] 模式 A：{len(words)} 个字 / 词，{len(sub)} 行字幕", flush=True)
     print(f"[align] 纠错 {len(corrections)} 处 · 模型 {args.model} · {stats['device']} · 加载 {stats['load_s']}s · 识别 {stats['asr_s']}s"
           f"（实时倍率 {stats['rtf']}）· 精修 {n_energy} · 均分短字 {n_short}" + (f" · 强制对齐 {n_refine} 字" if args.refine else ""), flush=True)
     print(f"[align] 写出 {out}", flush=True)
+    if status == "PARTIAL":
+        print(f"STATUS PARTIAL 口播段回填 {len(report['filled'])}/{report['voiced']}，{len(warnings)} 条警告：")
+        for w in warnings:
+            print(f"  - {w}")
+    else:
+        print("STATUS OK")
     print("ALIGN_DONE" + (f" · {len(warnings)} 条警告" if warnings else ""))
 
 

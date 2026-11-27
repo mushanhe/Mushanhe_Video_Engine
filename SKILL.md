@@ -5,7 +5,7 @@ description: mushanhe 视频动效 Skill（Mushanhe Video Engine）——把口�
 
 > 🌐 **简体中文** | [English](SKILL.en.md)
 
-# Mushanhe Video Engine · v3.3
+# Mushanhe Video Engine · v3.3.1
 
 纯 HTML/CSS/JS，零构建。`core/` 是共享内核（摄影机、字幕、人像、转场），`templates/01_*` ~ `templates/12_*` 是 12 套风格包。
 画面按时间确定性渲染：`?t=37.4` 一定是第 37.4 秒，可逐帧验货、可一键导出 1080p / 4K MP4。
@@ -17,6 +17,9 @@ description: mushanhe 视频动效 Skill（Mushanhe Video Engine）——把口�
    - 一天最多真正联网一次（上次检查时间记在本地 `.mh_update_pref`，已被 `.gitignore` 忽略）；`git fetch` 带 5 秒超时和 `GIT_TERMINAL_PROMPT=0`，超时 / 失败也只输出 `STATUS SKIP`。
    - 只有输出 `STATUS BEHIND N` 时才开口：把脚本列出的更新摘要告诉用户，**问用户是否更新**；用户确认后执行 `git pull --ff-only`。
      若因本地改动导致失败，只提示用户手动 `git stash` 后再试，**严禁** `git reset`。不设自动更新。
+   - 当天已联网查过时不再联网，改用本地已下载的上游信息重算：仍落后就照样输出 `STATUS BEHIND N`（注明「今日已联网查过」），已更新完则 `STATUS SKIP checked-today`。
+   - 升级须知：用 `git pull` 升级时，v3.2.2 改名的旧目录（`03_vox_desk`、`11_keynote_glass`、`12_bloomberg_fin`）会被自动删除，只有旧目录里放了用户自己的文件时才会残留（脚本会多打一行 `NOTE` 提示，只提示不删除）——请用户把自己的文件挪走后删掉旧目录；
+     用下载压缩包覆盖升级的，必须先删掉这 3 个旧目录，否则本地会同时出现新旧 15 套模板。
 2. **环境自检**：`python --version` 与 `ffmpeg -version`（ffmpeg 导出 MP4 和 `align.py` 才需要）；有真人口播要对齐时再查 `python -c "import faster_whisper"`；
    再跑 `python core/tools/smoke_test.py --packs 01_industrial_3d --times 3 --out scratch_verify/selfcheck`，真正启动一次无头浏览器，输出 `SMOKE PASS` 即 Playwright 内核就绪（报找不到浏览器时：`pip install playwright` + `playwright install chromium`）。
 
@@ -87,6 +90,7 @@ v3.2.2 起 03 / 11 / 12 目录改名为 `03_investigative_desk` / `11_stage_glas
 - `sub[]` 是这一段的字幕行（自动逐字高亮）；`**关键词**` 在标题里标高亮色；`dur` 单位秒。
 - 每种句型的完整 `data` 字段，照抄目标风格包 `demo_data.json` 里对应段落，不要自创字段。
 - 剧本放在风格包目录下，用 `?data=my_script.json` 加载；不同风格包字段一致，换风格只换目录（或点右上角切换器）。
+- 画幅固定 1920×1080（`core/engine.css`），导出分辨率和帧率由 `export_mp4.py` 的 `--res` / `--fps` 决定，剧本不控制（`meta` 里不写 `fps` / `size`）。
 
 **真人素材同步字段（v3.2，全部可选；不写则与原版逐帧一致）**——时间一律是**全片绝对秒**（从第 1 段开头算起，不是本段相对秒）：
 - `sc.words`：`[["字", 起始绝对秒, 结束绝对秒], ...]` → 真实词级字幕高亮；不写则回退 `sub[]` 均分。
@@ -123,7 +127,9 @@ v3.2.2 起 03 / 11 / 12 目录改名为 `03_investigative_desk` / `11_stage_glas
    - 依赖：`pip install faster-whisper`（不需要 PyTorch）+ ffmpeg；可选 `pip install pypinyin`（同音错字修正）、`opencc-python-reimplemented` 或 `zhconv`（繁转简，没装用内置表）。
      `--refine` 可选 stable-ts 强制对齐，需 `pip install stable-ts`，**会连带装 PyTorch**；没装自动跳过。视频输入会另存 48 kHz 立体声 WAV 当 `meta.audio`。
    - **硬约束**：必须在最终播放 / 导出用的那条 `meta.audio` 音轨上跑；剪停顿、变速、重拼后要重跑，否则全片时间错位。
-   - 草稿每段文字取 `sub`（没有再取 `text`、`script`；都没有 = 无口播段，保持原时长顺延）；对不上的段会打印「段号 + 原文」警告，要处理掉再往下走。
+   - 草稿每段文字取 `sub`（没有再取 `text`、`script`；都没有 = 无口播段，保持原时长顺延）；长稿（约 2000 字 / 7 分钟以上）自动逐段顺序对齐。
+   - 看最后几行判结果：`STATUS OK`；`STATUS PARTIAL`（有段没回填或与录音差异较大，附警告清单，要处理掉再往下走）；
+     `STATUS FAIL too-large|mismatch|io`（退出码 1，不写 `--out`，只写 `<out>.failed.json`）——**严禁当成功继续**，先查稿子和录音是不是同一版。
    - `--script` 只做保守纠错：一字对一字的同音错字、数字写法、英文大小写 / 拼写；多念、少念、改口一律以实际念的为准，全部记在 `corrections`。
    - 实测（i5-14600KF，CPU int8，medium 模型 1.53 GB）：3 分 04 秒口播识别约 85 秒（约 0.45× 实时），对 EP03 上线字幕文字一致 99.4%、
      每字起点误差中位 20 ms / P95 140 ms；`--refine` 多约 40 秒，中位降到 17 ms。`--model large-v3-turbo` 快约一倍但起点误差中位 120 ms，不推荐用于逐字高亮。

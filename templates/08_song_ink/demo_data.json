@@ -3,11 +3,6 @@
     "title": "宋韵水墨 · 组件展厅",
     "style": "08_song_ink",
     "version": "1.0.0",
-    "fps": 30,
-    "size": [
-      1920,
-      1080
-    ],
     "avatar": {
       "video": "",
       "bg": "assets/studio_bg.png",

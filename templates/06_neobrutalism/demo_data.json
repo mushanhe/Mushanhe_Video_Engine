@@ -3,11 +3,6 @@
     "title": "Neo-Brutalism 撞色潮刊 · 组件展厅",
     "style": "06_neobrutalism",
     "version": "1.1.0",
-    "fps": 30,
-    "size": [
-      1920,
-      1080
-    ],
     "avatar": {
       "video": "",
       "bg": "assets/studio_bg.png",

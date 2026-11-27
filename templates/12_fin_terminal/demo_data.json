@@ -3,11 +3,6 @@
     "title": "金融数据终端 · 财经研报风 · 组件展厅",
     "style": "12_fin_terminal",
     "version": "1.0.0",
-    "fps": 30,
-    "size": [
-      1920,
-      1080
-    ],
     "avatar": {
       "video": "",
       "bg": "assets/studio_bg.png",
