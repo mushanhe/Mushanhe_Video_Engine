@@ -1,9 +1,11 @@
 ---
 name: mushanhe-video-engine
-description: 把口播文案或口播视频转成确定性、JSON 驱动的电影级口播视频。12 大电影级流派 × 30 套开箱皮肤，同一份 { meta, theme, scenes } 剧本随时换风格、换皮肤，并能按文案情绪在 12 套里自动推荐。用户说“做一条口播视频 / 把这段稿子做成视频 / 换个风格或配色 / 出片”时使用。
+description: mushanhe 视频动效 Skill（Mushanhe Video Engine）——把口播文案或口播视频转成确定性、JSON 驱动的电影级口播视频。12 大电影级流派 × 30 套开箱皮肤，同一份 { meta, theme, scenes } 剧本随时换风格、换皮肤，支持词级字幕同步并一键导出 MP4。用户说“做一条口播视频 / 把这段稿子做成视频 / 换个风格或配色 / 出片”时使用。Use when the user asks to turn a talking-head script or video into a deterministic, JSON-driven cinematic video, switch styles or skins, sync word-level subtitles, or export MP4 (12 styles × 30 skins).
 ---
 
-# Mushanhe Video Engine · v3.2
+> 🌐 **简体中文** | [English](SKILL.en.md)
+
+# Mushanhe Video Engine · v3.2.1
 
 纯 HTML/CSS/JS，零构建。`core/` 是共享内核（摄影机、字幕、人像、转场），`templates/01_*` ~ `templates/12_*` 是 12 套风格包。
 画面按时间确定性渲染：`?t=37.4` 一定是第 37.4 秒，可逐帧验货、可一键导出 1080p / 4K MP4。
@@ -75,6 +77,26 @@ description: 把口播文案或口播视频转成确定性、JSON 驱动的电�
 - 每种句型的完整 `data` 字段，照抄目标风格包 `demo_data.json` 里对应段落，不要自创字段。
 - 剧本放在风格包目录下，用 `?data=my_script.json` 加载；不同风格包字段一致，换风格只换目录（或点右上角切换器）。
 
+**真人素材同步字段（v3.2，全部可选；不写则与原版逐帧一致）**——时间一律是**全片绝对秒**（从第 1 段开头算起，不是本段相对秒）：
+- `sc.words`：`[["字", 起始绝对秒, 结束绝对秒], ...]` → 真实词级字幕高亮，分行优先按本段 `sub[]`；不写则回退 `sub[]` 均分。
+  （误传本段相对秒时引擎会自动叠加段首并 `console.warn`，但请按规范写绝对秒。）
+- `sc.avatarCues`：`[[绝对秒, "card|pip|corner|full"], ...]` → 一段之内切换人像形态。
+- `meta.audio`：`"voice.wav"` 或 `{ "src": "...", "offset": 0, "volume": 1 }` → 人声音轨，播放时作为主时钟。
+  ⚠️ **12 套模板的人像 `<video>` 都默认静音，出镜视频自带的音轨不会被使用**：必须用 `meta.audio`（或导出时 `--audio`）提供人声，否则成片无声。
+- `meta.themeCues`：`[[绝对秒, "obsidian", "角标文字"], ...]` → 按时间实时换肤（仅 01–06）。
+
+```json
+{
+  "meta": { "audio": { "src": "voice.wav", "offset": 0, "volume": 1 },
+            "themeCues": [[6, "obsidian", "进入夜间模式"]] },
+  "scenes": [
+    { "type": "cover", "dur": 6, "sub": ["大家好"], "words": [["大", 0.4, 0.6], ["家", 0.6, 0.8], ["好", 0.8, 1.1]] },
+    { "type": "stat", "dur": 5, "sub": ["第二段"], "avatarCues": [[8.5, "pip"]],
+      "words": [["第", 6.2, 6.4], ["二", 6.4, 6.6], ["段", 6.6, 6.9]] }
+  ]
+}
+```
+
 ## 4. 标准 5 步工作流
 
 1. **定风格与皮肤**：问用户想要哪套；没指定就在全部 12 套里按第 1 节「适合题材 + 情绪」推荐 1 个风格（01–06 再配 1 套皮肤），并给出 1 个备选。
@@ -101,6 +123,8 @@ description: 把口播文案或口播视频转成确定性、JSON 驱动的电�
    ```
    时长缺省读剧本总长；`--audio` 外部人声 / 母带（缺省自动用剧本 `meta.audio`），`--bgm bgm.mp3 --bgm-vol 0.1` 可选循环背景乐；
    `--start` / `--duration` 只导一段做冒烟，`--workers` 并行分块。输出必须以 `ZERO_ERRORS` 结尾；成片放 `output/`，不提交。
+   **预期耗时**：本地无头逐帧渲染，1080p 约为实时时长的 3–10×（取决于机器与素材），4K 更久；启动时会打印总帧数 / workers / 预估分钟数，
+   之后每 5s 输出进度与 ETA。建议先加 `--duration 3` 冒烟确认画面与声音，再导全片。
 
 ## 5. 自动检查与一键更新新版模板
 

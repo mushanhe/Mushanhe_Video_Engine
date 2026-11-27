@@ -2,7 +2,7 @@
  * Mushanhe Video Engine — ScriptSync：剧本 ↔ 真人素材同步小工具（templates/01–12 共用，零依赖）
  *
  * 全部能力都是「剧本里有才生效」，剧本里没有对应字段时模板行为与原版逐帧一致：
- *   1. sc.words      [["字或词", start, end], ...]（本页时间轴秒数）→ 真实词级字幕；
+ *   1. sc.words      [["字或词", start, end], ...]（全片绝对秒；误传本段相对秒会自动叠加 sc.start 并 warn）→ 真实词级字幕；
  *                    分行优先按 sc.sub 的每一行，否则按停顿 ≥0.3s / 每行 ≤14 字自动切分。
  *   2. sc.avatarCues [[t, "card|pip|corner|full"], ...]（本页秒数）→ 一段之内按词级时间连续切人像形态。
  *   3. meta.avatar.offset  人像 <video> 对齐：video.currentTime = offset + t。
@@ -20,8 +20,20 @@
 
   /** 把一段 sc.words 按行推进 WORD_DATA；返回 true 表示已处理（调用方跳过均分逻辑） */
   function pushWords(sc, words, lines) {
-    const W = (sc && Array.isArray(sc.words) ? sc.words : []).filter((w) => Array.isArray(w) && w.length >= 3 && String(w[0]).trim());
+    let W = (sc && Array.isArray(sc.words) ? sc.words : []).filter((w) => Array.isArray(w) && w.length >= 3 && String(w[0]).trim());
     if (!W.length) return false;
+    // 容错：规范要求全片绝对秒；若明显传成了本段相对秒（整体落在 0~dur 且首词早于段首），整体叠加 sc.start
+    const st = +sc.start || 0, du = +sc.dur || 0;
+    if (st > 0) {
+      const maxEnd = Math.max(...W.map((w) => +w[2] || 0)), minStart = Math.min(...W.map((w) => +w[1] || 0));
+      if (maxEnd <= du + 0.5 && minStart < st - 0.5) {
+        W = W.map((w) => [w[0], +w[1] + st, +w[2] + st]);
+        if (!pushWords._warned) {
+          pushWords._warned = true;
+          console.warn('[MHEngine.ScriptSync] sc.words 疑似使用本段相对秒，已自动叠加 sc.start；规范要求使用全片绝对秒。');
+        }
+      }
+    }
     const groups = [];
     const subs = (sc.sub || []).map(norm).filter(Boolean);
     let k = 0;

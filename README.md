@@ -4,11 +4,13 @@
 
 # Mushanhe Video Engine
 
+**简体中文** | [English](README.en.md)
+
 **一份 JSON 剧本，驱动 12 大电影级流派 × 30 套开箱皮肤。**
 
 1 套 `core/` 通用内核 · 10 大万能口播句型 · 4 种动态人像粒子变形 · **01–06 各 4 色实时换肤（24 套）+ 07–12 六大新流派**
 
-`v3.2` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 右上角 01–12 一键切风格 · 一键导出 1080p / 4K MP4 · 自带 AI Agent Skill（`SKILL.md`）
+`v3.2.1` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 右上角 01–12 一键切风格 · 一键导出 1080p / 4K MP4 · 自带中英双语 AI Agent Skill（`SKILL.md` / `SKILL.en.md`）
 
 | 01 · 3D 工业实体画廊 | 02 · 瑞士印刷拼贴 |
 |---|---|
@@ -60,7 +62,7 @@ Mushanhe Video Engine 把口播视频拆成两层：
 | 🎛 **01–12 一键切风格（v3.2）** | 12 套展厅右上角都有「🎨 切换风格」胶囊：鼠标一点跳到任意流派，**自动携带当前 `?data=` 剧本**（路径自动换算）和当前播放时间；按 `H` 同步隐藏，抽帧 / 导出时不出现 |
 | 🎬 **一键导出 MP4（v3.2）** | `core/tools/export_mp4.py`：无头浏览器逐帧确定性截图 → FFmpeg 多进程分块编码，1080p / 4K（2 倍矢量渲染）、BT.709 色彩、人声 / 背景乐混流 |
 | 🎙 **真实词级时间轴（v3.2）** | 剧本可选 `sc.words` 词级时间戳（字幕按真实语速逐字点亮）、`sc.avatarCues` 段内切人像、`meta.audio` 人声音轨做主时钟、`meta.themeCues` 按时间换肤；不写这些字段时画面与旧版逐帧一致 |
-| 🤖 **AI Agent Skill** | 根目录 `SKILL.md`：Claude Code / Antigravity / Cursor 读完就会在 12 套里推荐最对味的风格、写剧本、抽帧验货、交付预览 |
+| 🤖 **AI Agent Skill** | 根目录 `SKILL.md`（English：`SKILL.en.md`）：Claude Code / Antigravity / Cursor 读完就会在 12 套里推荐最对味的风格、写剧本、抽帧验货、交付预览 |
 
 ### 10 大万能口播句型
 
@@ -171,13 +173,26 @@ http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=my_script.json
 - `**关键词**`：在标题、副标题里标出高亮色。
 - `meta.avatar.video`：填入你的抠像视频路径，就会替换剪影占位。
 
+### 真人素材同步字段（v3.2，可选）
+
+时间一律是**全片绝对秒**（从第 1 段开头算起，不是本段相对秒）；不写这些字段时画面与原版逐帧一致。
+
+| 字段 | 格式 | 作用 |
+|---|---|---|
+| `sc.words` | `[["字", 起始绝对秒, 结束绝对秒], ...]` | 真实词级字幕高亮；不写则回退 `sub[]` 均分（误传本段相对秒会自动叠加段首并 `console.warn`） |
+| `sc.avatarCues` | `[[绝对秒, "card\|pip\|corner\|full"], ...]` | 一段之内切换人像形态 |
+| `meta.audio` | `"voice.wav"` 或 `{ "src": "...", "offset": 0, "volume": 1 }` | 人声音轨，播放时作为主时钟 |
+| `meta.themeCues` | `[[绝对秒, "obsidian", "角标文字"], ...]` | 按时间实时换肤（01–06） |
+
+> ⚠️ **人像 `<video>` 默认静音**：12 套模板都不会使用出镜视频自带的音轨。请用 `meta.audio` 或导出时 `--audio` 提供人声，否则成片无声。
+
 每种句型的完整字段，直接看任意风格包里的 `demo_data.json`，10 段全部都有示例。
 
 ## 作为 AI Agent Skill 使用
 
-仓库根目录的 [`SKILL.md`](SKILL.md) 是一份标准 Agent Skill：12 大流派 + 30 套皮肤索引、10 大句型速查、剧本规范、5 步出片流程（含一键导出 MP4）和「自动检查更新」规则都在里面。把仓库交给 AI 编程助手后，直接说人话就能出片。
+仓库根目录的 [`SKILL.md`](SKILL.md)（英文版 [`SKILL.en.md`](SKILL.en.md)）是一份标准 Agent Skill：12 大流派 + 30 套皮肤索引、10 大句型速查、剧本规范、5 步出片流程（含一键导出 MP4）和「自动检查更新」规则都在里面。把仓库交给 AI 编程助手后，直接说人话就能出片。
 
-**Claude Code**：把 `SKILL.md` 复制到 `~/.claude/skills/mushanhe-video-engine/SKILL.md`（全局）或仓库内 `.claude/skills/mushanhe-video-engine/SKILL.md`，之后说到做口播视频时会自动调用；临时用也可以在对话里说“先读根目录 SKILL.md”。
+**Claude Code**：把 `SKILL.md`（英文环境用 `SKILL.en.md`，复制后改名为 `SKILL.md`）复制到 `~/.claude/skills/mushanhe-video-engine/SKILL.md`（全局）或仓库内 `.claude/skills/mushanhe-video-engine/SKILL.md`，之后说到做口播视频时会自动调用；临时用也可以在对话里说“先读根目录 SKILL.md”。
 
 **Antigravity / Cursor**：打开仓库文件夹，在对话里说“先读根目录 SKILL.md，再按里面的流程做”，或把它加到项目规则 / Rules 里。
 
@@ -232,6 +247,8 @@ python core/tools/export_mp4.py --template 08_song_ink --data my_script.json --r
 | `--workers 4` · `--crf` · `--preset` | 多进程分块并行；CRF 默认 1080p = 18、4K = 16 |
 | `--audio` · `--bgm` · `--bgm-vol 0.10` | 外部人声 / 母带精准混流（默认用剧本 `meta.audio`），可选循环背景乐；AAC 48 kHz 320 kbps |
 
+**预期耗时**：本地无头逐帧渲染，1080p 约为实时时长的 3–10×（取决于机器与素材），4K 更久。启动时会先打印总帧数、workers 数与预估分钟数，之后每 5s 输出进度与 ETA。建议先加 `--duration 3` 冒烟确认画面和声音，再导全片。
+
 原理：每帧 `seek(t)` → 等人像视频解码就绪 → 等 2 帧 `requestAnimationFrame` 落帧 → PNG 截图直接管道喂给 FFmpeg（不落盘），最后无损拼接分块并混流音频。结尾输出 `ZERO_ERRORS` 表示全程无页面报错。
 
 ## 获取后续新风格与更新
@@ -252,7 +269,9 @@ git pull --ff-only                           # 一键快进更新（不会合并
 ```text
 Mushanhe_Video_Engine/
 ├── index.html                 # 导航页：12 张流派海报卡 · 01–06 皮肤色点直达
+├── README.en.md               # English README
 ├── SKILL.md                   # AI Agent Skill：选风格 → 写剧本 → 验货 → 交付
+├── SKILL.en.md                # AI Agent Skill（English）
 ├── docs/                      # 12 套风格包 2×2 预览拼图（1616×930）
 ├── core/                      # 通用内核（所有风格包共享）
 │   ├── camera-rig.js          # 6 自由度 3D 空间摄影机
@@ -305,6 +324,7 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 - [x] **v3.0**：12 大旗舰流派（新增学院黑板 / 宋韵水墨 / 日系胶片 / 复古 CRT / Keynote 暗黑流光 / 华尔街金融终端）+ 30 套开箱皮肤 + 12 张 2×2 预览拼图 + `SKILL.md` 12 套平权索引
 - [x] **v3.1**：`inspect_frames.py` 支持 `--data` / `--theme`，一行命令验任意皮肤与自定义剧本；`SKILL.md` 精简，轻量 Agent 也能直接调用
 - [x] **v3.2**：`export_mp4.py` 一键导出 1080p / 4K MP4（多进程分块 + BT.709 + 音频混流）· 12 套展厅右上角 01–12 风格切换器（自动携带 `?data=` 剧本）· `script-sync.js` 真实词级字幕 / 人声主时钟 / 按时换肤 · `SKILL.md` 新增导出与自动检查更新
+- [x] **v3.2.1**：`sc.words` 误传本段相对秒自动纠正并告警 · `export_mp4.py` 启动时打印耗时预期 · 中英双语 `README` / `SKILL`（`README.en.md` · `SKILL.en.md`）· 补齐 4 个同步字段说明与人像静音提醒
 - [ ] **07–12 实时皮肤**：六大新流派各补 4 套 `themes.js` 实时皮肤
 - [ ] **更多变体与垂类组件**：其余风格包的 `variant` 布局变体 + 垂类组件（财经 / 编程 / 读书）
 - [ ] BGM 自动闪避（人声段自动压低背景乐）

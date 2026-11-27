@@ -366,6 +366,10 @@ def main():
         bounds = [round(k * n_frames / n_workers) for k in range(n_workers + 1)]
         print(f"[plan] {W}x{H} @ {args.fps}fps · start {args.start:.3f}s · {n_frames} frames ({duration:.4f}s) · "
               f"{n_workers} workers · x264 crf {args.crf} preset {args.preset}")
+        lo, hi = (3, 10) if args.res == "1080p" else (8, 25)
+        print(f"[eta] 预计耗时：{n_frames} 帧 / {n_workers} workers · 本地无头逐帧渲染约为实时时长的 {lo}–{hi}×"
+              f"（≈ {duration * lo / 60:.1f}–{duration * hi / 60:.1f} 分钟，视机器与素材而定）；下方每 5s 输出进度与 ETA。"
+              f"建议首次先用 --duration 3 冒烟确认。", flush=True)
 
         ctx = mp.get_context("spawn")
         q = ctx.Queue()
