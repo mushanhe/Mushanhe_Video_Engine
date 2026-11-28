@@ -112,6 +112,11 @@
   function reg(style) { return h('div', 'id-reg', style, PROPS.reg()); }
   /** 橙色资产吊牌（替代印章）：冲孔 + 模版字 */
   function tag(text, small, style, teal) { return h('div', `id-tag${teal ? ' teal' : ''}`, style, `${esc(text)}${small ? `<small>${esc(small)}</small>` : ''}`); }
+  /** v3.5 空字段不出框：可选字段没填 → 整块不渲染（display:none；Animator 只动 transform / opacity，不会再把它显示出来） */
+  const blank = (s) => !String(s == null ? '' : s).trim();
+  const hideIf = (el, cond) => { if (el && cond) el.style.display = 'none'; return el; };
+  /** 小标题（橙色方块 + 等宽字）：没填 kicker 不出孤零零的橙色方块 */
+  const kicker = (text, style) => hideIf(h('div', 'id-kicker', style, esc(text)), blank(text));
   /** 电光青尺寸标注线 */
   function dim(label, style) { return h('div', 'id-dim', style, `<div class="dl"></div><div class="dt">${esc(label)}</div>`); }
   /** 四角内六角螺丝 */
@@ -350,17 +355,18 @@
   function cover(data, ctx) {
     const D = ctx.dur, A = new Animator();
     const el = h('div', 'id-zone');
-    const kick = h('div', 'id-kicker', 'left:60px;top:120px;', esc(data.kicker));
+    const kick = kicker(data.kicker, 'left:60px;top:120px;');
     const title = h('div', 'id-cover-title');
     const chars = [];
     String(data.title || '').split('').forEach((c) => {
       if (c === '\n') { title.appendChild(document.createElement('br')); return; }
       const s = h('span', null, null, c === ' ' ? '&nbsp;' : esc(c)); title.appendChild(s); chars.push(s);
     });
-    const block = screws(h('div', 'id-steel id-chap', null, `<div class="stripe"></div><div class="l">${esc(data.chapterLabel || 'CHAPTER')}</div><div class="n">${esc(data.chapter || '01')}</div>`));
-    const sub = h('div', 'id-glass id-sub', 'left:400px;top:536px;', mark(data.subtitle));
-    const dm = dim(data.dim || '', 'left:410px;top:740px;width:560px;');
-    const st = tag(data.stamp || '', data.stampSmall || '', 'left:1010px;top:770px;font-size:50px;');
+    const block = screws(h('div', 'id-steel id-chap', null, `<div class="stripe"></div><div class="l">${esc(data.chapterLabel || '')}</div><div class="n">${esc(data.chapter || '')}</div>`));
+    hideIf(block, blank(data.chapterLabel) && blank(data.chapter));   // 章节号 / 章节名都没填 → 整块金属章节牌不出（不再出默认 CHAPTER 01）
+    const sub = hideIf(h('div', 'id-glass id-sub', 'left:400px;top:536px;', mark(data.subtitle)), blank(data.subtitle));
+    const dm = hideIf(dim(data.dim || '', 'left:410px;top:740px;width:560px;'), blank(data.dim));
+    const st = hideIf(tag(data.stamp || '', data.stampSmall || '', 'left:1010px;top:770px;font-size:50px;'), blank(data.stamp));
     const cb = cube(190);
     cb.el.style.left = '985px'; cb.el.style.top = '220px';
     const plinth = h('div', 'id-steel', 'left:940px;top:470px;width:280px;height:46px;border-radius:8px;');
@@ -393,12 +399,12 @@
     const D = ctx.dur, A = new Animator();
     const items = (data.items || []).slice(0, 5); const n = Math.max(1, items.length);
     const el = h('div', 'id-zone');
-    const kick = h('div', 'id-kicker', 'left:100px;top:110px;', esc(data.kicker));
+    const kick = kicker(data.kicker, 'left:100px;top:110px;');
     const head = h('div', 'id-head', 'left:96px;top:142px;font-size:96px;', mark(data.title));
-    const dm = dim(data.dim || `${n} STEPS`, 'left:100px;top:274px;width:1200px;');
+    const dm = hideIf(dim(data.dim || '', 'left:100px;top:274px;width:1200px;'), blank(data.dim));   // 没填 dim 不出默认 N STEPS
     const bed = h('div', 'id-bed');
     const clip = h('div', 'id-bed-clip');
-    bed.append(h('div', 'id-bed-tab', null, esc(data.folder || 'PROJECT /')), h('div', 'id-bed-back'), clip);
+    bed.append(h('div', 'id-bed-tab', null, esc(data.folder || '')), h('div', 'id-bed-back'), clip);
     const gap = 20, sw = (1200 - 80 - gap * (n - 1)) / n;
     const sheets = items.map((it, i) => {
       const s = h('div', 'id-glass id-st-card', `left:${40 + i * (sw + gap)}px;width:${sw}px;`,
@@ -431,7 +437,7 @@
     const H = 360 + n * 115 + (data.note ? 190 : 60);
     const el = h('div', 'id-zone');
     const tab = h('div', 'id-glass id-tablet', `height:${H}px;`,
-      `<div class="hdr">${esc(data.kicker || '')}<div class="lz"><i></i><i></i><i></i></div></div><div class="rail"></div><div class="ttl">${esc(data.title)}</div><div class="sub">${esc(data.subtitle || '')}<i></i></div><div class="hr"></div>`);
+      `<div class="hdr">${esc(data.kicker || '')}<div class="lz"><i></i><i></i><i></i></div></div><div class="rail"></div><div class="ttl">${esc(data.title)}</div>${blank(data.subtitle) ? '' : `<div class="sub">${esc(data.subtitle)}<i></i></div>`}<div class="hr"></div>`);
     const rows = items.map((it, i) => {
       const r = h('div', 'id-rl', `top:${350 + i * 115}px;`,
         `<div class="box">${PROPS.check(54, 7, '#FFFFFF')}</div><div class="k">${esc(it.k)}</div><div class="d">${esc(it.d || '')}</div><div class="n">QC-${String(i + 1).padStart(2, '0')}</div>`);
@@ -439,7 +445,7 @@
     });
     let note = null;
     if (data.note) {
-      note = h('div', 'id-note', `top:${350 + n * 115 + 40}px;`, `<small>${esc(data.noteLead || '')}</small><span class="tx">${esc(data.note)}</span><span class="hl"></span>`);
+      note = h('div', 'id-note', `top:${350 + n * 115 + 40}px;`, `${blank(data.noteLead) ? '' : `<small>${esc(data.noteLead)}</small>`}<span class="tx">${esc(data.note)}</span><span class="hl"></span>`);
       tab.appendChild(note);
     }
     tab.append(h('i', 'id-screw', `left:14px;top:${H - 28}px;`), h('i', 'id-screw', `right:14px;top:${H - 28}px;`));
@@ -467,14 +473,14 @@
     const D = ctx.dur, A = new Animator();
     const w = data.wrong || {}, r = data.right || {};
     const el = h('div', 'id-zone');
-    const kick = h('div', 'id-kicker', 'left:60px;top:110px;', esc(data.kicker));
+    const kick = kicker(data.kicker, 'left:60px;top:110px;');
     const head = h('div', 'id-head', 'left:56px;top:142px;font-size:90px;', mark(data.title));
-    const L = screws(h('div', 'id-steel id-cmp wrong', 'left:60px;', `<div class="band">${esc(w.label || '✕ WRONG')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div><svg class="strike" width="480" height="160"><path d="M4 92 L470 60" stroke="var(--id-orange)" stroke-width="12" stroke-linecap="round" fill="none" stroke-dasharray="480" stroke-dashoffset="480"/></svg>`));
-    const R = screws(h('div', 'id-glass id-cmp right', 'left:820px;', `<div class="band">${esc(r.label || '✓ RIGHT')}</div><div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div>`));
+    const L = screws(h('div', 'id-steel id-cmp wrong', 'left:60px;', `${blank(w.label) ? '' : `<div class="band">${esc(w.label)}</div>`}<div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div><svg class="strike" width="480" height="160"><path d="M4 92 L470 60" stroke="var(--id-orange)" stroke-width="12" stroke-linecap="round" fill="none" stroke-dasharray="480" stroke-dashoffset="480"/></svg>`));
+    const R = screws(h('div', 'id-glass id-cmp right', 'left:820px;', `${blank(r.label) ? '' : `<div class="band">${esc(r.label)}</div>`}<div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div>`));
     const vs = h('div', 'id-vs', null, 'VS');
-    const xs = tag(w.stamp || '✕', '', 'left:300px;top:610px;font-size:42px;');
+    const xs = hideIf(tag(w.stamp || '', '', 'left:300px;top:610px;font-size:42px;'), blank(w.stamp));
     const ck = h('div', 'id-abs', 'left:1220px;top:318px;z-index:7;', PROPS.check(84, 10));
-    const verdict = h('div', 'id-verdict', null, `<b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${mark(data.verdict || '')}</span>`);
+    const verdict = hideIf(h('div', 'id-verdict', null, `${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${mark(data.verdict || '')}</span>`), blank(data.verdict));
     el.append(depth(-40, reg('left:20px;top:96px;'), floorShadow('left:40px;top:700px;width:560px;height:80px;'), floorShadow('left:800px;top:700px;width:560px;height:80px;')),
       depth(0, kick, head, L, R, verdict),
       depth(30, vs, xs, ck, prop('hazard', 200, 'left:1120px;top:250px;transform:rotate(-4deg);')));
@@ -528,10 +534,10 @@
     const D = ctx.dur, A = new Animator();
     const kind = data.kind || 'code';
     const el = h('div', 'id-zone');
-    const kick = h('div', 'id-kicker', 'left:60px;top:110px;', esc(data.kicker));
+    const kick = kicker(data.kicker, 'left:60px;top:110px;');
     const head = h('div', 'id-head', 'left:56px;top:142px;font-size:80px;', mark(data.title));
     const dark = kind === 'code' || kind === 'terminal';
-    const panel = h('div', `id-panel ${dark ? 'dark' : 'id-glass light'}`, null, `<div class="bar"><i></i><i></i><i></i><span>${esc(data.file || (kind === 'product' ? 'EXHIBIT · PRODUCT' : kind.toUpperCase()))}</span></div>`);
+    const panel = h('div', `id-panel ${dark ? 'dark' : 'id-glass light'}`, null, `<div class="bar"><i></i><i></i><i></i><span>${esc(data.file || '')}</span></div>`);
     let codeEl = null, media = null, prod = null;
     const lines = data.lines || [];
     if (kind === 'product') { prod = productPanel(data); panel.appendChild(prod.el); }
@@ -590,9 +596,9 @@
     const el = h('div', 'id-screen-wrap', 'position:absolute;inset:0;pointer-events:none;');
     const right = data.pos === 'right';
     const card = h('div', 'id-quote', `${right ? 'right:70px;' : 'left:70px;'}`,
-      `<div class="k">${esc(data.kicker || 'QUOTE')}</div><div class="id-quote-t">${mark(data.text)}</div><div class="by">${esc(data.by || '')}</div>`);
+      `${blank(data.kicker) ? '' : `<div class="k">${esc(data.kicker)}</div>`}<div class="id-quote-t">${mark(data.text)}</div>${blank(data.by) ? '' : `<div class="by">${esc(data.by)}</div>`}`);
     screws(card, 12);
-    const st = tag(data.stamp || '', data.stampSmall || '', `${right ? 'right:110px;' : 'left:420px;'}top:${data.stampTop || 640}px;font-size:50px;`);
+    const st = hideIf(tag(data.stamp || '', data.stampSmall || '', `${right ? 'right:110px;' : 'left:420px;'}top:${data.stampTop || 640}px;font-size:50px;`), blank(data.stamp));
     el.append(card, st);
     A.add(card, 0.5, 0.5, { x: right ? 120 : -120, o: 0 }, { x: 0, o: 1 }, 'drop');
     A.add(st, Math.min(D - 1.0, D * 0.5), 0.18, { s: 1.45, o: 0, r: -8 }, { s: 1, o: 1, r: -5 }, 'back');
@@ -603,14 +609,17 @@
   function outro(data, ctx) {
     const D = ctx.dur, A = new Animator();
     const el = h('div', 'id-zone');
-    const kick = h('div', 'id-kicker', 'left:60px;top:110px;', esc(data.kicker));
+    const kick = kicker(data.kicker, 'left:60px;top:110px;');
     const head = h('div', 'id-head', 'left:56px;top:142px;font-size:90px;', mark(data.title));
     const acts = (data.actions || []).slice(0, 3).map((a, i) => h('div', 'id-glass id-act', `top:${280 + i * 172}px;`,
-      `<div class="no">${String(i + 1).padStart(2, '0')} / ${esc(a.tag || 'ACTION')}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div>`));
+      `<div class="no">${String(i + 1).padStart(2, '0')}${blank(a.tag) ? '' : ` / ${esc(a.tag)}`}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div>`));
     const c = data.cta || {};
-    const cta = screws(h('div', 'id-steel id-cta', null, `<div class="k">${esc(c.kicker || 'OPEN SOURCE')}</div><div class="t">${esc(c.title || '')}</div><div class="repo">${esc(c.repo || '')}</div><div class="btns">${(c.buttons || []).slice(0, 3).map((b) => `<span>${esc(b)}</span>`).join('')}</div>`));
-    const go = tag(c.stamp || 'GO', c.stampSmall || '', 'left:1110px;top:700px;font-size:60px;', true);
-    el.append(depth(-40, reg('left:20px;top:96px;'), reg('left:1320px;top:930px;'), floorShadow('left:670px;top:740px;width:690px;height:90px;')),
+    const btns = (c.buttons || []).slice(0, 3).filter((b) => !blank(b));
+    const cta = screws(h('div', 'id-steel id-cta', null, `${blank(c.kicker) ? '' : `<div class="k">${esc(c.kicker)}</div>`}<div class="t">${esc(c.title || '')}</div>${blank(c.repo) ? '' : `<div class="repo">${esc(c.repo)}</div>`}<div class="btns">${btns.map((b) => `<span>${esc(b)}</span>`).join('')}</div>`));
+    const noCta = blank(c.kicker) && blank(c.title) && blank(c.repo) && !btns.length;   // CTA 一个字段都没填 → 整块金属控制台不出
+    hideIf(cta, noCta);
+    const go = hideIf(tag(c.stamp || '', c.stampSmall || '', 'left:1110px;top:700px;font-size:60px;', true), blank(c.stamp));
+    el.append(depth(-40, reg('left:20px;top:96px;'), reg('left:1320px;top:930px;'), hideIf(floorShadow('left:670px;top:740px;width:690px;height:90px;'), noCta)),
       depth(0, kick, head, ...acts, cta),
       depth(30, go, prop('leds', 0, 'left:1130px;top:200px;')));
     A.add(kick, 0.1, 0.3, { o: 0 }, { o: 1 });
@@ -658,7 +667,7 @@
     const D = ctx.dur, A = new Animator();
     const items = (data.items || []).slice(0, 3); const n = Math.max(1, items.length);
     const el = h('div', 'id-zone');
-    const kick = h('div', 'id-kicker', 'left:60px;top:110px;', esc(data.kicker));
+    const kick = kicker(data.kicker, 'left:60px;top:110px;');
     const head = h('div', 'id-head', 'left:56px;top:142px;font-size:90px;', mark(data.title));
     const gap = 40, w = (1280 - gap * (n - 1)) / n, fs = n === 1 ? 260 : n === 2 ? 190 : 140;
     const cards = items.map((it, i) => screws(h('div', `${i === n - 1 ? 'id-steel hot' : 'id-glass'} id-stat`, `left:${60 + i * (w + gap)}px;width:${w}px;`,
@@ -698,7 +707,7 @@
     const NWD = 240, SP = n <= 5 ? Math.min(330, (1280 - NWD) / Math.max(1, n - 1)) : 300;
     const W = n <= 5 ? 1400 : 60 + (n - 1) * SP + NWD + 60, now = data.now != null ? data.now : n - 1;
     const el = h('div', 'id-zone', `width:${W}px;`);
-    const kick = h('div', 'id-kicker', 'left:60px;top:110px;', esc(data.kicker));
+    const kick = kicker(data.kicker, 'left:60px;top:110px;');
     const head = h('div', 'id-head', 'left:56px;top:142px;font-size:90px;', mark(data.title));
     const rail = prop('rail', W - 120, 'left:60px;top:532px;');
     const back = depth(-40, reg('left:20px;top:96px;'), floorShadow(`left:40px;top:560px;width:${W - 80}px;height:70px;`));
@@ -740,7 +749,7 @@
     const nodes = (data.nodes || []).slice(0, 8), links = (data.links || []).slice(0, 12);
     const L = 60, T = 290, AW = 1280, AH = 610, NW = 260, NH = 124;
     const el = h('div', 'id-zone');
-    const kick = h('div', 'id-kicker', 'left:60px;top:110px;', esc(data.kicker));
+    const kick = kicker(data.kicker, 'left:60px;top:110px;');
     const head = h('div', 'id-head', 'left:56px;top:142px;font-size:90px;', mark(data.title));
     const mid = depth(0, kick, head), front = depth(30);
     el.append(depth(-40, reg('left:20px;top:96px;'), reg('left:1320px;top:930px;')), mid, front);

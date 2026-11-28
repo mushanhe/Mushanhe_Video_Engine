@@ -95,6 +95,51 @@
     #subtitle-bar .w.active { color: #FF9A52 !important; text-shadow: 0 0 10px rgba(255,123,41,.6), 0 1px 2px rgba(0,0,0,.45) !important; }
 
     #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; background: var(--af-sunset); color: #fff; font-size: 28px; font-weight: 700; display: none; }
+
+    /* v3.5 · 跟词组件（core/cue-kit.js）的 09 造型：拍立得相纸——无墨线、奶白相框内沿、纸面三层软投影、
+       青绿 / 日落 / 暗棕相纸色、日期橙聚光，略歪（只在剧本写了新字段时出现） */
+    :root {
+      --mk-ink: var(--af-ink); --mk-paper: var(--af-paper); --mk-panel: var(--af-white); --mk-muted: #E4DDD0; --mk-muted-ink: #8F877A;
+      --mk-c1: var(--af-white); --mk-on1: var(--af-ink); --mk-c2: var(--af-teal); --mk-on2: var(--af-cream);
+      --mk-c3: var(--af-sunset); --mk-on3: #FFFFFF; --mk-c4: #3B3029; --mk-on4: var(--af-cream);
+      --mk-accent: var(--af-date); --mk-dark: #1A1714; --mk-on-dark: var(--af-cream);
+      --mk-bw: 0px; --mk-rad: 2px; --mk-tilt: 0.55;
+      --mk-sh: 0 1px 1px rgba(60,40,20,.08), 0 10px 18px rgba(60,40,20,.14), 0 26px 48px rgba(60,40,20,.14);
+      --mk-sh-lg: 0 1px 1px rgba(60,40,20,.1), 0 14px 26px rgba(60,40,20,.18), 0 32px 60px rgba(60,40,20,.16);
+      --mk-sh-sm: 0 1px 1px rgba(60,40,20,.08), 0 6px 14px rgba(60,40,20,.16);
+      --mk-font: var(--af-font-cn); --mk-font-num: var(--af-font-serif);
+      --mk-tex: radial-gradient(120% 90% at 92% 8%, rgba(255,150,70,.16), transparent 55%);
+      --mk-board: #EDE6D8; --mk-board-tex: repeating-linear-gradient(97deg, rgba(120,100,70,.06) 0 1px, transparent 1px 7px);
+      --mk-tape: rgba(232,220,192,.86);
+      --mk-trim: rgba(253,250,243,.55); --mk-trim-c: rgba(255,123,41,.85);
+      /* 全屏画框：拍立得白边——16px 奶白相框 + 纸面软投影 + 轻暗角；框外是杂志纸底 */
+      --mh-frame-bw: 16px; --mh-frame-color: var(--af-white); --mh-frame-shadow: 0 1px 1px rgba(60,40,20,.1), 0 14px 26px rgba(60,40,20,.2), 0 32px 60px rgba(60,40,20,.18); --mh-frame-radius: 2; --mh-frame-vig: .18;
+    }
+    /* 相纸内沿：拍立得奶白相框（inset 白边，不改尺寸）+ 纸面投影 */
+    .mk-ticket, .mk-cmp, .mk-file, .mk-plate, .mk-cstat { box-shadow: inset 0 0 0 10px var(--af-white), var(--mk-sh-lg) !important; }
+    .mk-zone .mh-focus-ring { inset: -14px; border: 5px solid var(--af-date); border-radius: 4px; box-shadow: 0 0 10px rgba(255,123,41,.6), 0 0 26px rgba(255,90,20,.3); }
+    html[data-mh-card="trim"] .mk-zone .mh-focus-ring:not(.row) { box-shadow: 0 0 10px rgba(255,123,41,.6), 0 0 34px 8px rgba(255,123,41,.28); }
+    .mk-stamp { background: rgba(253,250,243,.6); color: var(--af-marker); border: 4px solid var(--af-marker); outline: none; box-shadow: none; font-family: var(--af-font-cn); }
+    .mk-sticker { border: 0; border-radius: 999px; background: var(--af-sunset); color: var(--af-cream); box-shadow: 0 6px 14px rgba(120,50,20,.25), inset 0 0 0 4px rgba(255,255,255,.22); }
+    .mk-tape { border: 0; opacity: .9; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,.18) 0 3px, transparent 3px 9px); box-shadow: 0 1px 2px rgba(60,40,20,.12);
+      clip-path: polygon(0 8%, 4% 0, 8% 10%, 12% 0, 100% 0, 100% 92%, 96% 100%, 92% 90%, 88% 100%, 0 100%); }
+    .mk-ticket .pgb, .mk-cstat .pg { border-width: 1.5px; background: rgba(253,250,243,.35); }
+    .mk-ticket .pgb i { background: repeating-linear-gradient(-45deg, var(--af-date) 0 10px, #1A1714 10px 20px); }
+    .mk-cmp .rw i { border: 0; border-radius: 50%; background: var(--af-date); box-shadow: 0 0 6px rgba(255,123,41,.7); }
+    .mk-cmp .badge { border: 0; border-radius: 50%; background: var(--af-sunset); color: var(--af-cream); box-shadow: 0 6px 14px rgba(120,50,20,.25); }
+    .mk-cmp .sw, .mk-cmp .btn, .mk-cmp .tlx { border-width: 2px; }
+    .mk-cmp .btn { border: 0; border-radius: 999px; background: var(--af-cream); color: var(--af-sunset); }
+    .mk-vs .dm { border-radius: 50%; transform: none; background: var(--af-ink); }
+    .mk-vs .tx { font-style: italic; color: var(--af-cream); }
+    .mk-ripple { border-color: var(--af-date); }
+    .mk-cv-block { background-image: radial-gradient(120% 90% at 92% 8%, rgba(255,150,70,.16), transparent 55%); }
+    .mk-cv-dots { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='44'%3E%3Cpath fill='%23131110' fill-rule='evenodd' d='M0 0H28V44H0Z M9 14h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2z'/%3E%3C/svg%3E"); background-size: 28px 44px; background-color: #E9E3D7; }
+    .mk-cv-chip { border: 0; box-shadow: var(--mk-sh-sm); }
+    .mk-cv-ring { border-color: var(--af-date); box-shadow: 0 0 12px rgba(255,123,41,.6); }
+    .mk-cv-ring::after { background: var(--af-date); }
+    .mk-screw { border-width: 1.5px; }
+    .mk-banner { border-left: 10px solid var(--af-date); }
+    .mk-ai b { font-style: italic; }
   </style>
 </head>
 <body>
@@ -144,6 +189,10 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="../../core/script-sync.js"></script>
+  <script src="../../core/talk.js"></script>
+  <script src="../../core/focus.js"></script>
+  <script src="../../core/cue-kit.js"></script>
+  <script src="../../core/host-kit.js"></script>
   <script src="components.js"></script>
   <script>
     const vp = document.getElementById('viewport');
@@ -160,6 +209,19 @@
     const CAM_DX = 60, CAM_ZOOM = 0.92;
     const GATE = 160, PULL = 1920 + GATE, PULL_HALF = 0.36;
     const params = new URLSearchParams(location.search);
+    // v3.5：牌子层 09 造型（印章 = 记号笔红框戳、贴纸 = 日落圆角价签、标签 = 胶片黑片头条 + 日期橙边、
+    // 标注 = 拍立得奶白纸条、多色大字 = 日落 / 青绿 / 墨色 + 奶白描边；整体略歪）
+    MHEngine.Badges.registerKinds('09', {
+      stamp: 'padding:8px 28px 10px;background:rgba(253,250,243,.62);color:var(--af-marker);border:5px solid var(--af-marker);border-radius:3px;font-family:var(--af-font-cn);font-weight:900;',
+      sticker: 'padding:12px 32px 14px;background:var(--af-sunset);color:var(--af-cream);border-radius:999px;box-shadow:0 6px 14px rgba(120,50,20,.25),inset 0 0 0 4px rgba(255,255,255,.22);font-family:var(--af-font-cn);font-weight:900;',
+      tag: 'padding:12px 30px 14px 26px;background:#131110;color:var(--af-cream);border-left:10px solid var(--af-date);border-radius:2px;box-shadow:0 1px 1px rgba(60,40,20,.1),0 14px 26px rgba(60,40,20,.22);font-family:var(--af-font-cn);font-weight:900;',
+      label: 'padding:14px 34px 16px;background:var(--af-white);color:var(--af-ink);border-left:10px solid var(--af-sunset);border-radius:2px;box-shadow:0 1px 1px rgba(60,40,20,.1),0 14px 26px rgba(60,40,20,.18),0 32px 60px rgba(60,40,20,.14);font-family:var(--af-font-cn);font-weight:900;',
+      big: { pal: ['var(--af-sunset)', 'var(--af-teal)', 'var(--af-ink)'], ink: 'var(--af-white)', shadow: '0 10px 22px rgba(60,40,20,.28)' },
+      rot: { stamp: -6, sticker: 4, tag: -1, label: -1.2, big: -2 }
+    });
+    // 「换风格」色票（以前 / 现在里被点的按钮）：三种胶片冲印色调
+    MHEngine.CueKit.swatches = [['#FDFCF8', '#2B6E63', '#E06D3B', '#1A1A1A'], ['#E9E3D7', '#F1A458', '#9A3D27', '#3B3029'], ['#1D4740', '#FF7B29', '#FDFAF3', '#24564E']];
+    const escH = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
     /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
     function buildWordData(scenes) {
@@ -207,6 +269,7 @@
       try {
         const src = params.get('data') || 'demo_data.json';
         script = await (await fetch(src, { cache: 'no-store' })).json();
+        MHEngine.ScriptSync.resolveMedia(script, src); // v3.4：媒体路径以剧本文件为基准
       } catch (e) {
         const el = document.getElementById('load-error');
         el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
@@ -217,11 +280,13 @@
       ['paper', 'white', 'cream', 'ink', 'mute', 'teal', 'sunset', 'date', 'marker'].forEach((k) => { if (theme[k]) root.setProperty(`--af-${k}`, theme[k]); });
       AnalogFilm.injectCSS();
       const grains = buildGrain();
+      const HK = MHEngine.HostKit.init(script, document.getElementById('avatar-stage'));   // v3.5：铺满版式 / 画框 / 利落散聚 / 牌子层（剧本写了才开）
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
       if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
-      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      document.getElementById('avatar-tag-tx').textContent = av.tag || (av.video ? '' : 'YOUR NAME');
+      if (av.video && !String(av.tag || '').trim()) document.getElementById('avatar-tag').style.display = 'none';   // v3.5：真人素材没填名牌 → 整块不出（占位剪影仍配占位名）
       const filmStock = meta.filmStock || 'PORTRA 400';
       const dateText = meta.date || '26 11 25';
       document.getElementById('af-datehead').textContent = `'${dateText}`;
@@ -236,15 +301,19 @@
       // 组装场景
       const world = document.getElementById('af-world');
       const scenes = []; let acc = 0, zoneX = 0;
+      const COVER_AT = HK.coverAt(script.scenes, PULL_HALF);   // 35mm 过片在段边界前 PULL_HALF 秒开始把整格拉走
       (script.scenes || []).forEach((sc, i) => {
-        const factory = AnalogFilm.COMPONENTS[sc.type];
+        const factory = AnalogFilm.COMPONENTS[sc.type] || MHEngine.ScriptSync.coreComponent(sc.type);
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
-        const comp = factory.create(sc.data || {}, { dur });
+        const ctx = MHEngine.ScriptSync.sceneCtx(sc, acc, dur);
+        ctx.area = HK.area(sc, { CAM_DX, CAM_ZOOM, SX, SY }); ctx.coverAt = COVER_AT[i];
+        const comp = MHEngine.CueKit.create(sc.type, sc.data, ctx) || factory.create(sc.data || {}, ctx);
+        const badges = HK.badges(sc, comp, ctx, document.getElementById('screen-layer'));
         const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1400) + ZONE_GAP;
         if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
         else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
-        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, badges, zx, zy, avatar: sc.avatar || comp.avatar });
         acc += dur;
       });
       const DURATION = acc;
@@ -265,17 +334,17 @@
       camRig.setKeyframes(kfs);
 
       // 人像形态：card / pip / corner / full（拍立得白边；4 种形态全部走 core 点阵粒子散聚转场）
-      const avatar = new MHEngine.AvatarController({
+      const avatar = new MHEngine.AvatarController(HK.presets({
         card:   { left: 1328, top: 100, width: 548, height: 800, borderRadius: 0,   borderWidth: 16, tagOpacity: 1 },
         pip:    { left: 1556, top: 646, width: 304, height: 304, borderRadius: 152, borderWidth: 8,  tagOpacity: 0 },
         corner: { left: 1404, top: 552, width: 470, height: 350, borderRadius: 0,   borderWidth: 12, tagOpacity: 1 }
-      });
+      }));
       const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
       const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
       const tl = gsap.timeline({ paused: true });
       const AVSEG = MHEngine.ScriptSync.avatarSegments(scenes); // 无 avatarCues 时与 scenes 一一对应
       avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
-      AVSEG.forEach((s, i) => {
+      if (!HK.scheduleMorphs({ segs: AVSEG, avatar, morph: avatarMorph, tl, mapAv, seed: 90900 })) AVSEG.forEach((s, i) => {
         if (i === 0) return;
         const prev = mapAv(AVSEG[i - 1].avatar), cur = mapAv(s.avatar);
         if (prev !== cur) {
@@ -302,11 +371,19 @@
       // 齿孔条边码：每个画格一组，随胶片位置平移
       const fTop = document.getElementById('af-film-top'), fBot = document.getElementById('af-film-bot');
       const hTop = fTop.querySelector('.holes'), hBot = fBot.querySelector('.holes');
+      const NB = '&nbsp;&nbsp;&nbsp;&nbsp;';
       scenes.forEach((s, i) => {
         const no = String(i + 1).padStart(2, '0');
         const a = document.createElement('div'); a.className = 'ep';
-        a.innerHTML = `${filmStock} · ${no}A&nbsp;&nbsp;&nbsp;&nbsp;▸ ${i + 1}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ ${i + 1}A&nbsp;&nbsp;&nbsp;&nbsp;${(s.label || s.type).toUpperCase()}`;
         const b = document.createElement('div'); b.className = 'ep';
+        if (HK.CHROME_OFF) {   // v3.5：导出时片边码只留数字 / 箭头 + 剧本写了的 label（不出胶卷型号、句型名、35MM 字样）
+          const lb = HK.label(s);
+          a.innerHTML = `▸ ${i + 1}${NB}${NB}${NB}${NB}${NB}${NB}${NB}▸ ${no}${lb ? `${NB}${escH(lb)}` : ''}`;
+          b.innerHTML = `◂ ${no}${NB}·${NB}${escH(dateText)}${NB}·${NB}◂ ${i + 1}`;
+          fTop.appendChild(a); fBot.appendChild(b); s.epA = a; s.epB = b;
+          return;
+        }
+        a.innerHTML = `${filmStock} · ${no}A&nbsp;&nbsp;&nbsp;&nbsp;▸ ${i + 1}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ ${i + 1}A&nbsp;&nbsp;&nbsp;&nbsp;${(s.label || s.type).toUpperCase()}`;
         b.innerHTML = `◂ ${no}&nbsp;&nbsp;&nbsp;&nbsp;${s.type.toUpperCase()}&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;&nbsp;${dateText}&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;&nbsp;35MM COLOR NEGATIVE`;
         fTop.appendChild(a); fBot.appendChild(b); s.epA = a; s.epB = b;
       });
@@ -343,8 +420,9 @@
         const S = scenes[cur];
         const AS = MHEngine.ScriptSync.avatarAt(AVSEG, t, S);
         const isFull = AS.avatar === 'full';
-        stageEl.classList.toggle('is-full', isFull && t >= AS.start + 0.2);
-        camViewport.style.opacity = isFull && t >= AS.start + 0.15 && t < AS.start + AS.dur ? '0' : '1';
+        stageEl.classList.toggle('is-full', isFull && t >= AS.start + HK.fullDelay(0.2));
+        camViewport.style.opacity = isFull && t >= AS.start + HK.fullDelay(0.15) && t < AS.start + AS.dur ? '0' : '1';
+        HK.updateBadges(scenes, cur, t);
 
         // 35mm 过片：整格画面横向拉走 → 黑色片间隔 → 下一格拉入；中点漏光闪切掩盖硬切
         let F = 0, frameX = 0, active = -1, off = 0, b = 0;
@@ -357,14 +435,15 @@
           frameX = t < b ? -off : PULL - off;
           gate.style.display = 'block';
           gate.style.left = `${(1920 - off).toFixed(1)}px`;
-          gateTx.textContent = `${filmStock} · ${String(active + 1).padStart(2, '0')}A`;
+          gateTx.textContent = HK.CHROME_OFF ? `▸ ${String(active + 1).padStart(2, '0')} ▸` : `${filmStock} · ${String(active + 1).padStart(2, '0')}A`;   // v3.5：导出时不出胶卷型号
           const q = Math.abs(t - b), pk = Math.pow(clamp01(1 - q / 0.2), 1.4);
           const gx = (1920 - off + GATE / 2) / 1920 * 100;
           flashGlow.style.background = `radial-gradient(55% 90% at ${gx.toFixed(1)}% 50%, rgba(255,246,226,${(0.98 * pk).toFixed(3)}) 0%, rgba(255,150,70,${(0.92 * pk + 0.25).toFixed(3)}) 38%, rgba(224,72,43,${(0.85 * pk + 0.12).toFixed(3)}) 70%, rgba(224,72,43,${(0.55 * pk).toFixed(3)}) 100%)`;
           flash.style.display = 'block';
           flash.style.opacity = '1';
           flashNo.textContent = String(active + 1).padStart(2, '0');
-          flashLb.textContent = `FRAME ${String(active + 1).padStart(2, '0')}A · ${(scenes[active].label || scenes[active].type).toUpperCase()}`;
+          if (HK.CHROME_OFF) { const lb = HK.label(scenes[active]); flashLb.textContent = lb; flashLb.style.display = lb ? '' : 'none'; }   // v3.5：导出时只出剧本写了的 label
+          else flashLb.textContent = `FRAME ${String(active + 1).padStart(2, '0')}A · ${(scenes[active].label || scenes[active].type).toUpperCase()}`;
           flash.querySelector('.no').style.opacity = clamp01(1 - q / 0.16).toFixed(3);
         } else { gate.style.display = 'none'; flash.style.display = 'none'; }
         frameEl.style.transform = screenLayer.style.transform = `translateX(${frameX.toFixed(1)}px)`;
@@ -377,6 +456,7 @@
         });
 
         stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        HK.frame(t, stageEl, avatarMorph);
         document.getElementById('scrubber').value = t.toFixed(2);
         document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
       }
@@ -384,7 +464,7 @@
       // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
       let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
       const vid = document.getElementById('avatar-video');
-      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid }); // meta.avatar.offset + meta.audio
+      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid, scenes }); // meta.avatar.offset + meta.audio
       function seek(t) {
         cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
         scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });

@@ -9,6 +9,7 @@ import http.server
 import mimetypes
 import os
 import re
+import sys
 from pathlib import Path
 
 mimetypes.add_type("video/webm", ".webm")
@@ -97,7 +98,17 @@ def main():
     os.chdir(repo_root)
     httpd = http.server.ThreadingHTTPServer((args.bind, args.port), RangeHTTPRequestHandler)
     httpd.daemon_threads = True
-    print(f"SERVING http://{args.bind}:{args.port} (HTTP 206 Range Enabled)", flush=True)
+    for stream in (sys.stdout, sys.stderr):   # Agent 按 UTF-8 读管道
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+    base = f"http://{args.bind}:{args.port}"
+    print(f"SERVING {base} (HTTP 206 Range Enabled)", flush=True)
+    # v3.4 防呆：给用户的预览链接只能是这个格式（能播放、能换风格）；clean=1 / t= 只给抽帧和导出用，严禁放进给用户的链接
+    print(f"PREVIEW LINK FORMAT  {base}/templates/<风格包>/index.html?data=<剧本相对风格包目录的路径>&theme=<皮肤>", flush=True)
+    print(f"  例：{base}/templates/06_neobrutalism/index.html?data=../../work/ep01/ep01.json&theme=zine", flush=True)
+    print("  禁止在给用户的链接里带 clean=1 或 t=（clean=1 会隐藏播放键和风格切换器）", flush=True)
     httpd.serve_forever()
 
 

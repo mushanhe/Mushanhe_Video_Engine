@@ -33,6 +33,9 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const blink = (t, hz = 2) => Math.floor(t * hz * 2) % 2 === 0;
   const pad2 = (n) => String(n).padStart(2, '0');
+  const blank = (s) => !String(s == null ? '' : s).trim();
+  /** v3.5：可选字段没填 → 整块不渲染（display:none；Animator 只动 transform / opacity，不会再显出来） */
+  const hideIf = (el, cond) => { if (cond && el) el.style.display = 'none'; return el; };
 
   function h(tag, cls, style, html) {
     const el = document.createElement(tag);
@@ -144,10 +147,10 @@
       `${title != null ? `<div class="wt">[ ${esc(title)} ]</div>` : ''}<i class="cn k1">+</i><i class="cn k2">+</i><i class="cn k3">+</i><i class="cn k4">+</i>${inner || ''}`);
     return el;
   }
-  function kicker(text, style) { return h('div', 'rc-kicker', style, `${esc(text)}`); }
+  function kicker(text, style) { return hideIf(h('div', 'rc-kicker', style, `${esc(text)}`), blank(text)); }
   /** 警示 / 印章：ASCII 双线琥珀框，可带小字 */
-  function alert(text, small, style, tone) { return h('div', `rc-alert${tone ? ' ' + tone : ''}`, style, `${esc(text)}${small ? `<small>${esc(small)}</small>` : ''}`); }
-  function chip(text, style, tone) { return h('div', `rc-chip${tone ? ' ' + tone : ''}`, style, esc(text)); }
+  function alert(text, small, style, tone) { return hideIf(h('div', `rc-alert${tone ? ' ' + tone : ''}`, style, `${esc(text)}${small ? `<small>${esc(small)}</small>` : ''}`), blank(text)); }
+  function chip(text, style, tone) { return hideIf(h('div', `rc-chip${tone ? ' ' + tone : ''}`, style, esc(text)), blank(text)); }
 
   // ============================== 样式注入（主题色走 CSS 变量） ==============================
   const CSS = `
@@ -322,8 +325,9 @@
     const kick = kicker(data.kicker, 'left:60px;top:106px;');
     const boot = win('rc-boot', 'left:60px;top:170px;width:890px;height:470px;', 'BOOT.SYS', '<div class="log"></div><div class="ttl rc-g"></div>');
     const log = boot.querySelector('.log'), ttl = boot.querySelector('.ttl');
-    const ch = win('rc-ch', 'left:60px;top:680px;width:260px;height:230px;', null, `<div class="l">${esc(data.chapterLabel || 'CHAPTER')}</div><div class="n rc-a">${esc(data.chapter || '01')}</div>`, 'amber');
-    const sub = win('rc-sub', 'left:360px;top:680px;width:590px;height:156px;', 'README', `<div class="tx">${mark(data.subtitle)}</div>`);
+    const ch = hideIf(win('rc-ch', 'left:60px;top:680px;width:260px;height:230px;', null, `${blank(data.chapterLabel) ? '' : `<div class="l">${esc(data.chapterLabel)}</div>`}<div class="n rc-a">${esc(data.chapter || '')}</div>`, 'amber'),
+      blank(data.chapterLabel) && blank(data.chapter));
+    const sub = hideIf(win('rc-sub', 'left:360px;top:680px;width:590px;height:156px;', 'README', `<div class="tx">${mark(data.subtitle)}</div>`), blank(data.subtitle));
     const dm = chip(data.dim || '', 'left:360px;top:862px;font-size:26px;', 'inv');
     const st = alert(data.stamp || '', data.stampSmall || '', 'left:1000px;top:186px;font-size:72px;min-width:280px;', 'inv');
     const dip = h('div', 'rc-prop', 'left:1000px;top:420px;', PROPS.dip('10110010', 'DIP SW1'));
@@ -423,13 +427,14 @@
     const el = h('div', 'rc-zone');
     const kick = kicker(data.kicker, 'left:60px;top:106px;');
     const head = h('div', 'rc-head', 'left:56px;top:160px;font-size:90px;');
-    const tag = chip(data.dim || `${n} STEPS`, 'left:1120px;top:184px;font-size:30px;', 'amber');
+    const tag = chip(data.dim || '', 'left:1120px;top:184px;font-size:30px;', 'amber');
     const AW = 56, cw = (1280 - AW * (n - 1)) / n;
     const cards = items.map((it, i) => win('rc-ticket', `left:${60 + i * (cw + AW)}px;width:${cw}px;`, `PID ${pad2(i + 1)}`,
-      `<div class="no">STEP_${esc(it.no || pad2(i + 1))}</div><div class="nm rc-g">${esc(it.title)}</div><div class="pb"></div><div class="fn">&gt; ${esc(it.desc || '')}</div>`));
+      `<div class="no">STEP_${esc(it.no || pad2(i + 1))}</div><div class="nm rc-g">${esc(it.title)}</div><div class="pb"></div>${blank(it.desc) ? '' : `<div class="fn">&gt; ${esc(it.desc)}</div>`}`));
     const arrows = items.slice(1).map((_, i) => h('div', 'rc-arw rc-a', `left:${60 + (i + 1) * (cw + AW) - AW + 6}px;top:506px;`, '►'));
-    const bar = win('rc-steps-bar', null, 'DIR',
-      `<div class="f rc-g">${esc(data.folder || 'C:\\PROJECT\\')}</div><div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`);
+    const bar = hideIf(win('rc-steps-bar', null, 'DIR',
+      `<div class="f rc-g">${esc(data.folder || '')}</div><div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`),
+      blank(data.folder) && blank(data.folderBig) && blank(data.folderMeta));
     const label = data.label ? alert(data.label, data.labelSmall || '', 'left:1066px;top:770px;font-size:36px;') : null;
     el.append(kick, head, tag, ...cards, ...arrows, bar);
     if (label) el.appendChild(label);
@@ -461,7 +466,7 @@
     const RH = 100, R0 = 250;
     const H = R0 + n * RH + (data.note ? 150 : 30);
     const el = h('div', 'rc-zone');
-    const card = win('rc-card', `height:${H}px;`, data.kicker || 'README',
+    const card = win('rc-card', `height:${H}px;`, blank(data.kicker) ? null : data.kicker,
       `<div class="ttl rc-g">${esc(data.title)}</div><div class="sub">${esc(data.subtitle || '')}</div><div class="hr">${'═'.repeat(60)}</div>`);
     const rows = items.map((it, i) => {
       const r = h('div', 'rc-row', `top:${R0 + i * RH}px;`,
@@ -502,13 +507,13 @@
     const kick = kicker(data.kicker, 'left:60px;top:106px;');
     const head = h('div', 'rc-head', 'left:56px;top:160px;font-size:88px;');
     const L = win('rc-cmp', 'left:60px;', null,
-      `<div class="band">${esc(w.label || '✕ WRONG')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div><svg class="strike" width="480" height="150"><path d="M4 44 L440 38" stroke="var(--rc-red)" stroke-width="10" fill="none" stroke-dasharray="440" stroke-dashoffset="440"/><path d="M4 112 L400 106" stroke="var(--rc-red)" stroke-width="10" fill="none" stroke-dasharray="400" stroke-dashoffset="400"/></svg>`, 'red');
+      `<div class="band">${esc(w.label || '✕')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div><svg class="strike" width="480" height="150"><path d="M4 44 L440 38" stroke="var(--rc-red)" stroke-width="10" fill="none" stroke-dasharray="440" stroke-dashoffset="440"/><path d="M4 112 L400 106" stroke="var(--rc-red)" stroke-width="10" fill="none" stroke-dasharray="400" stroke-dashoffset="400"/></svg>`, 'red');
     L.classList.add('red');
     const R = win('rc-cmp ok', 'left:800px;', null,
-      `<div class="band">${esc(r.label || '✓ RIGHT')}</div><div class="t rc-g">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div><div class="badge">[✓]</div>`);
+      `<div class="band">${esc(r.label || '✓')}</div><div class="t rc-g">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div><div class="badge">[✓]</div>`);
     const vs = h('div', 'rc-vs', null, 'VS');
     const xs = alert(w.stamp || '✕', 'ERR 0x0F', 'left:300px;top:640px;font-size:40px;', 'red');
-    const verdict = win('rc-verdict', null, null, `<b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${mark(data.verdict || '')}</span>`, 'amber');
+    const verdict = hideIf(win('rc-verdict', null, null, `${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${mark(data.verdict || '')}</span>`, 'amber'), blank(data.verdict));
     const ok = alert('OK', '', 'left:1236px;top:748px;font-size:38px;z-index:9;', 'green');
     el.append(kick, head, L, R, vs, xs, verdict, ok);
     A.add(kick, 0.05, 0.3, { o: 0 }, { o: 1 }, 'linear', 'flick');
@@ -672,18 +677,18 @@
     const kick = kicker(data.kicker, 'left:60px;top:106px;');
     const head = h('div', 'rc-head', 'left:56px;top:150px;font-size:80px;');
     const panel = win(`rc-panel${kind === 'doc' ? ' doc' : ''}`, null, null,
-      `<div class="bar"><span>■</span><span class="tt">${esc(data.file || kind.toUpperCase())}</span><span class="st">9600 8N1</span><span class="rec">● ${kind === 'video' ? 'PLAY' : 'ONLINE'}</span></div>`);
+      `<div class="bar"><span>■</span><span class="tt">${esc(data.file || '')}</span><span class="st">9600 8N1</span><span class="rec">● ${kind === 'video' ? 'PLAY' : 'ONLINE'}</span></div>`);
     let codeEl = null, media = null, prod = null;
     const lines = data.lines || [];
     if (kind === 'product') { prod = productPanel(data); panel.appendChild(prod.el); }
     else if (kind === 'image' && data.src) { media = h('img', 'rc-media'); media.src = data.src; panel.append(media, h('div', 'rc-media-sl')); }
     else if (kind === 'video' && data.src) { media = h('video', 'rc-media'); media.src = data.src; media.muted = true; media.loop = true; media.playsInline = true; media.preload = 'auto'; panel.append(media, h('div', 'rc-media-sl')); }
     else { codeEl = h('div', 'rc-code'); panel.appendChild(codeEl); }
-    const notes = (data.notes || []).slice(0, 3).map((nt, i) => {
+    const notes = (data.notes || []).filter((nt) => nt && !blank(nt.text)).slice(0, 3).map((nt, i) => {
       const px = 60 + 1240 * (((nt.at && nt.at[0]) || 60) / 100), py = 262 + 640 * (((nt.at && nt.at[1]) || 30 + i * 20) / 100);
       return h('div', 'rc-callout', `left:${px.toFixed(0)}px;top:${(py - 24).toFixed(0)}px;`, `<b class="ar">◄──</b><span>${esc(nt.text)}</span>`);
     });
-    const tag = chip(kind.toUpperCase(), 'left:1170px;top:212px;font-size:22px;', 'inv');
+    const tag = chip(blank(data.kind) ? '' : kind.toUpperCase(), 'left:1170px;top:212px;font-size:22px;', 'inv');   // v3.5：没写 kind 不出默认 CODE
     el.append(kick, head, panel, ...notes, tag);
     A.add(kick, 0.05, 0.3, { o: 0 }, { o: 1 }, 'linear', 'flick');
     typer(A, head, data.title, 0.2, 16, false);
@@ -727,7 +732,7 @@
     const el = h('div', 'rc-sw', 'position:absolute;inset:0;pointer-events:none;font-family:var(--rc-font);');
     const right = data.pos === 'right';
     const side = right ? 'right:70px;' : 'left:70px;';
-    const card = win('rc-q', side, 'MSG.TXT', `<div class="k">${esc(data.kicker || 'QUOTE')}</div><div class="t"></div><div class="by">${esc(data.by || '')}</div>`);
+    const card = win('rc-q', side, 'MSG.TXT', `${blank(data.kicker) ? '' : `<div class="k">${esc(data.kicker)}</div>`}<div class="t"></div>${blank(data.by) ? '' : `<div class="by">${esc(data.by)}</div>`}`);
     const tx = card.querySelector('.t');
     // 预留终稿尺寸：先填满文本测量，再由打字机覆盖
     tx.innerHTML = mark(data.text);
@@ -749,11 +754,13 @@
     const head = h('div', 'rc-head', 'left:56px;top:150px;font-size:88px;');
     const tagCls = ['background:var(--rc-green);color:#031006;', 'background:var(--rc-amber);color:#120C00;', 'background:var(--rc-red);color:#160204;'];
     const acts = (data.actions || []).slice(0, 3).map((a, i) => win('rc-act', `top:${272 + i * 180}px;`, null,
-      `<div class="tg" style="${tagCls[i]}">${esc(a.tag || 'ACTION')}</div><div class="t rc-g">${esc(a.title)}</div><div class="d">$ ${esc(a.desc || '')}</div><div class="no">${pad2(i + 1)}</div>`));
+      `${blank(a.tag) ? '' : `<div class="tg" style="${tagCls[i]}">${esc(a.tag)}</div>`}<div class="t rc-g">${esc(a.title)}</div>${blank(a.desc) ? '' : `<div class="d">$ ${esc(a.desc)}</div>`}<div class="no">${pad2(i + 1)}</div>`));
     const c = data.cta || {};
-    const cta = win('rc-cta', null, 'CONNECT', `<div class="k">${esc(c.kicker || 'OPEN SOURCE')}</div><div class="t rc-g">${esc(c.title || '')}</div><div class="repo">${esc(c.repo || '')}</div><div class="btns">${(c.buttons || []).slice(0, 3).map((b) => `<span>[ ${esc(b)} ]</span>`).join('')}</div>`, 'amber');
-    const go = alert(c.stamp || 'GO', c.stampSmall || '', 'left:1110px;top:700px;font-size:66px;', 'green');
-    const dip = h('div', 'rc-prop', 'left:942px;top:812px;', PROPS.dip('11010110', 'MODE'));
+    const noCta = blank(c.kicker) && blank(c.title) && blank(c.repo) && !(c.buttons || []).some((b) => !blank(b)) && blank(c.stamp);
+    const cta = win('rc-cta', null, 'CONNECT', `${blank(c.kicker) ? '' : `<div class="k">${esc(c.kicker)}</div>`}<div class="t rc-g">${esc(c.title || '')}</div><div class="repo">${esc(c.repo || '')}</div><div class="btns">${(c.buttons || []).slice(0, 3).map((b) => `<span>[ ${esc(b)} ]</span>`).join('')}</div>`, 'amber');
+    hideIf(cta, noCta);
+    const go = alert(c.stamp || '', c.stampSmall || '', 'left:1110px;top:700px;font-size:66px;', 'green');
+    const dip = hideIf(h('div', 'rc-prop', 'left:942px;top:812px;', PROPS.dip('11010110', 'MODE')), noCta);
     el.append(kick, head, ...acts, cta, dip, go);
     A.add(kick, 0.05, 0.3, { o: 0 }, { o: 1 }, 'linear', 'flick');
     typer(A, head, data.title, 0.2, 16, false);

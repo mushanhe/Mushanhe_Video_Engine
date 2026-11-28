@@ -35,6 +35,9 @@
   };
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const f1 = (v) => v.toFixed(1);
+  /** v3.5：可选字段没填（空串 / 全空白）→ 整块不渲染 */
+  const blank = (s) => !String(s == null ? '' : s).trim();
+  const hide = (e) => { if (e) e.style.display = 'none'; return e; };
 
   function h(tag, cls, style, html) {
     const el = document.createElement(tag);
@@ -87,7 +90,7 @@
 
   /** "这句**关键词**话" → ** 包裹部分做翡翠发光高亮 */
   function mark(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<em>$1</em>').replace(/\n/g, '<br/>'); }
-  function kicker(text, style) { return h('div', 'ng-kicker', style, `<i></i>${esc(text)}`); }
+  function kicker(text, style) { const e = h('div', 'ng-kicker', style, `<i></i>${esc(text)}`); return blank(text) ? hide(e) : e; }
   function head(text, style) { return h('div', 'ng-head', style, mark(text)); }
   /** 等宽小芯片（节点参数 / 状态标签） */
   function chip(text, color, style, small) { return h('div', 'ng-chip', `--nc:${color};${style || ''}`, `${esc(text)}${small ? `<small>${esc(small)}</small>` : ''}`); }
@@ -410,8 +413,8 @@
     const el = h('div', 'ng-zone');
     const cab = CableLayer(1400, 1100); el.appendChild(cab.el);
     const kick = kicker(data.kicker, 'left:60px;top:100px;');
-    const nT = node(60, 168, 740, C.cyan, '01 · TITLE_ENCODER', `<div class="ng-cv-title"></div><div class="ng-np" style="--nc:var(--ng-cyan)"><span>OUTPUT</span><span class="pv">${esc(data.dim || '')}</span></div>`, { st: 'IDLE', h: 470 });
-    const title = nT.querySelector('.ng-cv-title'), npT = nT.querySelector('.ng-np');
+    const nT = node(60, 168, 740, C.cyan, '01 · TITLE_ENCODER', `<div class="ng-cv-title"></div>${blank(data.dim) ? '' : `<div class="ng-np" style="--nc:var(--ng-cyan)"><span>OUTPUT</span><span class="pv">${esc(data.dim)}</span></div>`}`, { st: 'IDLE', h: 470 });
+    const title = nT.querySelector('.ng-cv-title'), npT = nT.querySelector('.ng-np') || h('div');
     const chars = [];
     String(data.title || '').split('').forEach((c) => {
       if (c === '\n') { title.appendChild(document.createElement('br')); return; }
@@ -419,17 +422,19 @@
     });
     const cur = h('span', 'cur'); title.appendChild(cur);
     const scope = Scope(700, 62, C.cyan); scope.el.style.marginTop = '12px'; nT.querySelector('.nb').appendChild(scope.el);
-    const nC = node(940, 168, 400, C.violet, '02 · CHAPTER_ID', `<div class="ng-np" style="--nc:var(--ng-violet);margin-top:0"><span>${esc(data.chapterLabel || 'CHAPTER')}</span><span class="pv">INT</span></div><div class="ng-cv-no">${esc(data.chapter || '01')}</div>${ruler(360, 20, ['00', '05', '10'])}`);
+    const nC = node(940, 168, 400, C.violet, '02 · CHAPTER_ID', `${blank(data.chapterLabel) ? '' : `<div class="ng-np" style="--nc:var(--ng-violet);margin-top:0"><span>${esc(data.chapterLabel)}</span><span class="pv">INT</span></div>`}<div class="ng-cv-no">${esc(data.chapter || '01')}</div>${ruler(360, 20, ['00', '05', '10'])}`);
     const nS = node(940, 520, 400, C.amber, '03 · SUBTITLE_TXT', `<div class="ng-cv-sub">${mark(data.subtitle)}</div>`, { h: 180 });
-    const nQ = node(60, 772, 1280, C.jade, '04 · QUEUE_PROMPT', `<div class="ng-queue"><span class="lb">BATCH 1/1</span><div class="ng-track" style="--nc:var(--ng-jade)"><i></i></div><span class="pc">0%</span><div class="ng-btn" style="--nc:var(--ng-jade)">${esc(data.stamp || '▶ RUN')}${data.stampSmall ? `<small>${esc(data.stampSmall)}</small>` : ''}</div></div>`);
+    const nQ = node(60, 772, 1280, C.jade, '04 · QUEUE_PROMPT', `<div class="ng-queue"><span class="lb">BATCH 1/1</span><div class="ng-track" style="--nc:var(--ng-jade)"><i></i></div><span class="pc">0%</span><div class="ng-btn" style="--nc:var(--ng-jade)">${esc(data.stamp || '')}${data.stampSmall ? `<small>${esc(data.stampSmall)}</small>` : ''}</div></div>`);
     const fill = nQ.querySelector('.ng-track i'), pc = nQ.querySelector('.pc'), btn = nQ.querySelector('.ng-btn');
+    if (blank(data.stamp) && blank(data.stampSmall)) hide(btn);   // v3.5：没写 stamp 不出按钮（原默认 ▶ RUN）
+    if (blank(data.subtitle)) hide(nS);
     el.append(kick, nT, nC, nS, nQ);
     const tB = 0.6 + chars.length * 0.07;
     const tC = 0.75, tS = tB + 0.25, tQ = tB + 0.55, tRun = Math.min(D - 2.0, tQ + 0.5), tDone = Math.min(D - 0.8, tRun + 1.3);
     const cT = cab.add(hPath({ x: 800, y: 300 }, { x: 940, y: 300 }), C.violet, tC + 0.2);
-    const cS = cab.add(hPath({ x: 800, y: 470 }, { x: 940, y: 620 }), C.amber, tS + 0.1);
+    const cS = blank(data.subtitle) ? null : cab.add(hPath({ x: 800, y: 470 }, { x: 940, y: 620 }), C.amber, tS + 0.1);
     const cQ1 = cab.add(vPath({ x: 430, y: 638 }, { x: 430, y: 772 }), C.cyan, tQ + 0.15);
-    const cQ2 = cab.add(vPath({ x: 1140, y: 700 }, { x: 1140, y: 772 }), C.amber, tQ + 0.25);
+    const cQ2 = blank(data.subtitle) ? null : cab.add(vPath({ x: 1140, y: 700 }, { x: 1140, y: 772 }), C.amber, tQ + 0.25);
     A.add(kick, 0.05, 0.3, { x: -30, o: 0 }, { x: 0, o: 1 });
     popIn(A, nT, 0.15); popIn(A, nC, tC); popIn(A, nS, tS); popIn(A, nQ, tQ, 60);
     chars.forEach((c, i) => A.add(c, 0.5 + i * 0.07, 0.18, { o: 0, y: 14 }, { o: 1, y: 0 }));
@@ -459,13 +464,16 @@
     const cab = CableLayer(1400, 1100); el.appendChild(cab.el);
     const kick = kicker(data.kicker, 'left:60px;top:100px;');
     const hd = head(data.title, 'left:56px;top:150px;');
-    const tag = chip(data.dim || `${n} STEPS`, C.amber, 'right:60px;top:178px;font-size:24px;');
+    const tag = chip(data.dim || '', C.amber, 'right:60px;top:178px;font-size:24px;');
+    if (blank(data.dim)) hide(tag);   // v3.5：没写 dim 不出（原默认 N STEPS）
     const AW = 72, cw = (1280 - AW * (n - 1)) / n, TOP = 300, NH = 360;
     const cards = items.map((it, i) => node(60 + i * (cw + AW), TOP, cw, PALETTE[i % 4], `${String(i + 1).padStart(2, '0')} · ${it.no || 'STAGE'}`,
-      `<div class="ng-sp-no">${String(i + 1).padStart(2, '0')}</div><div class="ng-sp-t">${esc(it.title)}</div><div class="ng-np" style="--nc:${PALETTE[i % 4]}"><span>FILE</span><span class="pv">${esc(it.desc || '')}</span></div><div class="ng-track" style="--nc:${PALETTE[i % 4]};margin-top:22px"><i></i></div><div class="ng-st-meta" style="--nc:${PALETTE[i % 4]}"><span>PROGRESS</span><b>0%</b></div>`, { h: NH }));
+      `<div class="ng-sp-no">${String(i + 1).padStart(2, '0')}</div><div class="ng-sp-t">${esc(it.title)}</div><div class="ng-np" style="--nc:${PALETTE[i % 4]}${blank(it.desc) ? ';display:none' : ''}"><span>FILE</span><span class="pv">${esc(it.desc || '')}</span></div><div class="ng-track" style="--nc:${PALETTE[i % 4]};margin-top:22px"><i></i></div><div class="ng-st-meta" style="--nc:${PALETTE[i % 4]}"><span>PROGRESS</span><b>0%</b></div>`, { h: NH }));
     const outN = node(60, 772, 1280, C.cyan, 'OUTPUT · SAVE_DIR',
-      `<div class="ng-out"><div class="f">▣ ${esc(data.folder || 'PROJECT /')}</div><div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>${data.label ? `<div class="ng-btn" style="--nc:var(--ng-jade)">${esc(data.label)}${data.labelSmall ? `<small>${esc(data.labelSmall)}</small>` : ''}</div>` : ''}</div>`);
+      `<div class="ng-out">${blank(data.folder) ? '' : `<div class="f">▣ ${esc(data.folder)}</div>`}${blank(data.folderBig) ? '' : `<div class="b">${esc(data.folderBig)}</div>`}<div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>${data.label ? `<div class="ng-btn" style="--nc:var(--ng-jade)">${esc(data.label)}${data.labelSmall ? `<small>${esc(data.labelSmall)}</small>` : ''}</div>` : ''}</div>`);
     const lbBtn = outN.querySelector('.ng-btn');
+    const hasOut = !blank(data.folder) || !blank(data.folderBig) || !blank(data.folderMeta) || !blank(data.label);
+    if (!hasOut) hide(outN);   // v3.5：输出目录一个字段都没写 → 整个输出节点和下行电缆都不出
     el.append(kick, hd, tag, ...cards, outN);
     headIn(A, kick, hd);
     A.add(tag, 0.55, 0.35, { s: 0.6, o: 0 }, { s: 1, o: 1 }, 'back');
@@ -477,7 +485,7 @@
       popIn(A, c, at - 0.35);
       if (i > 0) cab.add(hPath({ x: 60 + i * (cw + AW) - AW, y: TOP + 180 }, { x: 60 + i * (cw + AW), y: TOP + 180 }), PALETTE[(i - 1) % 4], at - 0.12, { drawDur: 0.3, orbs: 2 });
       const cx = 60 + i * (cw + AW) + cw / 2;
-      cab.add(vPath({ x: cx, y: TOP + NH }, { x: cx, y: 772 }), PALETTE[i % 4], at + run, { drawDur: 0.3, orbs: 2, speed: 200 });
+      if (hasOut) cab.add(vPath({ x: cx, y: TOP + NH }, { x: cx, y: 772 }), PALETTE[i % 4], at + run, { drawDur: 0.3, orbs: 2, speed: 200 });
       return { at, fill: c.querySelector('.ng-track i'), pc: c.querySelector('.ng-st-meta b'), np: c.querySelector('.ng-np') };
     });
     const tL = D - 1.2;
@@ -505,7 +513,7 @@
     const H = 42 + R0 + n * RH + (data.note ? 128 : 16);
     const el = h('div', 'ng-zone');
     const cab = CableLayer(1400, 1300); el.appendChild(cab.el);
-    const V = node(120, 100, 880, C.cyan, data.kicker || 'RULES_VALIDATOR', `<div class="ng-ck-ttl">${esc(data.title)}</div><div class="ng-ck-sub">${esc(data.subtitle || '')}</div><div class="ng-ck-hr" style="top:${R0 - 34}px"></div>`, { h: H });
+    const V = node(120, 100, 880, C.cyan, data.kicker || '', `<div class="ng-ck-ttl">${esc(data.title)}</div><div class="ng-ck-sub">${esc(data.subtitle || '')}</div><div class="ng-ck-hr" style="top:${R0 - 34}px"></div>`, { h: H });
     const body = V.querySelector('.nb');
     const rows = items.map((it, i) => {
       const r = h('div', 'ng-row', `top:${R0 + i * RH - 12}px;--nc:${PALETTE[i % 4]};`,
@@ -554,12 +562,15 @@
     const cab = CableLayer(1400, 1100); el.appendChild(cab.el);
     const kick = kicker(data.kicker, 'left:60px;top:100px;');
     const hd = head(data.title, 'left:56px;top:150px;');
-    const L = node(60, 290, 500, C.coral, w.label || '✕ NODE_A', `<div class="ng-cmp-t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="ng-cmp-d">${esc(w.desc || '')}</div><svg class="ng-strike" width="470" height="160"><path d="M8 52 L440 46" style="stroke:var(--ng-coral)" stroke-width="8" fill="none" stroke-dasharray="440" stroke-dashoffset="440"/><path d="M8 118 L400 112" style="stroke:var(--ng-coral)" stroke-width="8" fill="none" stroke-dasharray="400" stroke-dashoffset="400"/></svg>`, { h: 420 });
-    const R = node(840, 290, 500, C.jade, r.label || '✓ NODE_B', `<div class="ng-cmp-t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="ng-cmp-d">${esc(r.desc || '')}</div><div class="ng-okbadge">${CHECK(34)}</div>`, { h: 420 });
+    const L = node(60, 290, 500, C.coral, w.label || '✕', `<div class="ng-cmp-t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="ng-cmp-d">${esc(w.desc || '')}</div><svg class="ng-strike" width="470" height="160"><path d="M8 52 L440 46" style="stroke:var(--ng-coral)" stroke-width="8" fill="none" stroke-dasharray="440" stroke-dashoffset="440"/><path d="M8 118 L400 112" style="stroke:var(--ng-coral)" stroke-width="8" fill="none" stroke-dasharray="400" stroke-dashoffset="400"/></svg>`, { h: 420 });
+    const R = node(840, 290, 500, C.jade, r.label || '✓', `<div class="ng-cmp-t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="ng-cmp-d">${esc(r.desc || '')}</div><div class="ng-okbadge">${CHECK(34)}</div>`, { h: 420 });
     const S = node(630, 404, 140, C.amber, 'A/B', `<div class="ng-vs">VS</div><div class="ng-lever"><i></i></div>`, { h: 170, style: 'z-index:4' });
     const err = chip(w.stamp || '✕ ERROR', C.coral, 'left:300px;top:640px;font-size:26px;', 'EXCEPTION');
     err.classList.add('solid');
-    const V = node(60, 790, 1280, C.amber, 'OUTPUT · VERDICT', `<div class="ng-verdict"><b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${mark(data.verdict || '')}</span></div>`);
+    if (blank(w.stamp)) hide(err);   // v3.5：没写 stamp 不出报错芯片（原默认 ✕ ERROR）
+    const hasV = !blank(data.verdict) || !blank(data.verdictLabel);
+    const V = node(60, 790, 1280, C.amber, 'OUTPUT · VERDICT', `<div class="ng-verdict">${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${mark(data.verdict || '')}</span></div>`);
+    if (!hasV) hide(V);   // v3.5：没写 verdict 不出结论节点
     el.append(kick, hd, L, R, S, err, V);
     headIn(A, kick, hd);
     popIn(A, L, 0.5);
@@ -571,7 +582,7 @@
     popIn(A, V, tV, 60);
     cab.add(hPath({ x: 630, y: 490 }, { x: 560, y: 500 }), C.coral, tStrike + 0.35, { broken: true });
     cab.add(hPath({ x: 770, y: 490 }, { x: 840, y: 500 }), C.jade, tR + 0.25);
-    cab.add(vPath({ x: 1090, y: 710 }, { x: 1090, y: 790 }), C.amber, tV + 0.1);
+    if (hasV) cab.add(vPath({ x: 1090, y: 710 }, { x: 1090, y: 790 }), C.amber, tV + 0.1);
     const strikes = L.querySelectorAll('.ng-strike path'), bck = R.querySelector('.ng-ck'), lever = S.querySelector('.ng-lever i');
     const badge = R.querySelector('.ng-okbadge');
     A.add(badge, -1, 0.01, { s: 0, o: 0 }, { s: 0, o: 0 });
@@ -686,11 +697,12 @@
     const D = ctx.dur, A = new Animator();
     const el = h('div', 'ng-screen-wrap', 'position:absolute;inset:0;pointer-events:none;');
     const right = data.pos === 'right';
-    const card = node(0, 0, 0, C.violet, data.kicker || 'KEY_TAKEAWAY', `<div class="t">${mark(data.text)}</div><div class="by">${esc(data.by || '')}</div>`, { cls: 'ng-q lit', st: 'LIVE' });
+    const card = node(0, 0, 0, C.violet, data.kicker || '', `<div class="t">${mark(data.text)}</div>${blank(data.by) ? '' : `<div class="by">${esc(data.by)}</div>`}`, { cls: 'ng-q lit', st: 'LIVE' });
     card.style.cssText += `${right ? 'right:70px;left:auto;' : 'left:70px;'}top:190px;width:fit-content;`;
     const scope = Scope(440, 54, C.violet); card.querySelector('.nb').appendChild(scope.el);
     const st = chip(data.stamp || '', C.amber, `${right ? 'right:70px;' : 'left:70px;'}top:${data.stampTop || 690}px;font-size:40px;`, data.stampSmall || '');
     st.classList.add('solid');
+    if (blank(data.stamp) && blank(data.stampSmall)) hide(st);   // v3.5：没写 stamp 不出空芯片
     el.append(card, st);
     const dir = right ? 1 : -1;
     A.add(card, -1, 0.01, { o: 0, x: dir * 120 }, { o: 0, x: dir * 120 });
@@ -709,19 +721,21 @@
     const kick = kicker(data.kicker, 'left:60px;top:100px;');
     const hd = head(data.title, 'left:56px;top:150px;');
     const AC = [C.cyan, C.violet, C.amber];
-    const acts = (data.actions || []).slice(0, 3).map((a, i) => node(60, 280 + i * 180, 540, AC[i], `${String(i + 1).padStart(2, '0')} · ${a.tag || 'ACTION'}`,
+    const acts = (data.actions || []).slice(0, 3).map((a, i) => node(60, 280 + i * 180, 540, AC[i], `${String(i + 1).padStart(2, '0')}${blank(a.tag) ? '' : ` · ${a.tag}`}`,
       `<div class="ng-act-no">${String(i + 1).padStart(2, '0')}</div><div class="ng-act-t">${esc(a.title)}</div><div class="ng-act-d">${esc(a.desc || '')}</div>`, { h: 146 }));
     const c = data.cta || {};
     const KC = [C.amber, C.cyan, C.jade];
-    const cta = node(720, 280, 620, C.jade, `OUTPUT · ${c.kicker || 'PUBLISH'}`,
-      `<div class="ng-chip" style="--nc:var(--ng-jade);position:relative;display:inline-block">${esc(c.kicker || 'OPEN SOURCE')}</div><div class="ng-cta-t">${esc(c.title || '')}</div><div class="ng-cta-repo"><b>$</b> git clone ${esc(c.repo || '')}</div><div class="ng-keys">${(c.buttons || []).slice(0, 3).map((b, i) => `<div class="ng-btn" style="--nc:${KC[i]}">${esc(b)}</div>`).join('')}</div><div class="ng-cta-run"><div class="ng-track" style="--nc:var(--ng-jade)"><i></i></div><div class="ng-btn go" style="--nc:var(--ng-jade);font-size:34px;padding:10px 22px 8px">${esc(c.stamp || 'GO')}${c.stampSmall ? `<small>${esc(c.stampSmall)}</small>` : ''}</div></div>`, { h: 470 });
+    const cta = node(720, 280, 620, C.jade, `OUTPUT${blank(c.kicker) ? '' : ` · ${c.kicker}`}`,
+      `${blank(c.kicker) ? '' : `<div class="ng-chip" style="--nc:var(--ng-jade);position:relative;display:inline-block">${esc(c.kicker)}</div>`}<div class="ng-cta-t">${esc(c.title || '')}</div>${blank(c.repo) ? '' : `<div class="ng-cta-repo"><b>$</b> git clone ${esc(c.repo)}</div>`}<div class="ng-keys">${(c.buttons || []).slice(0, 3).map((b, i) => `<div class="ng-btn" style="--nc:${KC[i]}">${esc(b)}</div>`).join('')}</div><div class="ng-cta-run"><div class="ng-track" style="--nc:var(--ng-jade)"><i></i></div><div class="ng-btn go" style="--nc:var(--ng-jade);font-size:34px;padding:10px 22px 8px${blank(c.stamp) && blank(c.stampSmall) ? ';display:none' : ''}">${esc(c.stamp || '')}${c.stampSmall ? `<small>${esc(c.stampSmall)}</small>` : ''}</div></div>`, { h: 470 });
+    const hasCta = !blank(c.kicker) || !blank(c.title) || !blank(c.repo) || (c.buttons || []).length > 0 || !blank(c.stamp);
+    if (!hasCta) hide(cta);   // v3.5：cta 一个字段都没写 → 输出节点和汇入电缆都不出
     el.append(kick, hd, ...acts, cta);
     headIn(A, kick, hd);
     const t0 = 0.7, stp = Math.min(0.6, (D * 0.35) / Math.max(1, acts.length));
     acts.forEach((a, i) => {
       popIn(A, a, t0 + i * stp);
       if (i > 0) cab.add(vPath({ x: 200, y: 280 + (i - 1) * 180 + 146 }, { x: 200, y: 280 + i * 180 }), AC[i - 1], t0 + i * stp + 0.2, { orbs: 1, drawDur: 0.25 });
-      cab.add(hPath({ x: 600, y: 280 + i * 180 + 73 }, { x: 720, y: 400 + i * 130 }), AC[i], t0 + acts.length * stp + 0.15 + i * 0.12);
+      if (hasCta) cab.add(hPath({ x: 600, y: 280 + i * 180 + 73 }, { x: 720, y: 400 + i * 130 }), AC[i], t0 + acts.length * stp + 0.15 + i * 0.12);
     });
     const tC = t0 + acts.length * stp + 0.05;
     popIn(A, cta, tC);
@@ -767,7 +781,7 @@
     const gap = 50, w = (1280 - gap * (n - 1)) / n, fs = n === 1 ? 220 : n === 2 ? 160 : 118, TOP = 290, NH = 400;
     const SC = n === 1 ? [C.jade] : n === 2 ? [C.cyan, C.jade] : [C.cyan, C.violet, C.jade];
     const cards = items.map((it, i) => node(60 + i * (w + gap), TOP, w, SC[i], `${String(i + 1).padStart(2, '0')} · PROBE`,
-      `<div class="ng-np" style="--nc:${SC[i]};margin-top:0"><span>${esc(it.label || '')}</span><span class="pv">${it.bar != null ? 'RATIO' : 'VALUE'}</span></div><div class="ng-st-num" style="font-size:${fs}px;">${it.prefix ? `<span class="pf">${esc(it.prefix)}</span>` : ''}<b>0</b><span class="u">${esc(it.unit || '')}</span></div><div class="ng-track" style="--nc:${SC[i]};margin-top:22px"><i></i></div>${ruler(Math.floor(w - 38), 20, ['0', '50', '100'])}<div class="ng-st-meta" style="--nc:${SC[i]}"><span>${leds(5, SC[i])}</span><b>${it.bar != null ? `${Math.round(clamp01(it.bar) * 100)}%` : ''}</b></div>`, { h: NH }));
+      `<div class="ng-np" style="--nc:${SC[i]};margin-top:0${blank(it.label) ? ';display:none' : ''}"><span>${esc(it.label || '')}</span><span class="pv">${it.bar != null ? 'RATIO' : 'VALUE'}</span></div><div class="ng-st-num" style="font-size:${fs}px;">${it.prefix ? `<span class="pf">${esc(it.prefix)}</span>` : ''}<b>0</b><span class="u">${esc(it.unit || '')}</span></div><div class="ng-track" style="--nc:${SC[i]};margin-top:22px"><i></i></div>${ruler(Math.floor(w - 38), 20, ['0', '50', '100'])}<div class="ng-st-meta" style="--nc:${SC[i]}"><span>${leds(5, SC[i])}</span><b>${it.bar != null ? `${Math.round(clamp01(it.bar) * 100)}%` : ''}</b></div>`, { h: NH }));
     const nums = cards.map((c) => c.querySelector('.ng-st-num'));
     const decs = items.map((it) => (it.decimals != null ? it.decimals : decOf(it.value || 0)));
     const finals = items.map((it, i) => fmtNum(it.value || 0, decs[i]));

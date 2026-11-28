@@ -31,6 +31,8 @@
   };
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const f1 = (v) => (+v).toFixed(1);
+  /** v3.5：可选字段没填（空串 / 纯空白 / null）→ 整块不渲染 */
+  const blank = (s) => !String(s == null ? '' : s).trim();
 
   function h(tag, cls, style, html) {
     const el = document.createElement(tag);
@@ -260,7 +262,7 @@
         <rect x="0" y="0" width="${w}" height="${hh - fh}" rx="12" fill="url(#${id})" stroke="#5C3A1E" stroke-width="3"/>${grain}
         <rect x="10" y="${hh - fh - 2}" width="${w - 20}" height="${fh}" rx="4" fill="#3A3A3C" stroke="#232325" stroke-width="2"/>
         <rect x="12" y="${hh - fh + 4}" width="${w - 24}" height="${fh * 0.45}" fill="rgba(244,244,238,.42)"/>
-        <text x="${w / 2}" y="${(hh - fh) * 0.62}" text-anchor="middle" font-family="Consolas, monospace" font-size="${Math.round(hh * 0.17)}" font-weight="700" fill="rgba(60,34,14,.75)" letter-spacing="3">CHALK · ERASER</text></svg>`;
+        <text class="cb-en" x="${w / 2}" y="${(hh - fh) * 0.62}" text-anchor="middle" font-family="Consolas, monospace" font-size="${Math.round(hh * 0.17)}" font-weight="700" fill="rgba(60,34,14,.75)" letter-spacing="3">CHALK · ERASER</text></svg>`;
     },
     /** 彩色粉笔头 */
     chalk(len = 110, color = '#F4F4EE') {
@@ -270,12 +272,14 @@
   function propEl(html, style) { return h('div', 'cb-prop', style, html); }
   function kicker(text, style) {
     const el = h('div', 'cb-kicker', style, `<span>${esc(text)}</span>`);
+    if (blank(text)) el.style.display = 'none';   // v3.5：没填 kicker 不出空虚线
     return el;
   }
   function head(text, style) { return h('div', 'cb-head', style, chalkHTML(text)); }
   /** 粉笔圈注印记（大字 + 小字 + 手绘双圈） */
   function stamp(text, small, style, color = 'var(--cb-pink)') {
     const el = h('div', 'cb-stamp', `color:${color};${style || ''}`, `<div class="tx">${esc(text)}</div>${small ? `<small>${esc(small)}</small>` : ''}`);
+    if (blank(text)) { el.style.display = 'none'; return el; }   // v3.5：没填印记文字 → 不出空圈
     ring(el, { color, double: true, pad: 24, w: 5 });
     return el;
   }
@@ -443,9 +447,13 @@
     const maxLen = Math.max(...lines.map((l) => l.length), 1);
     const ulW = Math.min(1180, maxLen * 150 + 20), ulY = 168 + lines.length * 171 + 4;
     const ul = svgWrap(P(G.wave(62, 0, ulW, 6, 40), 'var(--cb-yellow)', 6) + P(G.wave(80, 18, ulW - 70, 5, 46), 'var(--cb-yellow)', 3.5), `left:0;top:${ulY}px;`);
-    const ch = frame(h('div', 'cb-cover-ch', null, `<div class="l">${esc(data.chapterLabel || 'CHAPTER')}</div><div class="n">${esc(data.chapter || '01')}</div>`), { double: true, color: 'var(--cb-white)' });
+    // v3.5：章号框 / 副标题框 / 维度标签没填就整块不出（不再补 CHAPTER / 01 占位）
+    const ch = frame(h('div', 'cb-cover-ch', null, `${blank(data.chapterLabel) ? '' : `<div class="l">${esc(data.chapterLabel)}</div>`}<div class="n">${esc(data.chapter || '')}</div>`), { double: true, color: 'var(--cb-white)' });
+    if (blank(data.chapter) && blank(data.chapterLabel)) ch.style.display = 'none';
     const sub = frame(h('div', 'cb-cover-sub', null, chalkHTML(data.subtitle)), { dash: true, color: 'rgba(244,244,238,.7)' });
+    if (blank(data.subtitle)) sub.style.display = 'none';
     const dm = frame(h('div', 'cb-tag', 'left:430px;top:858px;color:var(--cb-blue);', esc(data.dim || '')), { dash: true, color: 'var(--cb-blue)' });
+    if (blank(data.dim)) dm.style.display = 'none';
     const st = stamp(data.stamp || '', data.stampSmall || '', 'left:1040px;top:250px;font-size:76px;');
     const r = RNG();
     const doodle = svgWrap(P(G.star(r, 1190, 580, 46), 'var(--cb-yellow)', 4.5) + P(G.star(r, 1080, 650, 24), 'var(--cb-blue)', 3.5) + G.cross(1260, 680, 12).map((d) => P(d, 'var(--cb-pink)', 4)).join('') + G.cross(1140, 500, 9).map((d) => P(d, 'var(--cb-white)', 3.5)).join(''), 'left:0;top:0;');
@@ -545,11 +553,11 @@
     const el = h('div', 'cb-zone');
     const kick = kicker(data.kicker, 'left:60px;top:102px;');
     const hd = head(data.title, 'left:58px;top:150px;font-size:92px;');
-    const tag = stamp(data.dim || `${n} STEPS`, '', 'left:1130px;top:178px;font-size:34px;font-family:var(--cb-mono);', 'var(--cb-yellow)');
+    const tag = stamp(data.dim || '', '', 'left:1130px;top:178px;font-size:34px;font-family:var(--cb-mono);', 'var(--cb-yellow)');
     const AW = 60, cw = (1280 - AW * (n - 1)) / n;
     const cards = items.map((it, i) => {
       const c = frame(h('div', 'cb-ticket', `left:${60 + i * (cw + AW)}px;width:${cw}px;`,
-        `<div class="no">${esc(it.no || String(i + 1).padStart(2, '0'))}</div><div class="nm">${esc(it.title)}</div><div class="fn">${esc(it.desc || '')}</div>`), { double: i === n - 1, color: i === n - 1 ? 'var(--cb-yellow)' : 'var(--cb-white)' });
+        `<div class="no">${esc(it.no || String(i + 1).padStart(2, '0'))}</div><div class="nm">${esc(it.title)}</div>${blank(it.desc) ? '' : `<div class="fn">${esc(it.desc)}</div>`}`), { double: i === n - 1, color: i === n - 1 ? 'var(--cb-yellow)' : 'var(--cb-white)' });
       ring(c.querySelector('.no'), { color: PAL[(i + 1) % 4], pad: 14, w: 3.5 });
       return c;
     });
@@ -560,7 +568,8 @@
     });
     const brace = svgWrap(P(G.braceH(70, 718, 1260, 60), 'var(--cb-yellow)', 5), 'left:0;top:0;');
     const bar = frame(h('div', 'cb-steps-bar', null,
-      `<div class="f">▣ ${esc(data.folder || 'PROJECT /')}</div><div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`), { dash: true, color: 'rgba(244,244,238,.6)' });
+      `${blank(data.folder) ? '' : `<div class="f">▣ ${esc(data.folder)}</div>`}<div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`), { dash: true, color: 'rgba(244,244,238,.6)' });
+    if (blank(data.folder) && blank(data.folderBig) && blank(data.folderMeta)) bar.style.display = 'none';   // v3.5：文件夹条三项都没填 → 不出空框（不再补 PROJECT /）
     const label = data.label ? stamp(data.label, data.labelSmall || '', 'left:1104px;top:818px;font-size:40px;') : null;
     el.append(kick, hd, tag, ...cards, ...arrows, brace, bar);
     if (label) el.appendChild(label);
@@ -651,16 +660,17 @@
     const kick = kicker(data.kicker, 'left:60px;top:102px;');
     const hd = head(data.title, 'left:58px;top:150px;font-size:90px;');
     const L = frame(h('div', 'cb-cmp wrong', 'left:60px;',
-      `<div class="band">${esc(w.label || '✕ WRONG')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div>`), { dash: true, color: 'rgba(244,244,238,.5)' });
+      `${blank(w.label) ? '' : `<div class="band">${esc(w.label)}</div>`}<div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div>`), { dash: true, color: 'rgba(244,244,238,.5)' });
     const rr = RNG();
     const strike = svgWrap(P(G.line(rr, 80, 160, 520, 150, 5), 'var(--cb-pink)', 7) + P(G.line(rr, 80, 228, 470, 236, 5), 'var(--cb-pink)', 7) + P(G.line(rr, 90, 120, 470, 270, 6), 'var(--cb-pink)', 4.5), 'left:0;top:290px;');
     const R = frame(h('div', 'cb-cmp right', 'left:800px;',
-      `<div class="band">${esc(r.label || '✓ RIGHT')}</div><div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div>`), { double: true, color: 'var(--cb-white)' });
+      `${blank(r.label) ? '' : `<div class="band">${esc(r.label)}</div>`}<div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div>`), { double: true, color: 'var(--cb-white)' });
     const bigTick = svgWrap(P(G.tick(1220, 300, 1.9), 'var(--cb-yellow)', 9), 'left:0;top:0;');
     const vs = h('div', 'cb-vs', null, 'VS');
     ring(vs, { color: 'var(--cb-yellow)', pad: 10, w: 4.5, double: true });
     const xs = stamp(w.stamp || '✕', '', 'left:330px;top:648px;font-size:44px;');
-    const verdict = frame(h('div', 'cb-verdict', null, `<b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${chalkHTML(data.verdict || '')}</span>`), { double: true, color: 'var(--cb-yellow)' });
+    const verdict = frame(h('div', 'cb-verdict', null, `${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${chalkHTML(data.verdict || '')}</span>`), { double: true, color: 'var(--cb-yellow)' });
+    if (blank(data.verdict) && blank(data.verdictLabel)) verdict.style.display = 'none';   // v3.5：结论条没填 → 不出空框（不再补 VERDICT）
     el.append(kick, hd, L, strike, R, bigTick, vs, xs, verdict);
     KICK(A, kick);
     writeIn(A, hd, 0.25, 0.06);
@@ -809,7 +819,7 @@
   }
 
   // ============================== 8. showcase 原木框石板 / 磁吸纸张 / 照片 ==============================
-  const DEVICE_SVG = () => `<svg viewBox="0 0 400 300"><g fill="none" stroke="#F4F4EE" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M42 90 Q200 84 358 92 L356 258 Q200 262 44 256 Z"/><path d="M82 88 L90 58 L170 60 L176 90"/></g><circle cx="200" cy="174" r="62" fill="none" stroke="#FFE066" stroke-width="7"/><circle cx="200" cy="174" r="26" fill="none" stroke="#74C0FC" stroke-width="6"/><path d="M300 108 h34 v20 h-34 z" fill="none" stroke="#FF8787" stroke-width="5"/><text x="200" y="294" text-anchor="middle" font-family="Consolas, monospace" font-size="20" font-weight="700" fill="rgba(244,244,238,.7)" letter-spacing="4">PRODUCT IMAGE</text></svg>`;
+  const DEVICE_SVG = () => `<svg viewBox="0 0 400 300"><g fill="none" stroke="#F4F4EE" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M42 90 Q200 84 358 92 L356 258 Q200 262 44 256 Z"/><path d="M82 88 L90 58 L170 60 L176 90"/></g><circle cx="200" cy="174" r="62" fill="none" stroke="#FFE066" stroke-width="7"/><circle cx="200" cy="174" r="26" fill="none" stroke="#74C0FC" stroke-width="6"/><path d="M300 108 h34 v20 h-34 z" fill="none" stroke="#FF8787" stroke-width="5"/></svg>`;
   function productPanel(data) {
     const el = h('div', 'cb-prod');
     const pic = frame(h('div', 'pic'), { dash: true, color: 'rgba(244,244,238,.55)' });
@@ -829,7 +839,7 @@
     const kick = kicker(data.kicker, 'left:60px;top:102px;');
     const hd = head(data.title, 'left:58px;top:146px;font-size:80px;');
     const paper = kind === 'doc';
-    const panel = h('div', `cb-panel ${paper ? 'paper' : 'slate'}`, null, `<div class="bar"><i></i><i></i><i></i><span>${esc(data.file || kind.toUpperCase())}</span></div>`);
+    const panel = h('div', `cb-panel ${paper ? 'paper' : 'slate'}`, null, `<div class="bar"><i></i><i></i><i></i><span>${esc(data.file || '')}</span></div>`);
     if (paper) { panel.insertAdjacentHTML('beforeend', '<div class="cb-magnet" style="left:90px;background:#FF8787"></div><div class="cb-magnet" style="right:90px;background:#74C0FC"></div>'); }
     let codeEl = null, media = null, prod = null;
     const lines = data.lines || [];
@@ -846,6 +856,7 @@
       return c;
     });
     const tag = stamp(kind.toUpperCase(), '', 'left:1178px;top:196px;font-size:30px;font-family:var(--cb-mono);', 'var(--cb-pink)');
+    tag.classList.add('cb-en');   // v3.5：导出（?chrome=0）时藏掉英文种类小章
     const ck = propEl(PROPS.chalk(96, '#F4F4EE'), 'left:1190px;top:930px;');
     el.append(kick, hd, panel, ...notes, tag, ck);
     KICK(A, kick);
@@ -894,7 +905,7 @@
     const el = h('div', 'cb-scr');
     const right = data.pos === 'right';
     const side = right ? 'right:80px;' : 'left:80px;';
-    const card = h('div', 'cb-q', side, `<div class="k">${esc(data.kicker || 'QUOTE')}</div><div class="t">${chalkHTML(data.text)}</div><div class="by">${esc(data.by || '')}</div><div class="tray"></div>`);
+    const card = h('div', 'cb-q', side, `${blank(data.kicker) ? '' : `<div class="k">${esc(data.kicker)}</div>`}<div class="t">${chalkHTML(data.text)}</div><div class="by">${esc(data.by || '')}</div><div class="tray"></div>`);
     const sTop = (data.stampTop || 690) + 44;
     const st = stamp(data.stamp || '', data.stampSmall || '', `${right ? 'right:150px;' : 'left:150px;'}top:${sTop}px;font-size:58px;`, 'var(--cb-pink)');
     const ck = propEl(PROPS.chalk(92, '#FFE066'), `${right ? 'right:470px;' : 'left:470px;'}top:${sTop + 70}px;`);
@@ -916,12 +927,13 @@
     const hd = head(data.title, 'left:58px;top:146px;font-size:90px;');
     const tagC = ['var(--cb-blue)', 'var(--cb-pink)', 'var(--cb-yellow)'];
     const acts = (data.actions || []).slice(0, 3).map((a, i) => frame(h('div', 'cb-act', `top:${272 + i * 180}px;`,
-      `<div class="tg" style="color:${tagC[i]}">${esc(a.tag || 'ACTION')}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div><div class="no">${String(i + 1).padStart(2, '0')}</div>`), { dash: true, color: 'rgba(244,244,238,.6)' }));
+      `${blank(a.tag) ? '' : `<div class="tg" style="color:${tagC[i]}">${esc(a.tag)}</div>`}<div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div><div class="no">${String(i + 1).padStart(2, '0')}</div>`), { dash: true, color: 'rgba(244,244,238,.6)' }));
     const c = data.cta || {};
-    const cta = frame(h('div', 'cb-cta', null, `<div class="k">${esc(c.kicker || 'OPEN SOURCE')}</div><div class="t">${esc(c.title || '')}</div><div class="repo">${esc(c.repo || '')}</div><div class="btns">${(c.buttons || []).slice(0, 3).map((b) => `<div>${esc(b)}</div>`).join('')}</div>`), { double: true, color: 'var(--cb-yellow)' });
+    const cta = frame(h('div', 'cb-cta', null, `${blank(c.kicker) ? '' : `<div class="k">${esc(c.kicker)}</div>`}<div class="t">${esc(c.title || '')}</div><div class="repo">${esc(c.repo || '')}</div><div class="btns">${(c.buttons || []).slice(0, 3).map((b) => `<div>${esc(b)}</div>`).join('')}</div>`), { double: true, color: 'var(--cb-yellow)' });
+    if (blank(c.kicker) && blank(c.title) && blank(c.repo) && !(c.buttons || []).length) cta.style.display = 'none';   // v3.5：CTA 整块没填 → 不出空框
     const btns = Array.from(cta.querySelectorAll('.btns > div'));
     btns.forEach((b, i) => { ring(b, { color: PAL[(i + 1) % 4], pad: 16, w: 4 }); b.insertAdjacentHTML('beforeend', `<div class="cb-fr-svg"><svg width="10" height="10" style="overflow:visible">${P(G.tick(-6, -40, 0.75), 'var(--cb-yellow)', 6)}</svg></div>`); });
-    const go = stamp(c.stamp || 'GO', c.stampSmall || '', 'left:1100px;top:752px;font-size:66px;', 'var(--cb-pink)');
+    const go = stamp(c.stamp || '', c.stampSmall || '', 'left:1100px;top:752px;font-size:66px;', 'var(--cb-pink)');
     const er = propEl(PROPS.eraser(220, 84), 'left:760px;top:808px;');
     el.append(kick, hd, ...acts, cta, er, go);
     KICK(A, kick);

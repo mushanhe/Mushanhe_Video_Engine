@@ -87,6 +87,70 @@
     #subtitle-bar .w.active { color: var(--rc-amber) !important; text-shadow: 0 0 12px rgba(255,176,0,0.75) !important; }
 
     #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; background: #000; color: var(--rc-red); border: 4px double var(--rc-red); font-size: 28px; font-weight: 700; display: none; }
+
+    /* v3.5 · 跟词组件（core/cue-kit.js）的 10 造型：CRT 终端窗——5px 双线磷光绿框、0 圆角、磷光外发光（不用实体投影）、
+       暗绿底 + 扫描线纹理、琥珀聚光、等宽字体、完全不歪（只在剧本写了新字段时出现） */
+    :root {
+      --mk-ink: var(--rc-green); --mk-paper: var(--rc-screen); --mk-panel: #04140A; --mk-muted: #0A1A0F; --mk-muted-ink: #3FAE62;
+      --mk-c1: #04140A; --mk-on1: var(--rc-green); --mk-c2: #041A2A; --mk-on2: #7FE3FF;
+      --mk-c3: #0B2E15; --mk-on3: var(--rc-green); --mk-c4: #2A1A00; --mk-on4: var(--rc-amber);
+      --mk-accent: var(--rc-amber); --mk-dark: #000000; --mk-on-dark: var(--rc-green);
+      --mk-bw: 5px; --mk-bs: double; --mk-rad: 0px; --mk-tilt: 0;
+      --mk-sh: 0 0 22px rgba(51,255,102,.28), inset 0 0 30px rgba(51,255,102,.07);
+      --mk-sh-lg: 0 0 30px rgba(51,255,102,.34), inset 0 0 36px rgba(51,255,102,.08);
+      --mk-sh-sm: 0 0 12px rgba(51,255,102,.3);
+      --mk-font: var(--rc-font); --mk-font-num: var(--rc-font);
+      --mk-tex: repeating-linear-gradient(180deg, rgba(51,255,102,.055) 0 1px, transparent 1px 4px);
+      --mk-board: #020A04; --mk-board-tex: radial-gradient(rgba(51,255,102,.16) 1.2px, transparent 1.4px);
+      --mk-tape: rgba(255,176,0,.28);
+      --mk-trim: rgba(51,255,102,.28); --mk-trim-c: var(--rc-amber);
+      /* 全屏画框：终端窗——6px 双线磷光绿 + 外发光 + 暗角；框外露出荧光屏点阵底 */
+      --mh-frame-bw: 6px; --mh-frame-color: var(--rc-green); --mh-frame-shadow: 0 0 30px rgba(51,255,102,.45), 0 0 0 3px #020603; --mh-frame-radius: 0; --mh-frame-vig: .32;
+    }
+    html[data-mh-full="frame"] body #avatar-stage.is-full { border-style: double !important; }
+    .mk-zone { text-shadow: 0 0 8px rgba(51,255,102,.35); }
+    .mk-zone .mh-focus-ring { inset: -16px; border: 4px solid var(--rc-amber); border-radius: 0; box-shadow: 0 0 18px rgba(255,176,0,.55), inset 0 0 12px rgba(255,176,0,.2); }
+    html[data-mh-card="trim"] .mk-zone .mh-focus-ring:not(.row) { box-shadow: 0 0 18px rgba(255,176,0,.55), 0 0 40px 8px rgba(255,176,0,.22); }
+    .mk-cmp.wrong { border-color: #2E8B4E; }
+    .mk-cmp.right { border-color: var(--rc-green); }
+    .mk-cv-blue { border-color: #7FE3FF; }
+    .mk-stamp { background: #000; color: var(--rc-red); border: 5px double var(--rc-red); outline: none; box-shadow: 0 0 18px rgba(255,51,68,.5); text-shadow: 0 0 10px rgba(255,51,68,.8); }
+    .mk-sticker { background: #000; color: var(--rc-amber); border: 3px solid var(--rc-amber); box-shadow: 0 0 14px rgba(255,176,0,.5); text-shadow: 0 0 8px rgba(255,176,0,.7); }
+    .mk-tape { border: 1px solid var(--rc-amber); background-image: repeating-linear-gradient(90deg, rgba(255,176,0,.35) 0 6px, transparent 6px 12px); }
+    .mk-ticket .no { color: var(--rc-amber); text-shadow: 0 0 8px rgba(255,176,0,.7); }
+    .mk-ticket .pgb { background: rgba(51,255,102,.06); border: 2px solid var(--rc-green); }
+    .mk-ticket .pgb i { background: repeating-linear-gradient(90deg, var(--rc-green) 0 14px, transparent 14px 18px); }
+    .mk-file .ear { background: linear-gradient(225deg, var(--rc-screen) 0 50%, var(--rc-green) 50% calc(50% + 3px), rgba(51,255,102,.25) calc(50% + 3px)); }
+    .mk-ai { border-color: var(--rc-green); }
+    .mk-ai b { text-shadow: 0 0 18px rgba(51,255,102,.9), 0 0 3px rgba(51,255,102,1); }
+    .mk-ai .mini u { border-width: 2px; }
+    .mk-cmp .rw i { border: 0; border-radius: 0; background: var(--rc-amber); box-shadow: 0 0 8px rgba(255,176,0,.7); }
+    .mk-cmp .badge { border: 3px solid var(--rc-green); background: #000; color: var(--rc-green); }
+    .mk-cmp .sw { background: #000; border: 2px solid var(--rc-green); }
+    .mk-cmp .sw i { border-left-color: var(--rc-green); }
+    .mk-cmp .btn { background: #000; color: var(--rc-amber); border: 3px solid var(--rc-amber); box-shadow: 0 0 12px rgba(255,176,0,.45); }
+    .mk-cmp .tlx { background: rgba(51,255,102,.05); border: 2px solid #2E8B4E; }
+    .mk-cmp .tlx .trk { border-bottom-color: rgba(51,255,102,.2); }
+    .mk-cmp .tlx .clp { border-color: #2E8B4E; }
+    .mk-vs .dm { border: 3px solid var(--rc-amber); box-shadow: 0 0 14px rgba(255,176,0,.5); }
+    .mk-vs .tx { color: var(--rc-amber); text-shadow: 0 0 10px rgba(255,176,0,.8); }
+    .mk-ripple { border-color: var(--rc-amber); }
+    .mk-cstat { border-color: var(--rc-green); }
+    .mk-cstat .num { color: var(--rc-amber); text-shadow: 0 0 12px rgba(255,176,0,.75); }
+    .mk-cstat .lb { border: 2px solid var(--rc-green); }
+    .mk-cstat .pg { border: 2px solid var(--rc-green); background: #000; }
+    .mk-cstat .pg i { background: repeating-linear-gradient(90deg, var(--rc-amber) 0 14px, transparent 14px 18px); }
+    .mk-cv-block { background-image: repeating-linear-gradient(180deg, rgba(51,255,102,.07) 0 1px, transparent 1px 4px); }
+    .mk-cv-dots { background-color: #000; background-image: radial-gradient(rgba(255,176,0,.55) 2.5px, transparent 3px); border-color: var(--rc-amber); }
+    .mk-cv-chip { border: 2px solid var(--rc-green); box-shadow: 0 0 10px rgba(51,255,102,.35); }
+    .mk-cv-ring { border-color: var(--rc-amber); box-shadow: 0 0 16px rgba(255,176,0,.55); }
+    .mk-cv-ring::after { background: var(--rc-amber); }
+    .mk-screw { background: #000; border: 2px solid var(--rc-green); }
+    .mk-screw::after { background: var(--rc-green); }
+    .mk-plate .ic { color: inherit; }
+    .mk-banner { background: #000; border: 3px solid var(--rc-green); box-shadow: 0 0 20px rgba(51,255,102,.4); text-shadow: 0 0 10px rgba(51,255,102,.7); }
+      /* v3.5 收尾（12 套打分）：「换风格」色块点击前用本包的亮色，不在深色卡上像三个空格 */
+    :root { --mk-sw0: var(--rc-screen); --mk-sw1: var(--rc-green); --mk-sw2: var(--rc-amber); --mk-sw3: var(--rc-ink); }
   </style>
 </head>
 <body>
@@ -133,6 +197,10 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="../../core/script-sync.js"></script>
+  <script src="../../core/talk.js"></script>
+  <script src="../../core/focus.js"></script>
+  <script src="../../core/cue-kit.js"></script>
+  <script src="../../core/host-kit.js"></script>
   <script src="components.js"></script>
   <script>
     const vp = document.getElementById('viewport');
@@ -148,6 +216,18 @@
     // 组件局部安全区 x60–1340 / y100–980 → 屏幕 x≈115–1295（避开人像框 1328+）/ y≈100–910（避开字幕）
     const CAM_DX = 60, CAM_ZOOM = 0.92;
     const params = new URLSearchParams(location.search);
+    // v3.5：牌子层 10 造型（印章 = 警示红双线终端框、贴纸 = 琥珀描边反显块、标签 = 磷光绿描边终端条 + > 提示符、
+    // 标注 = 黑底绿双线窗、多色大字 = 磷光绿 / 琥珀 无描边发光；完全不歪）
+    MHEngine.Badges.registerKinds('10', {
+      stamp: 'padding:8px 26px 10px;background:#000000;color:var(--rc-red);border:6px double var(--rc-red);box-shadow:0 0 22px rgba(255,51,68,.5);text-shadow:0 0 10px rgba(255,51,68,.85);font-family:var(--rc-font);font-weight:700;',
+      sticker: 'padding:10px 26px 12px;background:var(--rc-amber);color:#120C00;border:3px solid var(--rc-amber);box-shadow:0 0 18px rgba(255,176,0,.6);font-family:var(--rc-font);font-weight:700;',
+      tag: 'padding:10px 28px 12px 24px;background:#000000;color:var(--rc-green);border:3px solid var(--rc-green);box-shadow:0 0 22px rgba(51,255,102,.45),inset 0 0 18px rgba(51,255,102,.12);text-shadow:0 0 10px rgba(51,255,102,.75);font-family:var(--rc-font);font-weight:700;',
+      label: 'padding:12px 32px 14px;background:rgba(4,11,6,.96);color:#E6FFEC;border:5px double var(--rc-green);box-shadow:0 0 22px rgba(51,255,102,.35);font-family:var(--rc-font);font-weight:700;',
+      big: { pal: ['var(--rc-green)', 'var(--rc-amber)'], ink: 'transparent', shadow: '0 0 18px rgba(51,255,102,.55)' },
+      rot: { stamp: 0, sticker: 0, tag: 0, label: 0, big: 0 }
+    });
+    // 「换风格」色票（以前 / 现在里被点的按钮）：三种显像管荧光
+    MHEngine.CueKit.swatches = [['#000000', '#33FF66', '#14532D', '#33FF66'], ['#0A0700', '#FFB000', '#5A3E00', '#FFB000'], ['#00101A', '#7FE3FF', '#FF3344', '#E6FFEC']];
 
     /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
     function buildWordData(scenes) {
@@ -177,6 +257,7 @@
       try {
         const src = params.get('data') || 'demo_data.json';
         script = await (await fetch(src, { cache: 'no-store' })).json();
+        MHEngine.ScriptSync.resolveMedia(script, src); // v3.4：媒体路径以剧本文件为基准
       } catch (e) {
         const el = document.getElementById('load-error');
         el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
@@ -186,11 +267,16 @@
       const root = document.documentElement.style;
       ['screen', 'green', 'amber', 'red', 'line'].forEach((k) => { if (theme[k]) root.setProperty(`--rc-${k}`, theme[k]); });
       RetroCRT.injectCSS();
+      const HK = MHEngine.HostKit.init(script, document.getElementById('avatar-stage'));   // v3.5：铺满版式 / 画框 / 利落散聚 / 牌子层（剧本写了才开）
+      if (HK.CHROME_OFF) {   // v3.5：导出时状态条不出 SYS_MEM / BAUD / REC 英文字样，只留数字和符号
+        document.querySelector('#rc-sys .l').innerHTML = '640 · 9600 · <span class="rec" id="rc-rec">●</span>';
+      }
 
       // 人像：可选真人视频，否则用线框剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
       if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
-      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      document.getElementById('avatar-tag-tx').textContent = av.tag || (av.video ? '' : 'YOUR NAME');
+      if (av.video && !String(av.tag || '').trim()) document.getElementById('avatar-tag').style.display = 'none';   // v3.5：真人素材没填名牌 → 整块不出（占位剪影仍配占位名）
       if (av.video) {
         const v = document.createElement('video');
         v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
@@ -201,15 +287,19 @@
       // 组装场景
       const world = document.getElementById('rc-world');
       const scenes = []; let acc = 0, zoneX = 0;
+      const COVER_AT = HK.coverAt(script.scenes, 0.30);   // CRT 压扁成光束在段边界前 0.30s 开始
       (script.scenes || []).forEach((sc, i) => {
-        const factory = RetroCRT.COMPONENTS[sc.type];
+        const factory = RetroCRT.COMPONENTS[sc.type] || MHEngine.ScriptSync.coreComponent(sc.type);
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
-        const comp = factory.create(sc.data || {}, { dur });
+        const ctx = MHEngine.ScriptSync.sceneCtx(sc, acc, dur);
+        ctx.area = HK.area(sc, { CAM_DX, CAM_ZOOM, SX, SY }); ctx.coverAt = COVER_AT[i];
+        const comp = MHEngine.CueKit.create(sc.type, sc.data, ctx) || factory.create(sc.data || {}, ctx);
+        const badges = HK.badges(sc, comp, ctx, document.getElementById('screen-layer'));
         const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1400) + ZONE_GAP;
         if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
         else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
-        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, badges, zx, zy, avatar: sc.avatar || comp.avatar });
         acc += dur;
       });
       const DURATION = acc;
@@ -230,17 +320,17 @@
       camRig.setKeyframes(kfs);
 
       // 人像形态：card / pip / corner / full（4 种形态全部走 core 点阵粒子散聚转场）
-      const avatar = new MHEngine.AvatarController({
+      const avatar = new MHEngine.AvatarController(HK.presets({
         card:   { left: 1328, top: 82,  width: 540, height: 790, borderRadius: 0,   borderWidth: 5, tagOpacity: 1 },
         pip:    { left: 1532, top: 642, width: 320, height: 320, borderRadius: 160, borderWidth: 5, tagOpacity: 0 },
         corner: { left: 1410, top: 530, width: 458, height: 342, borderRadius: 0,   borderWidth: 5, tagOpacity: 1 }
-      });
+      }));
       const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
       const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
       const tl = gsap.timeline({ paused: true });
       const AVSEG = MHEngine.ScriptSync.avatarSegments(scenes); // 无 avatarCues 时与 scenes 一一对应
       avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
-      AVSEG.forEach((s, i) => {
+      if (!HK.scheduleMorphs({ segs: AVSEG, avatar, morph: avatarMorph, tl, mapAv, seed: 101000 })) AVSEG.forEach((s, i) => {
         if (i === 0) return;
         const prev = mapAv(AVSEG[i - 1].avatar);
         const cur = mapAv(s.avatar);
@@ -273,7 +363,8 @@
       const tcEl = document.getElementById('rc-tc'), recEl = document.getElementById('rc-rec');
       const clamp01 = (x) => Math.max(0, Math.min(1, x));
       const easeOut = (x) => 1 - Math.pow(1 - x, 3), easeIn = (x) => x * x * x;
-      const fmtTC = (t) => `T+${String(Math.floor(t / 60)).padStart(2, '0')}:${(t % 60).toFixed(2).padStart(5, '0')}`;
+      const escH = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      const fmtTC = (t) => `${HK.CHROME_OFF ? '' : 'T+'}${String(Math.floor(t / 60)).padStart(2, '0')}:${(t % 60).toFixed(2).padStart(5, '0')}`;
 
       function updateUI(t) {
         MHEngine.ScriptSync.renderCues(script, t);
@@ -297,8 +388,9 @@
         const S = scenes[cur];
         const AS = MHEngine.ScriptSync.avatarAt(AVSEG, t, S);
         const isFull = AS.avatar === 'full';
-        stageEl.classList.toggle('is-full', isFull && t >= AS.start + 0.2);
-        const hideWorld = isFull && t >= AS.start + 0.15 && t < AS.start + AS.dur;
+        stageEl.classList.toggle('is-full', isFull && t >= AS.start + HK.fullDelay(0.2));
+        const hideWorld = isFull && t >= AS.start + HK.fullDelay(0.15) && t < AS.start + AS.dur;
+        HK.updateBadges(scenes, cur, t);
 
         // 标志转场：画面纵向压扁成一条亮白光束（b-0.30→b）→ 光束横向收束（b→b+0.14）→ 绿色扫描线自上而下刷出新画面（b+0.08→b+0.56）
         let txOn = false, sq = 1, bright = 1, clip = 0, sweepY = -1;
@@ -313,7 +405,10 @@
             beam.style.transform = `scaleX(${t < b ? 1 : (1 - easeIn(clamp01((t - b) / 0.16)) * 0.98).toFixed(3)}) scaleY(${(1 + bp * 0.6).toFixed(2)})`;
             const lp = t < b ? clamp01((t - (b - 0.1)) / 0.06) : 1 - clamp01((t - b - 0.2) / 0.15);
             const loadBar = '█'.repeat(Math.round(clamp01((t - (b - 0.25)) / 0.45) * 12)).padEnd(12, '░');
-            seg.innerHTML = `&gt; LOAD SEG_${String(i + 1).padStart(2, '0')} :: ${scenes[i].label || scenes[i].type}<small>[${loadBar}] ${scenes[i].type.toUpperCase()}.EXE</small>`;
+            if (HK.CHROME_OFF) {   // v3.5：导出时不出 LOAD SEG / 句型名 / .EXE，只留段号 + 剧本写了的 label + 像素进度条
+              const lb = HK.label(scenes[i]);
+              seg.innerHTML = `&gt; ${String(i + 1).padStart(2, '0')}${lb ? ` :: ${escH(lb)}` : ''}<small>[${loadBar}]</small>`;
+            } else seg.innerHTML = `&gt; LOAD SEG_${String(i + 1).padStart(2, '0')} :: ${scenes[i].label || scenes[i].type}<small>[${loadBar}] ${scenes[i].type.toUpperCase()}.EXE</small>`;
             seg.style.opacity = lp.toFixed(3);
             if (t >= b + 0.08) sweepY = (1 - clip) * 1080;
             break;
@@ -329,6 +424,7 @@
         else sweep.style.display = 'none';
 
         stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        HK.frame(t, stageEl, avatarMorph);
         document.getElementById('scrubber').value = t.toFixed(2);
         document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
       }
@@ -336,7 +432,7 @@
       // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
       let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
       const vid = document.getElementById('avatar-video');
-      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid }); // meta.avatar.offset + meta.audio
+      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid, scenes }); // meta.avatar.offset + meta.audio
       function seek(t) {
         cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
         scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });

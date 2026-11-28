@@ -71,6 +71,95 @@
     #subtitle-bar .w.active { color: #60A5FA !important; text-shadow: 0 0 18px rgba(96,165,250,.55) !important; }
 
     #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; border-radius: 16px; background: rgba(239,68,68,.15); border: 1px solid #F87171; color: #fff; font-size: 26px; font-weight: 600; display: none; }
+
+    /* v3.5 · 跟词组件（core/cue-kit.js）的 11 造型：纯黑舞台上的液态毛玻璃 Bento——1px 亮边 + 顶部高光线 + 28px 大圆角 + 极光（蓝→紫→青）点睛，完全不歪（只在剧本写了新字段时出现） */
+    :root {
+      --mk-ink: var(--kg-white); --mk-paper: var(--kg-bg); --mk-panel: rgba(255,255,255,.06); --mk-muted: rgba(255,255,255,.035); --mk-muted-ink: #8391A7;
+      --mk-c1: rgba(37,99,235,.24); --mk-on1: var(--kg-white); --mk-c2: rgba(124,58,237,.26); --mk-on2: var(--kg-white);
+      --mk-c3: rgba(34,211,238,.16); --mk-on3: var(--kg-white); --mk-c4: rgba(255,255,255,.075); --mk-on4: var(--kg-white);
+      --mk-accent: var(--kg-accent); --mk-dark: rgba(10,12,20,.72); --mk-on-dark: var(--kg-white);
+      --mk-bw: 1px; --mk-rad: 28px; --mk-tilt: 0;
+      --mk-sh: 0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.14);
+      --mk-sh-lg: 0 34px 90px rgba(0,0,0,.55), 0 0 60px rgba(96,165,250,.10), inset 0 1px 0 rgba(255,255,255,.16);
+      --mk-sh-sm: 0 14px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12);
+      --mk-font: var(--kg-font); --mk-font-num: var(--kg-font-latin);
+      --mk-tex: linear-gradient(180deg, rgba(255,255,255,.085) 0%, rgba(255,255,255,.02) 100%);
+      --mk-board: rgba(255,255,255,.03); --mk-board-tex: none; --mk-tape: rgba(255,255,255,.12);
+      --mk-trim: rgba(255,255,255,.07); --mk-trim-c: rgba(255,255,255,.5);
+      /* 全屏画框：舞台上的发光玻璃屏——1px 银白亮边 + 32px 圆角 + 深投影与极光外晕 */
+      --mh-frame-bw: 1px; --mh-frame-color: rgba(226,232,240,.38); --mh-frame-radius: 32;
+      --mh-frame-shadow: 0 40px 100px rgba(0,0,0,.65), 0 0 90px rgba(37,99,235,.22); --mh-frame-vig: .3;
+    }
+    .mk-zone .mk-box { border-color: rgba(255,255,255,.15); -webkit-backdrop-filter: blur(28px) saturate(160%); backdrop-filter: blur(28px) saturate(160%); }
+    .mk-zone .mk-head { background: linear-gradient(180deg,#FFFFFF 0%,#EEF2F7 38%,#B4C0D0 78%,#8A98AD 100%); -webkit-background-clip: text; background-clip: text; color: transparent; padding-bottom: .06em; }
+    /* 顶部高光线（玻璃磁贴的标志）：常态 + 卡片细节（trim）都用它，替代直角 L 角标 */
+    .mk-zone .mk-ticket::after, .mk-zone .mk-cmp::after, .mk-zone .mk-cstat::after, .mk-zone .mk-file::after, .mk-zone .mk-plate::after,
+    html[data-mh-card="trim"] .mk-zone .mk-ticket::after, html[data-mh-card="trim"] .mk-zone .mk-cmp::after, html[data-mh-card="trim"] .mk-zone .mk-cstat::after,
+    html[data-mh-card="trim"] .mk-zone .mk-file::after, html[data-mh-card="trim"] .mk-zone .mk-plate::after {
+      content: ''; position: absolute; inset: auto; left: 28px; right: 28px; top: -1px; height: 1px; pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent); }
+    .mk-zone .mh-focus-ring { inset: -12px; border: 2px solid rgba(147,197,253,.9); border-radius: calc(var(--mk-rad) + 12px); box-shadow: 0 0 40px rgba(96,165,250,.45), inset 0 0 24px rgba(96,165,250,.14); }
+    html[data-mh-card="trim"] .mk-zone .mh-focus-ring:not(.row) { box-shadow: 0 0 46px 6px rgba(96,165,250,.42), inset 0 0 24px rgba(167,139,250,.16); }
+    .mk-stamp { padding: 12px 36px 14px; background: rgba(10,12,20,.62); color: #F8FAFC; border: 1.5px solid rgba(147,197,253,.75); border-radius: 999px; outline: none; font-weight: 800;
+      -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: 0 0 60px rgba(96,165,250,.35), 0 20px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.2); }
+    .mk-sticker { padding: 12px 30px 14px; background: linear-gradient(120deg, #3B82F6, #7C3AED); color: #FFFFFF; border: 0; border-radius: 999px; font-weight: 800; box-shadow: 0 10px 40px rgba(59,130,246,.45), inset 0 1px 0 rgba(255,255,255,.35); }
+    .mk-tape { border: 1px solid rgba(255,255,255,.22); border-radius: 10px; background-image: none; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: inset 0 1px 0 rgba(255,255,255,.2); }
+    .mk-arrow { color: rgba(203,213,225,.7); }
+    /* cover：钛金属大字 + 玻璃球 + 胶囊 */
+    .mk-cv-block { background-image: var(--mk-tex); background-size: auto; }
+    .mk-cv-title span { background: linear-gradient(180deg,#FFFFFF 0%,#EEF2F7 38%,#B4C0D0 78%,#8A98AD 100%); -webkit-background-clip: text; background-clip: text; color: transparent; padding-bottom: .06em; }
+    .mk-cv-blue { color: #BFDBFE; }
+    .mk-cv-dots { background-color: rgba(255,255,255,.04); background-image: radial-gradient(rgba(148,163,184,.28) 1.6px, transparent 1.6px); }
+    .mk-cv-chip { border: 1px solid rgba(255,255,255,.16); border-radius: 999px; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+    .mk-cv-ring { border: 1px solid rgba(255,255,255,.2); box-shadow: inset 0 0 40px rgba(96,165,250,.22), inset -14px -20px 50px rgba(124,58,237,.28), 0 30px 90px rgba(37,99,235,.28);
+      background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.55) 0%, rgba(255,255,255,.10) 18%, rgba(255,255,255,0) 40%), radial-gradient(circle at 70% 78%, rgba(34,211,238,.35) 0%, rgba(124,58,237,.18) 38%, rgba(5,5,7,0) 72%), rgba(255,255,255,.03); }
+    .mk-cv-ring::after { display: none; }
+    .mk-cv-wave path { stroke: var(--kg-cyan); stroke-width: 3; stroke-linecap: round; }
+    /* steps / intake */
+    .mk-ticket .no { background: rgba(255,255,255,.06); color: #CBD5E1; font-weight: 300; border-right: 1px solid rgba(255,255,255,.12); border-bottom: 1px solid rgba(255,255,255,.12); }
+    .mk-ticket .ico { color: #BFDBFE; opacity: .85; }
+    .mk-ticket .pgb { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); border-radius: 999px; }
+    .mk-ticket .pgb i { background: linear-gradient(90deg, var(--kg-accent), #A78BFA, var(--kg-cyan)); box-shadow: 0 0 14px var(--kg-accent); }
+    html[data-mh-card="trim"] .mk-ticket .pgb::before { background: #FFFFFF; box-shadow: 0 0 10px #FFFFFF; }
+    .mk-file .ear { display: none; }
+    .mk-file .ic { color: #BFDBFE; }
+    .mk-ai { border-color: rgba(147,197,253,.5) !important; }
+    .mk-ai b { background: linear-gradient(90deg, var(--kg-accent) 0%, #A78BFA 52%, var(--kg-cyan) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; padding: 0 .04em .06em; }
+    .mk-ai .mini { color: #CBD5E1; }
+    .mk-ai .mini u { border: 1px solid rgba(255,255,255,.22); border-radius: 999px; background: repeating-linear-gradient(-45deg, rgba(96,165,250,.75) 0 7px, rgba(167,139,250,.15) 7px 14px); }
+    .mk-ai.lit { box-shadow: var(--mk-sh-lg), 0 0 60px 16px rgba(96,165,250,.38); }
+    /* compare */
+    .mk-cmp.wrong { border-color: rgba(255,255,255,.07); }
+    .mk-cmp.right { border-color: rgba(147,197,253,.42); box-shadow: 0 34px 90px rgba(0,0,0,.55), 0 0 70px rgba(96,165,250,.2), inset 0 1px 0 rgba(255,255,255,.18); }
+    .mk-cmp.right .t { background: linear-gradient(180deg,#FFFFFF 0%,#EEF2F7 38%,#B4C0D0 100%); -webkit-background-clip: text; background-clip: text; color: transparent; padding-bottom: .06em; }
+    .mk-cmp.wrong .rw { color: #94A3B8; }
+    .mk-cmp .rw i { width: 14px; height: 14px; border: 0; border-radius: 50%; background: linear-gradient(135deg, var(--kg-accent), var(--kg-violet)); box-shadow: 0 0 12px var(--kg-accent); }
+    .mk-cmp.wrong .rw i { background: #475569; box-shadow: none; }
+    .mk-cmp .badge { border: 0; border-radius: 50%; background: linear-gradient(135deg, var(--kg-accent), var(--kg-violet)); color: #FFFFFF; box-shadow: 0 0 30px rgba(96,165,250,.55); }
+    .mk-cmp .sw { border: 1px solid rgba(255,255,255,.2); border-radius: 16px; box-shadow: 0 14px 40px rgba(0,0,0,.45); }
+    .mk-cmp .sw i { border-left: 1px solid rgba(255,255,255,.2); }
+    .mk-cmp .btn { border: 0; border-radius: 999px; background: linear-gradient(120deg, #3B82F6, #7C3AED); color: #FFFFFF; font-weight: 700; box-shadow: 0 10px 40px rgba(59,130,246,.45), inset 0 1px 0 rgba(255,255,255,.35); }
+    .mk-cmp .tlx { border: 1px solid rgba(255,255,255,.14); border-radius: 16px; background: rgba(255,255,255,.04); }
+    .mk-cmp .tlx .trk { border-bottom: 1px solid rgba(255,255,255,.08); }
+    .mk-cmp .tlx .clp { border: 0; border-radius: 6px; }
+    .mk-cmp .tlx .ph { width: 3px; background: #FFFFFF; box-shadow: 0 0 12px var(--kg-accent); }
+    .mk-vs .dm { transform: none; border-radius: 50%; background: rgba(10,12,20,.6); border: 1px solid rgba(255,255,255,.2); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 0 40px rgba(96,165,250,.25); }
+    .mk-vs .tx { font-weight: 300; color: #CBD5E1; }
+    .mk-ripple { border: 2px solid rgba(147,197,253,.9); box-shadow: 0 0 24px rgba(96,165,250,.5); }
+    .mk-cstat { border-color: rgba(147,197,253,.4); }
+    .mk-cstat .lb { background: rgba(255,255,255,.07); color: #CBD5E1; font-weight: 600; border: 1px solid rgba(255,255,255,.14); border-radius: 999px; }
+    .mk-cstat .num b { background: linear-gradient(90deg, var(--kg-accent) 0%, #A78BFA 52%, var(--kg-cyan) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; padding-bottom: .05em; }
+    .mk-cstat .num .u { color: #CBD5E1; }
+    .mk-cstat .pg { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); border-radius: 999px; }
+    .mk-cstat .pg i { background: linear-gradient(90deg, var(--kg-accent), #A78BFA, var(--kg-cyan)); box-shadow: 0 0 16px var(--kg-accent); }
+    /* outro：玻璃底板 + 玻璃铭牌 + 极光 CTA 横条 */
+    .mk-board { border-color: rgba(255,255,255,.09) !important; }
+    .mk-screw { display: none; }
+    .mk-plate .ic { color: #BFDBFE; }
+    .mk-banner { background: linear-gradient(120deg, #3B82F6, #7C3AED 60%, #06B6D4); color: #FFFFFF; border-radius: 999px; font-weight: 700; box-shadow: 0 16px 50px rgba(59,130,246,.45), inset 0 1px 0 rgba(255,255,255,.4); }
+    .mk-banner .ar { color: #FFFFFF; }
+      /* v3.5 收尾（12 套打分）：「换风格」色块点击前用本包的亮色，不在深色卡上像三个空格 */
+    :root { --mk-sw0: var(--kg-white); --mk-sw1: var(--kg-accent); --mk-sw2: var(--kg-cyan); --mk-sw3: var(--kg-violet); }
   </style>
 </head>
 <body>
@@ -118,6 +207,10 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="../../core/script-sync.js"></script>
+  <script src="../../core/talk.js"></script>
+  <script src="../../core/focus.js"></script>
+  <script src="../../core/cue-kit.js"></script>
+  <script src="../../core/host-kit.js"></script>
   <script src="components.js"></script>
   <script>
     const vp = document.getElementById('viewport');
@@ -133,6 +226,17 @@
     // 组件局部安全区 x60–1340 / y100–980 → 屏幕 x≈115–1295（避开人像框 1328+）/ y≈100–910（避开字幕）
     const CAM_DX = 60, CAM_ZOOM = 0.92;
     const params = new URLSearchParams(location.search);
+    // v3.5：牌子层 11 造型（印章 = 极光亮边毛玻璃胶囊、贴纸 = 蓝紫渐变胶囊、标签 = 深色毛玻璃标题牌、多色大字 = 极光三色无描边带辉光；全部不歪）
+    MHEngine.Badges.registerKinds('11', {
+      stamp: 'padding:12px 38px 14px;background:rgba(10,12,20,.62);color:#F8FAFC;border:1.5px solid rgba(147,197,253,.8);border-radius:999px;box-shadow:0 0 60px rgba(96,165,250,.38),0 20px 50px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.22);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);font-family:var(--kg-font);font-weight:800;',
+      sticker: 'padding:12px 32px 14px;background:linear-gradient(120deg,#3B82F6,#7C3AED);color:#FFFFFF;border-radius:999px;box-shadow:0 10px 40px rgba(59,130,246,.45),inset 0 1px 0 rgba(255,255,255,.35);font-family:var(--kg-font);font-weight:800;',
+      tag: 'padding:14px 36px 16px;background:rgba(14,16,26,.66);color:#F8FAFC;border:1px solid rgba(226,232,240,.3);border-radius:28px;box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 50px rgba(96,165,250,.2),inset 0 1px 0 rgba(255,255,255,.2);-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);font-family:var(--kg-font);font-weight:800;',
+      label: 'padding:16px 40px 18px;background:rgba(255,255,255,.08);color:#F8FAFC;border:1px solid rgba(255,255,255,.22);border-radius:24px;box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.18);-webkit-backdrop-filter:blur(28px) saturate(160%);backdrop-filter:blur(28px) saturate(160%);font-family:var(--kg-font);font-weight:800;',
+      big: { pal: ['#60A5FA', '#A78BFA', '#22D3EE', '#F8FAFC'], ink: 'transparent', shadow: '0 0 34px rgba(96,165,250,.55)' },
+      rot: { stamp: 0, sticker: 0, tag: 0, label: 0, big: 0 }
+    });
+    // 「换风格」按钮的样色（只在 compare 写了 right.button 时用）：玻璃 / 极光 / 冷银
+    MHEngine.CueKit.swatches = [['#050507', '#60A5FA', '#A78BFA', '#22D3EE'], ['#0B1220', '#2563EB', '#7C3AED', '#F8FAFC'], ['#1E293B', '#22D3EE', '#94A3B8', '#E2E8F0']];
 
     /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
     function buildWordData(scenes) {
@@ -162,6 +266,7 @@
       try {
         const src = params.get('data') || 'demo_data.json';
         script = await (await fetch(src, { cache: 'no-store' })).json();
+        MHEngine.ScriptSync.resolveMedia(script, src); // v3.4：媒体路径以剧本文件为基准
       } catch (e) {
         const el = document.getElementById('load-error');
         el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
@@ -171,11 +276,13 @@
       const root = document.documentElement.style;
       ['bg', 'white', 'silver', 'blue', 'violet', 'cyan', 'accent'].forEach((k) => { if (theme[k]) root.setProperty(`--kg-${k}`, theme[k]); });
       StageGlass.injectCSS();
+      const HK = MHEngine.HostKit.init(script, document.getElementById('avatar-stage'));   // v3.5：铺满版式 / 画框 / 利落散聚 / 牌子层（剧本写了才开）
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
       if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
-      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      document.getElementById('avatar-tag-tx').textContent = av.tag || (av.video ? '' : 'YOUR NAME');
+      if (av.video && !String(av.tag || '').trim()) document.getElementById('avatar-tag').style.display = 'none';   // v3.5：真人素材没填名牌 → 整块不出（占位剪影仍配占位名）
       if (av.video) {
         const v = document.createElement('video');
         v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
@@ -186,15 +293,19 @@
       // 组装场景
       const world = document.getElementById('kg-world');
       const scenes = []; let acc = 0, zoneX = 0;
+      const COVER_AT = HK.coverAt(script.scenes, 0.5);   // 极光光幕在段边界前 0.5s（PRE）开始扫入、画面开始虚化
       (script.scenes || []).forEach((sc, i) => {
-        const factory = StageGlass.COMPONENTS[sc.type];
+        const factory = StageGlass.COMPONENTS[sc.type] || MHEngine.ScriptSync.coreComponent(sc.type);
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
-        const comp = factory.create(sc.data || {}, { dur });
+        const ctx = MHEngine.ScriptSync.sceneCtx(sc, acc, dur);
+        ctx.area = HK.area(sc, { CAM_DX, CAM_ZOOM, SX, SY }); ctx.coverAt = COVER_AT[i];
+        const comp = MHEngine.CueKit.create(sc.type, sc.data, ctx) || factory.create(sc.data || {}, ctx);
+        const badges = HK.badges(sc, comp, ctx, document.getElementById('screen-layer'));
         const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1400) + ZONE_GAP;
         if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
         else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
-        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, badges, zx, zy, avatar: sc.avatar || comp.avatar });
         acc += dur;
       });
       const DURATION = acc;
@@ -215,17 +326,17 @@
       camRig.setKeyframes(kfs);
 
       // 人像形态：card / pip / corner / full（4 种形态全部支持 core 点阵粒子散聚转场）
-      const avatar = new MHEngine.AvatarController({
+      const avatar = new MHEngine.AvatarController(HK.presets({
         card:   { left: 1328, top: 82,  width: 540, height: 790, borderRadius: 32,  borderWidth: 1, tagOpacity: 1 },
         pip:    { left: 1532, top: 642, width: 320, height: 320, borderRadius: 160, borderWidth: 1, tagOpacity: 0 },
         corner: { left: 1410, top: 530, width: 458, height: 342, borderRadius: 26,  borderWidth: 1, tagOpacity: 1 }
-      });
+      }));
       const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
       const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
       const tl = gsap.timeline({ paused: true });
       const AVSEG = MHEngine.ScriptSync.avatarSegments(scenes); // 无 avatarCues 时与 scenes 一一对应
       avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
-      AVSEG.forEach((s, i) => {
+      if (!HK.scheduleMorphs({ segs: AVSEG, avatar, morph: avatarMorph, tl, mapAv, seed: 110100 })) AVSEG.forEach((s, i) => {
         if (i === 0) return;
         const prev = mapAv(AVSEG[i - 1].avatar);
         const cur = mapAv(s.avatar);
@@ -283,10 +394,11 @@
         });
         const S = scenes[cur];
         const AS = MHEngine.ScriptSync.avatarAt(AVSEG, t, S);
-        navTx.innerHTML = `<b>${String(cur + 1).padStart(2, '0')} / ${String(scenes.length).padStart(2, '0')}</b>${(S.label || S.type).toUpperCase()}`;
+        navTx.innerHTML = `<b>${String(cur + 1).padStart(2, '0')} / ${String(scenes.length).padStart(2, '0')}</b>${HK.label(S).toUpperCase()}`;
         const isFull = AS.avatar === 'full';
-        stageEl.classList.toggle('is-full', isFull && t >= AS.start + 0.2);
-        let camOp = isFull && t >= AS.start + 0.15 && t < AS.start + AS.dur ? 0 : 1;
+        stageEl.classList.toggle('is-full', isFull && t >= AS.start + HK.fullDelay(0.2));
+        let camOp = isFull && t >= AS.start + HK.fullDelay(0.15) && t < AS.start + AS.dur ? 0 : 1;
+        HK.updateBadges(scenes, cur, t);
 
         // 极光光幕扫过 + 景深微缩放：旧画面后退虚化 → 光幕盖过 → 新画面由近及远清晰落位
         let tr = -1;
@@ -307,7 +419,8 @@
           chap.style.opacity = co.toFixed(3);
           chap.style.transform = `scale(${(0.96 + 0.04 * u).toFixed(4)})`;
           chap.querySelector('.no').textContent = String(tr + 1).padStart(2, '0');
-          chap.querySelector('.lb').textContent = scenes[tr].label || scenes[tr].type;
+          chap.querySelector('.no').style.display = HK.CHROME_OFF && !scenes[tr].label ? 'none' : '';   // v3.5：导出时没写 label 不出章节号 / 英文句型名，只留极光光幕
+          chap.querySelector('.lb').textContent = HK.label(scenes[tr]);
           curtain.style.display = 'block';
         } else {
           curtain.style.display = 'none';
@@ -317,6 +430,7 @@
         camViewport.style.opacity = camOp >= 0.999 ? '' : camOp.toFixed(3);
 
         stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        HK.frame(t, stageEl, avatarMorph);
         document.getElementById('scrubber').value = t.toFixed(2);
         document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
       }
@@ -324,7 +438,7 @@
       // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
       let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
       const vid = document.getElementById('avatar-video');
-      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid }); // meta.avatar.offset + meta.audio
+      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid, scenes }); // meta.avatar.offset + meta.audio
       function seek(t) {
         cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
         scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });

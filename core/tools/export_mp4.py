@@ -12,14 +12,23 @@ Mushanhe Video Engine — 通用 MP4 导出器（无头浏览器确定性逐帧�
   # 任意页面（仓库相对路径）+ 外部母带音轨
   python core/tools/export_mp4.py --url-path my_project/index.html --duration 120 --audio my_master.wav --out output/my_ep.mp4
 
-音频优先级：--audio（外部母带，按 --start 对齐裁切）＞ 剧本 meta.audio.src（--data 时自动解析，含 offset / volume）＞ 静音轨。
+音频优先级：--audio（外部母带，按 --start 对齐裁切）＞ 剧本 meta.audio.src（--data 时自动解析，含 offset / volume）。
             --bgm 可选循环背景乐（--bgm-vol 线性音量），与上面的人声混合。
+
+v3.4 缺素材一律失败（绝不静默导出无声 / 无人的废片，没有任何「静音兜底」开关）：
+  - 剧本里的 meta.audio / meta.avatar.video / meta.avatar.bg 按「剧本 JSON 所在目录」解析（与预览页一致）；
+  - --audio 指向的文件不存在、剧本声明的媒体文件不存在、剧本有口播音轨却没有人像视频、整片没有任何音轨（无 --audio / meta.audio / --bgm）、
+    页面加载时任一请求 404 / 媒体加载失败 → 打印 STATUS FAIL missing-media，退出码 1，不产出 mp4。
+  - 渲染前先打印片长、帧数、预计耗时；不带 --yes 时等 5 秒（Ctrl+C 可取消）再开始。
+最后两行：STATUS OK + ZERO_ERRORS；有帧等就绪超时 → STATUS WARN ready-timeout（不再打印 ZERO_ERRORS）。
 """
 import argparse
+import base64
 import functools
 import http.server
 import json
 import multiprocessing as mp
+import re
 import shutil
 import subprocess
 import sys
@@ -139,6 +148,7 @@ def build_url(port: int, args, t: float) -> str:
         params["theme"] = args.theme
     params["t"] = f"{t:.4f}"
     params["clean"] = 1
+    params["chrome"] = 0   # v3.4：导出时隐藏顶部英文句型页签（预览页不带，照常显示）
     sep = "&" if "?" in base_url else "?"
     return f"{base_url}{sep}{urlencode(params, safe='/')}"
 
@@ -160,6 +170,9 @@ def open_page(browser, url: str, scale: int, errors: list, ready_timeout: float)
     page = ctx.new_page()
     page.on("pageerror", lambda err: errors.append(str(err)))
     page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+    page.on("response", lambda r: errors.append(f"[missing-media] HTTP {r.status} {unquote(r.url)}") if r.status >= 400 else None)
+    page.on("requestfailed", lambda r: errors.append(f"[missing-media] 请求失败 {unquote(r.url)} ({r.failure})")
+            if "ERR_ABORTED" not in str(r.failure or "") else None)
     page.goto(url, wait_until="domcontentloaded", timeout=60000)
     page.wait_for_function("() => window.__MH_ENGINE__ !== undefined && typeof window.__MH_ENGINE__.seek === 'function'",
                            timeout=60000)
@@ -196,12 +209,20 @@ def worker_main(wid, port, args_dict, f0, f1, chunk_path, progress_q):
             # 预热：首帧连 seek 两次（新开页面 / 跨章首次加载时，确保落到目标章节的目标帧）
             page.evaluate(JS_SEEK_FRAME, [t_first, int(a.ready_timeout * 1000)])
             page.evaluate(JS_WAIT_ASSETS, int(a.ready_timeout * 1000))
+            # v3.4：用 CDP 的无损快速 PNG（optimizeForSpeed）截图：像素与 page.screenshot 完全一致，
+            # 全屏真人画面每帧从约 330ms 降到约 70ms（慢的不是解码，是 PNG 压缩）；不支持时退回 page.screenshot
+            try:
+                cdp = ctx.new_cdp_session(page)
+                cdp.send("Page.captureScreenshot", {"format": "png", "optimizeForSpeed": True})
+                shot = lambda: base64.b64decode(cdp.send("Page.captureScreenshot", {"format": "png", "optimizeForSpeed": True})["data"])
+            except Exception:
+                shot = lambda: page.screenshot(type="png")
             for i in range(f0, f1):
                 t = a.start + i / fps
                 ok = page.evaluate(JS_SEEK_FRAME, [t, int(a.ready_timeout * 1000)])
                 if not ok:
                     slow.append(round(t, 4))
-                ff.stdin.write(page.screenshot(type="png"))
+                ff.stdin.write(shot())
                 if (i - f0) % 10 == 9 or i == f1 - 1:
                     progress_q.put(("p", wid, i - f0 + 1))
             ctx.close()
@@ -222,49 +243,121 @@ def worker_main(wid, port, args_dict, f0, f1, chunk_path, progress_q):
         progress_q.put(("fail", wid, f"{type(e).__name__}: {e}"))
 
 
-# ==================== 音频 ====================
-def resolve_script_audio(args):
-    """--data 剧本里的 meta.audio → (本地文件, offset, volume)；src 按页面目录解析（与浏览器一致）。"""
+# ==================== 素材（v3.4：以剧本文件为基准解析，缺了就失败） ====================
+MISSING = "missing-media"
+
+
+def is_media_error(e: str) -> bool:
+    return "missing-media" in e
+
+
+def fail_media(msgs):
+    """缺素材：打印清单 + STATUS FAIL missing-media，退出码 1（调用方保证此时还没写出 mp4）。"""
+    print("[FAIL] 素材缺失 / 加载失败，已停止导出（不会产出无声或没人像的成片）：")
+    for m in msgs:
+        print("  -", m)
+    print("  提示：剧本里的 meta.audio / meta.avatar.video / meta.avatar.bg 按「剧本 JSON 所在目录」解析；--audio 按当前目录解析。")
+    print(f"STATUS FAIL {MISSING}", flush=True)
+    sys.exit(1)
+
+
+def script_path(args):
     if not args.data:
         return None
     page_rel = urlsplit(page_rel_path(args)).path
     page_dir = (REPO_ROOT / unquote(page_rel)).parent
-    data_path = (page_dir / args.data).resolve()
-    if not data_path.exists():
-        print(f"[audio] script not found: {data_path}")
-        return None
-    try:
-        meta = json.loads(data_path.read_text(encoding="utf-8")).get("meta", {})
-    except Exception as e:
-        print(f"[audio] cannot parse {data_path}: {e}")
-        return None
+    return (page_dir / unquote(args.data)).resolve()
+
+
+def media_file(src, data_path):
+    """剧本里的媒体路径 → 本地文件（与 script-sync.js resolveMedia 同一规则）；外网 URL 返回 None。"""
+    src = unquote(str(src).split("?")[0].split("#")[0])
+    if re.match(r"^[a-z][a-z0-9+.-]*:", src, re.I) or src.startswith("//"):
+        m = re.match(r"^https?://(?:127\.0\.0\.1|localhost)(?::\d+)?/(.*)$", src, re.I)
+        return (REPO_ROOT / m.group(1)).resolve() if m else None
+    if src.startswith("/"):
+        return (REPO_ROOT / src.lstrip("/")).resolve()
+    base = data_path.parent if data_path is not None else REPO_ROOT
+    return (base / src).resolve()
+
+
+def preflight_media(args):
+    """渲染前检查：返回 (voice, problems)。voice = (本地文件, offset, volume) 或 None。"""
+    problems, voice, meta, dp = [], None, {}, script_path(args)
+    if dp is not None:
+        if not dp.exists():
+            return None, [f"剧本不存在：{dp}"]
+        try:
+            meta = json.loads(dp.read_text(encoding="utf-8")).get("meta", {}) or {}
+        except Exception as e:
+            return None, [f"剧本 JSON 解析失败：{dp}（{e}）"]
+    av = meta.get("avatar") if isinstance(meta.get("avatar"), dict) else {}
+    for key, label in (("video", "人像视频 meta.avatar.video"), ("bg", "人像底图 meta.avatar.bg")):
+        if av.get(key):
+            f = media_file(av[key], dp)
+            if f is not None and not f.exists():
+                problems.append(f"{label} 不存在：{av[key]} → {f}")
     A = meta.get("audio")
-    if not A:
-        return None
-    src = A if isinstance(A, str) else A.get("src", "")
-    if not src:
-        return None
-    off = float(A.get("offset", 0) or 0) if isinstance(A, dict) else 0.0
-    vol = float(A.get("volume", 1.0)) if isinstance(A, dict) and A.get("volume") is not None else 1.0
-    f = (page_dir / unquote(src)).resolve()
-    if not f.exists():
-        print(f"[audio] meta.audio.src not found: {f}")
-        return None
-    return f, off, vol
+    a_src = (A if isinstance(A, str) else (A or {}).get("src", "")) if A else ""
+    if args.audio:
+        f = Path(args.audio).resolve()
+        if not f.exists():
+            problems.append(f"--audio 指向的文件不存在：{f}")
+        voice = (f, args.start, 1.0)
+    elif a_src:
+        f = media_file(a_src, dp)
+        off = float(A.get("offset", 0) or 0) if isinstance(A, dict) else 0.0
+        vol = float(A.get("volume", 1.0)) if isinstance(A, dict) and A.get("volume") is not None else 1.0
+        if f is None:
+            problems.append(f"人声音轨 meta.audio 是外网地址，导出需要本地文件：{a_src}")
+        elif not f.exists():
+            problems.append(f"人声音轨 meta.audio 不存在：{a_src} → {f}")
+        voice = (f, off + args.start, vol)
+    if args.bgm and not Path(args.bgm).resolve().exists():
+        problems.append(f"--bgm 指向的文件不存在：{Path(args.bgm).resolve()}")
+    if (args.audio or a_src) and not av.get("video"):
+        problems.append("有口播音轨，但剧本没有 meta.avatar.video：成片会是剪影占位、没有真人画面")
+    if not (args.audio or a_src or args.bgm):
+        problems.append("整片没有任何音轨：剧本没有 meta.audio，也没给 --audio / --bgm（v3.4 起不再自动补静音轨）")
+    return voice, problems
 
 
-def mux_final(args, chunks, duration, out_path: Path, work: Path):
+def avatar_hint(args):
+    """人像视频的分辨率 / 关键帧间隔 → 导出倍率估计（浏览器每帧 seek 都要从上一个关键帧解码，GOP 越长越慢）。"""
+    dp = script_path(args)
+    try:
+        meta = json.loads(dp.read_text(encoding="utf-8")).get("meta", {}) if dp else {}
+        src = ((meta.get("avatar") or {}).get("video")) or ""
+    except Exception:
+        src = ""
+    f = media_file(src, dp) if src else None
+    if not f or not f.exists() or not shutil.which("ffprobe"):
+        return (1.0, 1.5), "无人像视频"
+    try:
+        r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=height",
+                            "-of", "csv=p=0", str(f)], capture_output=True, text=True, timeout=20)
+        height = int((r.stdout.strip().split() or ["0"])[0] or 0)
+        r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-skip_frame", "nokey", "-read_intervals", "%+12",
+                            "-show_entries", "frame=pts_time", "-of", "csv=p=0", str(f)], capture_output=True, text=True, timeout=60)
+        ks = sorted(float(x) for x in re.findall(r"[0-9.]+", r.stdout))
+        gaps = sorted(b - a for a, b in zip(ks, ks[1:]) if b > a)
+        gop = gaps[len(gaps) // 2] if gaps else 99.0
+    except Exception:
+        return (3, 10), "人像视频读不出关键帧信息"
+    desc = f"人像 {height}p · 关键帧间隔约 {gop:.2f}s"
+    if height > 1200:
+        return (5, 8), desc + "（4K 原片直接当人像：建议先跑 rough_cut.py 转 1080p 全帧内）"
+    if gop <= 0.1:
+        return (1.0, 1.5), desc + "（全帧内，最快）"
+    return (4, 6), desc + "（关键帧稀疏：先跑 rough_cut.py 转全帧内可提速约 3–4 倍）"
+
+
+def mux_final(args, chunks, duration, out_path: Path, work: Path, voice):
     lst = work / "concat.txt"
-    lst.write_text("".join(f"file '{c.as_posix()}'\n" for c in chunks), encoding="utf-8")
+    esc = lambda c: c.as_posix().replace("'", "'\\''")   # concat 列表单引号转义：路径带英文撇号也能拼接
+    lst.write_text("".join(f"file '{esc(c)}'\n" for c in chunks), encoding="utf-8")
     cmd = [args.ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst)]
     D = f"{duration:.6f}"
-    voice = None
-    if args.audio:
-        voice = (Path(args.audio).resolve(), args.start, 1.0)
-    else:
-        voice = resolve_script_audio(args)
-        if voice:
-            voice = (voice[0], voice[1] + args.start, voice[2])
     filters, labels, idx = [], [], 1
     if voice:
         f, off, vol = voice
@@ -281,10 +374,8 @@ def mux_final(args, chunks, duration, out_path: Path, work: Path):
                        f"volume={args.bgm_vol:g},atrim=duration={D},asetpts=PTS-STARTPTS[ba]")
         labels.append("[ba]")
         idx += 1
-    if not labels:
-        print("[audio] no audio source → silent stereo track")
-        cmd += ["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo"]
-        filters.append(f"[{idx}:a]atrim=duration={D}[aout]")
+    if not labels:   # preflight 已拦下，这里只是保险：绝不补静音轨
+        fail_media(["没有任何音轨（v3.4 起不再自动补静音轨）"])
     elif len(labels) == 1:
         filters[-1] = filters[-1].rsplit("[", 1)[0] + "[aout]"
     else:
@@ -332,7 +423,13 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--keep-chunks", action="store_true")
     ap.add_argument("--ready-timeout", type=float, default=20.0, help="max seconds to wait for ready() per frame")
+    ap.add_argument("--yes", action="store_true", help="skip the 5-second countdown before rendering")
     args = ap.parse_args()
+    for stream in (sys.stdout, sys.stderr):   # Agent 按 UTF-8 读管道；中文 / 英文 Windows 默认 GBK / cp1252
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
     args.ffmpeg = shutil.which("ffmpeg")
     if not args.ffmpeg:
@@ -340,23 +437,29 @@ def main():
     if args.crf is None:
         args.crf = DEFAULT_CRF[args.res]
     out_path = Path(args.out).resolve()
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    work = out_path.parent / f".{out_path.stem}_chunks"
-    if work.exists():
-        shutil.rmtree(work)
-    work.mkdir(parents=True)
+    voice, problems = preflight_media(args)   # v3.4：先查素材，缺了直接停（此时还没建任何输出）
+    if problems:
+        fail_media(problems)
 
     httpd, port = start_server(REPO_ROOT)
     t_begin = time.time()
+    work = out_path.parent / f".{out_path.stem}_chunks"
     try:
         print(f"URL {build_url(port, args, args.start)}")
         probe_errors = []
+        total, ch = probe_duration(port, args, probe_errors)   # 同时是页面预检：任何 404 / 媒体加载失败都在渲染前拦下
+        bad = [e for e in probe_errors if is_media_error(e)]
+        if bad:
+            fail_media(bad)
         if args.duration is None:
-            total, ch = probe_duration(port, args, probe_errors)
             if total <= 0:
                 sys.exit("page has no __MH_ENGINE__.duration; pass --duration")
             args.duration = total - args.start
             print(f"[probe] __MH_ENGINE__.duration = {total:.4f}s  (browser: {ch})")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        if work.exists():
+            shutil.rmtree(work)
+        work.mkdir(parents=True)
         n_frames = max(1, int(round(args.duration * args.fps)))
         duration = n_frames / args.fps
         W, H = 1920 * RES[args.res], 1080 * RES[args.res]
@@ -364,10 +467,14 @@ def main():
         bounds = [round(k * n_frames / n_workers) for k in range(n_workers + 1)]
         print(f"[plan] {W}x{H} @ {args.fps}fps · start {args.start:.3f}s · {n_frames} frames ({duration:.4f}s) · "
               f"{n_workers} workers · x264 crf {args.crf} preset {args.preset}")
-        lo, hi = (3, 10) if args.res == "1080p" else (8, 25)
-        print(f"[eta] 预计耗时：{n_frames} 帧 / {n_workers} workers · 本地无头逐帧渲染约为实时时长的 {lo}–{hi}×"
-              f"（≈ {duration * lo / 60:.1f}–{duration * hi / 60:.1f} 分钟，视机器与素材而定）；下方每 5s 输出进度与 ETA。"
-              f"建议首次先用 --duration 3 冒烟确认。", flush=True)
+        (lo, hi), why = avatar_hint(args)
+        if args.res == "4k":
+            lo, hi = lo * 2.5, hi * 2.5
+        print(f"[eta] 片长 {duration:.1f}s · {n_frames} 帧 · {n_workers} workers · {why} → 预计约为实时的 {lo:g}–{hi:g}×"
+              f"（≈ {duration * lo / 60:.1f}–{duration * hi / 60:.1f} 分钟）；下方每 5s 输出进度与 ETA。", flush=True)
+        if not args.yes:
+            print("[wait] 5 秒后开始渲染，Ctrl+C 取消（加 --yes 跳过等待）", flush=True)
+            time.sleep(5)
 
         ctx = mp.get_context("spawn")
         q = ctx.Queue()
@@ -418,8 +525,12 @@ def main():
             sys.exit(1)
         t_render = time.time() - t_enc
 
+        bad = [e for e in all_errors if is_media_error(e)]
+        if bad:   # 渲染途中出现 404 / 媒体加载失败：不拼接、不出片
+            shutil.rmtree(work, ignore_errors=True)
+            fail_media(bad[:20])
         print("[mux] concat chunks + audio → MP4")
-        mux_final(args, chunks, duration, out_path, work)
+        mux_final(args, chunks, duration, out_path, work, voice)
         if not args.keep_chunks:
             shutil.rmtree(work, ignore_errors=True)
         else:
@@ -434,7 +545,10 @@ def main():
             print("CONSOLE/PAGE ERRORS:")
             for e in errs[:40]:
                 print("  -", e)
-        else:
+        if all_slow:
+            print(f"STATUS WARN ready-timeout {len(all_slow)} 帧人像没等到解码完成（这些帧人像可能不对，请抽帧核对）")
+        elif not errs:
+            print("STATUS OK")
             print("ZERO_ERRORS")
     finally:
         httpd.shutdown()

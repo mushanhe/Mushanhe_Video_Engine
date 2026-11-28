@@ -30,6 +30,10 @@
     press: (x) => (x < 0.55 ? EASE.in(x / 0.55) : 1 + Math.sin(((x - 0.55) / 0.45) * Math.PI) * 0.025)
   };
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  /** v3.5：可选字段没填（空串 / 纯空白 / null）→ 整块不渲染 */
+  const blank = (s) => !String(s == null ? '' : s).trim();
+  /** v3.5：印章文字没填 → 不落印（不再补「印」字占位） */
+  const sealOpt = (text, small, style, opts) => { const el = seal(text, small, style, opts); if (blank(sealText(text))) el.style.display = 'none'; return el; };
   function h(tag, cls, style, html) {
     const el = document.createElement(tag);
     if (cls) el.className = cls;
@@ -173,7 +177,7 @@
   const stampIn = (A, el, at, r = -4) => A.add(el, at, 0.32, { s: 1.6, o: 0, r: r - 5 }, { s: 1, o: 1, r }, 'press');
 
   function vtag(text, style) { return h('div', 'si-vtag', style, `<i></i>${esc(text)}`); }
-  function kicker(text, style) { return h('div', 'si-kicker', style, `${PROPS.fretBand(64)}<span>${esc(text)}</span>`); }
+  function kicker(text, style) { const el = h('div', 'si-kicker', style, `${PROPS.fretBand(64)}<span>${esc(text)}</span>`); if (blank(text)) el.style.display = 'none'; return el; }   // v3.5：没填 kicker 不出孤零零的回纹
   /** "这句**关键词**话" → 朱砂字 + 飞白下划线 */
   function mark(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<em>$1</em>').replace(/\n/g, '<br/>'); }
   function corners(el, color) {
@@ -390,10 +394,14 @@
       const s = h('span', null, null, c === ' ' ? '&nbsp;' : esc(c)); title.appendChild(s); chars.push(s);
     });
     const ul = h('div', 'si-prop', 'left:150px;top:540px;', PROPS.brush(560, 26, 'var(--si-ink)', 21));
-    const ch = h('div', 'si-cover-ch', null, `<div class="l">${esc(data.chapterLabel || 'CHAPTER')}</div><div class="n">${esc(data.chapter || '01')}</div><div class="z">第 · 章</div>`);
+    // v3.5：月洞章号 / 副标题卷 / 维度线 / 印章没填就整块不出（不再补 CHAPTER / 01 / 「印」占位）
+    const ch = h('div', 'si-cover-ch', null, `${blank(data.chapterLabel) ? '' : `<div class="l">${esc(data.chapterLabel)}</div>`}<div class="n">${esc(data.chapter || '')}</div><div class="z">第 · 章</div>`);
+    if (blank(data.chapter) && blank(data.chapterLabel)) ch.style.display = 'none';
     const sub = card('si-cover-sub', null, mark(data.subtitle));
+    if (blank(data.subtitle)) sub.style.display = 'none';
     const dm = h('div', 'si-cover-dim', null, esc(data.dim || ''));
-    const st = seal(data.stamp || '', data.stampSmall || '', 'left:1150px;top:560px;', { size: 168 });
+    if (blank(data.dim)) dm.style.display = 'none';
+    const st = sealOpt(data.stamp || '', data.stampSmall || '', 'left:1150px;top:560px;', { size: 168 });
     el.append(mtn, sun, vt, kick, title, ul, ch, sub, dm, st);
     A.add(vt, 0.05, 0.5, { o: 0, y: -20 }, { o: 1, y: 0 }, 'soft');
     A.add(kick, 0.15, 0.45, { o: 0, x: -24 }, { o: 1, x: 0 }, 'soft');
@@ -448,7 +456,7 @@
     header(el, A, 'stat', data);
     const gap = 44, w = (1280 - gap * (n - 1)) / n, fs = n === 1 ? 240 : n === 2 ? 176 : 130;
     const cards = items.map((it, i) => card(`si-stat${i === n - 1 && n > 1 ? ' hot' : ''}`, `left:${60 + i * (w + gap)}px;width:${w}px;`,
-      `<div class="lb">${esc(it.label || '')}</div><div class="num" style="font-size:${fs}px;">${it.prefix ? `<span class="pf">${esc(it.prefix)}</span>` : ''}<b>0</b><span class="u">${esc(it.unit || '')}</span></div>` +
+      `${blank(it.label) ? '' : `<div class="lb">${esc(it.label)}</div>`}<div class="num" style="font-size:${fs}px;">${it.prefix ? `<span class="pf">${esc(it.prefix)}</span>` : ''}<b>0</b><span class="u">${esc(it.unit || '')}</span></div>` +
       `<div class="bar"><div class="tr"></div><div class="fill" style="min-width:64px;width:${(clamp01(it.bar != null ? it.bar : 1) * 100).toFixed(1)}%">${PROPS.brush(Math.max(64, (w - 88) * clamp01(it.bar != null ? it.bar : 1)), 22, i === n - 1 && n > 1 ? 'var(--si-cinnabar)' : 'var(--si-ink)', 31 + i)}</div></div>` +
       `<div class="sc">${it.bar != null ? `${Math.round(clamp01(it.bar) * 100)}%` : ''}</div>`));
     const nums = cards.map((c) => c.querySelector('.num'));
@@ -496,10 +504,11 @@
     const AW = 54, cw = (1280 - AW * (n - 1)) / n;
     const dim = data.dim ? h('div', 'si-kind', 'left:1160px;top:180px;', esc(data.dim)) : null;
     const cards = items.map((it, i) => card('si-step', `left:${60 + i * (cw + AW)}px;width:${cw}px;`,
-      `<div class="big">${CN_NUM[i] || i + 1}</div><div class="no">第${CN_NUM[i] || i + 1}步</div><div class="nm">${esc(it.title)}</div><div class="ul">${PROPS.brush(Math.min(150, cw - 60), 16, TINTS[i % 4], 41 + i)}</div><div class="fn">${esc(it.desc || '')}</div>`));
+      `<div class="big">${CN_NUM[i] || i + 1}</div><div class="no">第${CN_NUM[i] || i + 1}步</div><div class="nm">${esc(it.title)}</div><div class="ul">${PROPS.brush(Math.min(150, cw - 60), 16, TINTS[i % 4], 41 + i)}</div>${blank(it.desc) ? '' : `<div class="fn">${esc(it.desc)}</div>`}`));
     const uls = cards.map((c) => c.querySelector('.ul svg'));
     const arrows = items.slice(1).map((_, i) => h('div', 'si-prop', `left:${60 + (i + 1) * (cw + AW) - AW + 2}px;top:520px;`, PROPS.arrow(48)));
-    const bar = h('div', 'si-steps-bar', null, `<div class="f">${esc(data.folder || 'PROJECT /')}</div><div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`);
+    const bar = h('div', 'si-steps-bar', null, `${blank(data.folder) ? '' : `<div class="f">${esc(data.folder)}</div>`}<div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`);
+    if (blank(data.folder) && blank(data.folderBig) && blank(data.folderMeta)) bar.style.display = 'none';   // v3.5：石青文件夹条三项都没填 → 不出空条（不再补 PROJECT /）
     const lab = data.label ? seal(data.label, data.labelSmall || '', 'left:1170px;top:752px;', { size: 136 }) : null;
     el.append(...cards, ...arrows, bar);
     if (dim) el.appendChild(dim);
@@ -524,14 +533,14 @@
     const el = h('div', 'si-zone');
     const vt = vtag(data.vtag || VTAG.checklist, 'left:150px;top:104px;');
     const c = card('si-list', `height:${H}px;`,
-      `<div class="hd">${PROPS.fretBand(48)}${esc(data.kicker || '')}</div><div class="ttl">${esc(data.title)}</div><div class="sub">${esc(data.subtitle || '')}</div><div class="hr"></div>`);
+      `${blank(data.kicker) ? '' : `<div class="hd">${PROPS.fretBand(48)}${esc(data.kicker)}</div>`}<div class="ttl">${esc(data.title)}</div><div class="sub">${esc(data.subtitle || '')}</div><div class="hr"></div>`);
     const rows = items.map((it, i) => {
       const r = h('div', 'si-row', `top:${R0 + i * RH}px;`,
         `<div class="wash"></div><div class="box">${PROPS.tick(56)}</div><div class="k">${esc(it.k)}</div><div class="d">${esc(it.d || '')}</div><div class="n">${ORD[i] || ''}</div>`);
       c.appendChild(r); return r;
     });
     let memo = null;
-    if (data.note) { memo = h('div', 'si-memo', `top:${R0 + n * RH + 16}px;`, `<small>${esc(data.noteLead || '')}</small>${mark(data.note)}`); c.appendChild(memo); }
+    if (data.note) { memo = h('div', 'si-memo', `top:${R0 + n * RH + 16}px;`, `${blank(data.noteLead) ? '' : `<small>${esc(data.noteLead)}</small>`}${mark(data.note)}`); c.appendChild(memo); }
     const st = seal(`${n}/${n}`, '', 'left:1186px;top:150px;', { size: 104, yang: true });
     el.append(vt, c, st);
     A.add(vt, 0.05, 0.5, { o: 0, y: -20 }, { o: 1, y: 0 }, 'soft');
@@ -557,14 +566,15 @@
     const w = data.wrong || {}, r = data.right || {};
     const el = h('div', 'si-zone');
     header(el, A, 'compare', data);
-    const L = card('si-cmp wrong', 'left:60px;', `<div class="band">${esc(w.label || '✕ WRONG')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div>`, '#9A9488');
+    const L = card('si-cmp wrong', 'left:60px;', `${blank(w.label) ? '' : `<div class="band">${esc(w.label)}</div>`}<div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div>`, '#9A9488');
     const s1 = h('div', 'strike', 'left:22px;top:126px;', PROPS.brush(400, 20, 'var(--si-cinnabar)', 51));
     const s2 = h('div', 'strike', 'left:22px;top:198px;', PROPS.brush(360, 20, 'var(--si-cinnabar)', 52));
     L.append(s1, s2);
-    const R = card('si-cmp right', 'left:800px;', `<div class="band">${esc(r.label || '✓ RIGHT')}</div><div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div><div class="badge">${PROPS.tick(60)}</div>`);
+    const R = card('si-cmp right', 'left:800px;', `${blank(r.label) ? '' : `<div class="band">${esc(r.label)}</div>`}<div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div><div class="badge">${PROPS.tick(60)}</div>`);
     const vs = h('div', 'si-vs', null, 'VS');
     const xs = seal(w.stamp || '否', '', 'left:420px;top:410px;', { size: 116 });
-    const verdict = card('si-verdict', null, `<b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${mark(data.verdict || '')}</span>`);
+    const verdict = card('si-verdict', null, `${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${mark(data.verdict || '')}</span>`);
+    if (blank(data.verdict) && blank(data.verdictLabel)) verdict.style.display = 'none';   // v3.5：结论卷没填 → 不出空框（不再补 VERDICT）
     el.append(L, R, vs, xs, verdict);
     inkIn(A, L, 0.5, 0.7, { from: { x: -30 }, to: { x: 0 } });
     const tStrike = Math.min(D * 0.26, 1.6);
@@ -585,7 +595,7 @@
   }
 
   // ============================== 6. showcase 砚墨代码卷 / 宣纸文档 / 录屏 / 器物 ==============================
-  const DEVICE_SVG = `<svg viewBox="0 0 400 300"><ellipse cx="200" cy="262" rx="150" ry="14" fill="currentColor" opacity=".12"/><rect x="60" y="80" width="280" height="170" fill="none" stroke="currentColor" stroke-width="5"/><rect x="72" y="92" width="256" height="146" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/><circle cx="200" cy="165" r="52" fill="none" stroke="#B82925" stroke-width="5"/><circle cx="200" cy="165" r="22" fill="currentColor"/><rect x="96" y="58" width="84" height="22" fill="currentColor"/><text x="200" y="292" text-anchor="middle" font-family="serif" font-size="18" fill="currentColor" letter-spacing="6">器 · PRODUCT</text></svg>`;
+  const DEVICE_SVG = `<svg viewBox="0 0 400 300"><ellipse cx="200" cy="262" rx="150" ry="14" fill="currentColor" opacity=".12"/><rect x="60" y="80" width="280" height="170" fill="none" stroke="currentColor" stroke-width="5"/><rect x="72" y="92" width="256" height="146" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".5"/><circle cx="200" cy="165" r="52" fill="none" stroke="#B82925" stroke-width="5"/><circle cx="200" cy="165" r="22" fill="currentColor"/><rect x="96" y="58" width="84" height="22" fill="currentColor"/><text x="200" y="292" text-anchor="middle" font-family="serif" font-size="18" fill="currentColor" letter-spacing="6">器</text></svg>`;
   function productPanel(data) {
     const el = h('div', 'si-prod');
     const pic = h('div', 'pic');
@@ -605,7 +615,7 @@
     header(el, A, 'showcase', data, { size: 76, headTop: 150 });
     const dark = kind === 'code' || kind === 'terminal';
     const panel = dark ? h('div', 'si-panel dark') : card('si-panel light', 'position:absolute;');
-    panel.insertAdjacentHTML('afterbegin', `<div class="bar"><i></i><i></i><i></i><span>${esc(data.file || kind.toUpperCase())}</span></div>`);
+    panel.insertAdjacentHTML('afterbegin', `<div class="bar"><i></i><i></i><i></i><span>${esc(data.file || '')}</span></div>`);
     let codeEl = null, media = null, prod = null;
     const lines = data.lines || [];
     if (kind === 'product') { prod = productPanel(data); panel.appendChild(prod.el); }
@@ -616,7 +626,7 @@
       const px = 60 + 1240 * (((nt.at && nt.at[0]) || 60) / 100), py = 262 + 640 * (((nt.at && nt.at[1]) || 30 + i * 20) / 100);
       return h('div', 'si-callout', `left:${px.toFixed(0)}px;top:${(py - 24).toFixed(0)}px;`, `<div class="ld"></div><span>${esc(nt.text)}</span>`);
     });
-    const tag = h('div', 'si-kind', 'left:1170px;top:206px;', esc(kind.toUpperCase()));
+    const tag = h('div', 'si-kind si-en', 'left:1170px;top:206px;', esc(kind.toUpperCase()));   // v3.5：si-en = 导出（?chrome=0）时藏掉英文种类签
     el.append(panel, ...notes, tag);
     inkIn(A, panel, 0.3, 0.8, { from: { y: 40 }, to: { y: 0 } });
     A.add(tag, 0.8, 0.5, { o: 0 }, { o: 1 }, 'soft');
@@ -659,7 +669,7 @@
     const c = h('div', 'si-q', right ? 'right:110px;' : 'left:110px;',
       `<div class="k">${esc(data.kicker || '要义')}</div><div class="t">${mark(data.text)}</div><div class="by">${esc(data.by || '')}</div>`);
     corners(c);
-    const st = seal(data.stamp || '', data.stampSmall || '', `${right ? 'right:130px;' : 'left:130px;'}top:${data.stampTop || 690}px;`, { size: 128 });
+    const st = sealOpt(data.stamp || '', data.stampSmall || '', `${right ? 'right:130px;' : 'left:130px;'}top:${data.stampTop || 690}px;`, { size: 128 });
     el.append(c, st);
     inkIn(A, c, 0.4, 0.9, { from: { x: right ? 40 : -40 }, to: { x: 0 } });
     const cols = Array.from(c.querySelectorAll('.t'));
@@ -675,10 +685,13 @@
     header(el, A, 'outro', data);
     const tagC = ['var(--si-azurite)', 'var(--si-cinnabar)', 'var(--si-ochre)'];
     const acts = (data.actions || []).slice(0, 3).map((a, i) => card('si-act', `top:${282 + i * 180}px;`,
-      `<div class="no">${ORD[i]}</div><div class="tg" style="color:${tagC[i]}">${esc(a.tag || 'ACTION')}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div>`));
+      `<div class="no">${ORD[i]}</div>${blank(a.tag) ? '' : `<div class="tg" style="color:${tagC[i]}">${esc(a.tag)}</div>`}<div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div>`));
     const cdat = data.cta || {};
-    const cta = card('si-cta', null, `<div class="k">${esc(cdat.kicker || 'OPEN SOURCE')}</div><div class="t">${esc(cdat.title || '')}</div><div class="ul">${PROPS.brush(360, 20, 'var(--si-cinnabar)', 61)}</div><div class="repo">${esc(cdat.repo || '')}</div><div class="btns">${(cdat.buttons || []).slice(0, 3).map((b) => `<span>${esc(b)}</span>`).join('')}</div>`);
-    const go = seal(cdat.stamp || '行', cdat.stampSmall || '', 'left:1222px;top:690px;', { size: 116 });
+    // v3.5：CTA 题签的引题 / 仓库框 / 整块、收尾印章没填就不出（不再补 OPEN SOURCE / ACTION / 「行」）
+    const cta = card('si-cta', null, `${blank(cdat.kicker) ? '' : `<div class="k">${esc(cdat.kicker)}</div>`}<div class="t">${esc(cdat.title || '')}</div><div class="ul">${PROPS.brush(360, 20, 'var(--si-cinnabar)', 61)}</div>${blank(cdat.repo) ? '' : `<div class="repo">${esc(cdat.repo)}</div>`}<div class="btns">${(cdat.buttons || []).slice(0, 3).map((b) => `<span>${esc(b)}</span>`).join('')}</div>`);
+    if (blank(cdat.title)) cta.querySelector('.ul').style.display = 'none';
+    if (blank(cdat.kicker) && blank(cdat.title) && blank(cdat.repo) && !(cdat.buttons || []).length) cta.style.display = 'none';
+    const go = sealOpt(cdat.stamp || '', cdat.stampSmall || '', 'left:1222px;top:690px;', { size: 116 });
     el.append(...acts, cta, go);
     const t0 = 0.7, stp = Math.min(0.55, (D * 0.33) / Math.max(1, acts.length));
     acts.forEach((a, i) => inkIn(A, a, t0 + i * stp, 0.7, { from: { x: -36 }, to: { x: 0 } }));

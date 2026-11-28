@@ -111,6 +111,9 @@
   function reg(style) { return h('div', 'sp-reg', style, PROPS.reg()); }
   function stamp(text, small, style) { return h('div', 'sp-stamp', style, `${esc(text)}${small ? `<small>${esc(small)}</small>` : ''}`); }
   function dim(label, style) { return h('div', 'sp-dim', style, `<div class="dl"></div><div class="dt">${esc(label)}</div>`); }
+  /** v3.5 空字段不出框：可选字段没填 → 整块不渲染（display:none；Animator 只动 transform / opacity，不会再把它显示出来） */
+  const blank = (s) => !String(s == null ? '' : s).trim();
+  const hideIf = (el, cond) => { if (el && cond) el.style.display = 'none'; return el; };
   /** 把 "这句**关键词**话" 中 ** 包裹部分标红 */
   function mark(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<em>$1</em>').replace(/\n/g, '<br/>'); }
 
@@ -284,10 +287,11 @@
       if (c === '\n') { title.appendChild(document.createElement('br')); return; }
       const s = h('span', null, null, c === ' ' ? '&nbsp;' : esc(c)); title.appendChild(s); chars.push(s);
     });
-    const block = h('div', 'sp-cover-block', null, `<div class="l">${esc(data.chapterLabel || 'CHAPTER')}</div><div class="n">${esc(data.chapter || '01')}</div>`);
+    const block = h('div', 'sp-cover-block', null, `<div class="l">${esc(data.chapterLabel || '')}</div><div class="n">${esc(data.chapter || '')}</div>`);
+    hideIf(block, blank(data.chapterLabel) && blank(data.chapter));   // 章节号 / 章节名都没填 → 红色章节块不出（不再出默认 CHAPTER 01）
     const sub = h('div', 'sp-cover-sub', null, mark(data.subtitle));
-    const dm = dim(data.dim || '', 'left:410px;top:700px;width:880px;');
-    const st = stamp(data.stamp || '', data.stampSmall || '', 'left:1000px;top:770px;font-size:52px;');
+    const dm = hideIf(dim(data.dim || '', 'left:410px;top:700px;width:880px;'), blank(data.dim));
+    const st = hideIf(stamp(data.stamp || '', data.stampSmall || '', 'left:1000px;top:770px;font-size:52px;'), blank(data.stamp));
     el.append(kick, title, block, sub, dm, st,
       prop('pencil', 400, 'left:410px;top:850px;transform:rotate(-3deg);'),
       prop('triangle', 170, 'left:1160px;top:560px;transform:rotate(8deg);'),
@@ -311,9 +315,9 @@
     const el = h('div', 'sp-zone');
     const kick = h('div', 'sp-kicker', 'left:100px;top:110px;', esc(data.kicker));
     const head = h('div', 'sp-head', 'left:96px;top:142px;font-size:96px;', mark(data.title));
-    const dm = dim(data.dim || `${n} STEPS`, 'left:100px;top:272px;width:1200px;');
+    const dm = hideIf(dim(data.dim || '', 'left:100px;top:272px;width:1200px;'), blank(data.dim));   // 没填 dim 不出默认 N STEPS
     const folder = h('div', 'sp-folder');
-    folder.append(h('div', 'sp-f-tab', null, esc(data.folder || 'PROJECT /')), h('div', 'sp-f-back'));
+    folder.append(h('div', 'sp-f-tab', null, esc(data.folder || '')), h('div', 'sp-f-back'));
     const gap = 20, sw = (1200 - 80 - gap * (n - 1)) / n;
     const sheets = items.map((it, i) => {
       const s = h('div', 'sp-f-sheet', `left:${40 + i * (sw + gap)}px;width:${sw}px;`,
@@ -322,7 +326,7 @@
     });
     const front = h('div', 'sp-f-front', null, `<div class="bar"></div><div class="big">${esc(data.folderBig || '')}</div><div class="meta">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`);
     folder.appendChild(front);
-    const label = h('div', 'sp-f-label', null, `${esc(data.label || '')}<small>${esc(data.labelSmall || '')}</small>`);
+    const label = h('div', 'sp-f-label', null, `${esc(data.label || '')}${blank(data.labelSmall) ? '' : `<small>${esc(data.labelSmall)}</small>`}`);
     if (data.label) folder.appendChild(label);
     el.append(kick, head, dm, folder, tape('left:1180px;top:300px;transform:rotate(14deg);'), reg('left:40px;top:96px;'), reg('left:1320px;top:930px;'));
     A.add(folder, 0.1, 0.5, { s: 1.15, y: -40, o: 0, r: -2 }, { s: 1, y: 0, o: 1, r: 0 }, 'drop');
@@ -344,7 +348,7 @@
     const H = 360 + n * 115 + (data.note ? 190 : 60);
     const el = h('div', 'sp-zone');
     const a4 = h('div', 'sp-a4', `height:${H}px;`,
-      `<div class="margin"></div><div class="hd">${esc(data.kicker || '')}</div><div class="ttl">${esc(data.title)}</div><div class="sub">${esc(data.subtitle || '')}<i></i></div><div class="hr"></div>`);
+      `<div class="margin"></div><div class="hd">${esc(data.kicker || '')}</div><div class="ttl">${esc(data.title)}</div>${blank(data.subtitle) ? '' : `<div class="sub">${esc(data.subtitle)}<i></i></div>`}<div class="hr"></div>`);
     const rows = items.map((it, i) => {
       const r = h('div', 'sp-rl', `top:${350 + i * 115}px;`,
         `<div class="box">${PROPS.check(60, 8)}</div><div class="k">${esc(it.k)}</div><div class="d">${esc(it.d || '')}</div><div class="n">§${String(i + 1).padStart(2, '0')}</div>`);
@@ -352,7 +356,7 @@
     });
     let note = null;
     if (data.note) {
-      note = h('div', 'sp-note', `top:${350 + n * 115 + 40}px;`, `<small>${esc(data.noteLead || '')}</small><span class="tx">${esc(data.note)}</span><span class="hl"></span>`);
+      note = h('div', 'sp-note', `top:${350 + n * 115 + 40}px;`, `${blank(data.noteLead) ? '' : `<small>${esc(data.noteLead)}</small>`}<span class="tx">${esc(data.note)}</span><span class="hl"></span>`);
       a4.appendChild(note);
     }
     a4.append(reg('left:16px;top:16px;'));
@@ -377,14 +381,14 @@
     const el = h('div', 'sp-zone');
     const kick = h('div', 'sp-kicker', 'left:60px;top:110px;', esc(data.kicker));
     const head = h('div', 'sp-head', 'left:56px;top:142px;font-size:90px;', mark(data.title));
-    const L = h('div', 'sp-cmp', 'left:60px;', `<div class="band">${esc(w.label || '✕ WRONG')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div><svg class="strike" width="480" height="160"><path d="M4 90 L470 62" stroke="var(--sp-red)" stroke-width="12" fill="none" stroke-dasharray="480" stroke-dashoffset="480"/></svg>`);
-    const R = h('div', 'sp-cmp right', 'left:820px;', `<div class="band">${esc(r.label || '✓ RIGHT')}</div><div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div>`);
+    const L = h('div', 'sp-cmp', 'left:60px;', `${blank(w.label) ? '' : `<div class="band">${esc(w.label)}</div>`}<div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div><svg class="strike" width="480" height="160"><path d="M4 90 L470 62" stroke="var(--sp-red)" stroke-width="12" fill="none" stroke-dasharray="480" stroke-dashoffset="480"/></svg>`);
+    const R = h('div', 'sp-cmp right', 'left:820px;', `${blank(r.label) ? '' : `<div class="band">${esc(r.label)}</div>`}<div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div>`);
     const vs = h('div', 'sp-vs', null, 'VS');
-    const xs = stamp(w.stamp || '✕', '', 'left:330px;top:600px;font-size:46px;');
+    const xs = hideIf(stamp(w.stamp || '', '', 'left:330px;top:600px;font-size:46px;'), blank(w.stamp));
     const ck = h('div', 'sp-abs', 'left:1230px;top:330px;z-index:7;', PROPS.check(84, 9));
     const pinR = prop('pin', 0, 'left:1060px;top:268px;');
     const pinL = prop('pin', 0, 'left:300px;top:268px;');
-    const verdict = h('div', 'sp-verdict', null, `<b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${mark(data.verdict || '')}</span>`);
+    const verdict = hideIf(h('div', 'sp-verdict', null, `${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${mark(data.verdict || '')}</span>`), blank(data.verdict));
     el.append(kick, head, L, R, vs, xs, ck, pinL, pinR, verdict,
       prop('triangle', 190, 'left:1180px;top:690px;transform:rotate(-12deg);'),
       prop('pencil', 300, 'left:0px;top:0px;'), reg('left:20px;top:96px;'));
@@ -421,7 +425,7 @@
     const kick = h('div', 'sp-kicker', 'left:60px;top:110px;', esc(data.kicker));
     const head = h('div', 'sp-head', 'left:56px;top:142px;font-size:80px;', mark(data.title));
     const dark = kind === 'code' || kind === 'terminal';
-    const panel = h('div', `sp-panel ${dark ? 'dark' : 'light'}`, null, `<div class="bar"><i></i><i></i><i></i><span>${esc(data.file || kind.toUpperCase())}</span></div>`);
+    const panel = h('div', `sp-panel ${dark ? 'dark' : 'light'}`, null, `<div class="bar"><i></i><i></i><i></i><span>${esc(data.file || '')}</span></div>`);
     let codeEl = null, media = null;
     const lines = data.lines || [];
     let prod = null;
@@ -475,9 +479,9 @@
     const el = h('div', 'sp-screen-wrap', 'position:absolute;inset:0;pointer-events:none;');
     const right = data.pos === 'right';
     const card = h('div', 'sp-quote', `${right ? 'right:70px;' : 'left:70px;'}`,
-      `<div class="k">${esc(data.kicker || 'QUOTE')}</div><div class="sp-quote-t">${mark(data.text)}</div><div class="by">${esc(data.by || '')}</div>`);
+      `${blank(data.kicker) ? '' : `<div class="k">${esc(data.kicker)}</div>`}<div class="sp-quote-t">${mark(data.text)}</div>${blank(data.by) ? '' : `<div class="by">${esc(data.by)}</div>`}`);
     const tp = tape(`left:${right ? 1920 - 70 - 660 + 250 : 320}px;top:220px;transform:rotate(-4deg);`);
-    const st = stamp(data.stamp || '', data.stampSmall || '', `${right ? 'right:110px;' : 'left:420px;'}top:${data.stampTop || 640}px;font-size:54px;background:rgba(247,244,236,.0);`);
+    const st = hideIf(stamp(data.stamp || '', data.stampSmall || '', `${right ? 'right:110px;' : 'left:420px;'}top:${data.stampTop || 640}px;font-size:54px;background:rgba(247,244,236,.0);`), blank(data.stamp));
     st.style.mixBlendMode = 'normal';
     el.append(card, tp, st);
     A.add(card, 0.5, 0.5, { x: right ? 120 : -120, o: 0, r: right ? 4 : -4 }, { x: 0, o: 1, r: right ? 1 : -1 }, 'drop');
@@ -493,15 +497,18 @@
     const kick = h('div', 'sp-kicker', 'left:60px;top:110px;', esc(data.kicker));
     const head = h('div', 'sp-head', 'left:56px;top:142px;font-size:90px;', mark(data.title));
     const acts = (data.actions || []).slice(0, 3).map((a, i) => {
-      const e = h('div', 'sp-act', `top:${280 + i * 172}px;`, `<div class="no">${String(i + 1).padStart(2, '0')} / ${esc(a.tag || 'ACTION')}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div>`);
+      const e = h('div', 'sp-act', `top:${280 + i * 172}px;`, `<div class="no">${String(i + 1).padStart(2, '0')}${blank(a.tag) ? '' : ` / ${esc(a.tag)}`}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div>`);
       return e;
     });
     const pins = acts.map((_, i) => prop('pin', 0, `left:320px;top:${258 + i * 172}px;`));
     const c = data.cta || {};
-    const cta = h('div', 'sp-cta', null, `<div class="k">${esc(c.kicker || 'OPEN SOURCE')}</div><div class="t">${esc(c.title || '')}</div><div class="repo">${esc(c.repo || '')}</div><div class="btns">${(c.buttons || []).slice(0, 3).map((b) => `<span>${esc(b)}</span>`).join('')}</div>`);
-    const go = stamp(c.stamp || 'GO', c.stampSmall || '', 'left:1120px;top:690px;font-size:64px;');
+    const btns = (c.buttons || []).slice(0, 3).filter((b) => !blank(b));
+    const cta = h('div', 'sp-cta', null, `${blank(c.kicker) ? '' : `<div class="k">${esc(c.kicker)}</div>`}<div class="t">${esc(c.title || '')}</div>${blank(c.repo) ? '' : `<div class="repo">${esc(c.repo)}</div>`}<div class="btns">${btns.map((b) => `<span>${esc(b)}</span>`).join('')}</div>`);
+    const go = hideIf(stamp(c.stamp || '', c.stampSmall || '', 'left:1120px;top:690px;font-size:64px;'), blank(c.stamp));
     go.style.mixBlendMode = 'normal'; go.style.background = 'var(--sp-sheet)';
     const ctaTape = tape('left:930px;top:258px;');
+    const noCta = blank(c.kicker) && blank(c.title) && blank(c.repo) && !btns.length;   // CTA 一个字段都没填 → 整张深色结尾卡（连胶带）不出
+    [cta, ctaTape].forEach((e) => hideIf(e, noCta));
     el.append(kick, head, ...acts, ...pins, cta, go, ctaTape, reg('left:20px;top:96px;'), reg('left:1320px;top:930px;'));
     A.add(kick, 0.1, 0.3, { o: 0 }, { o: 1 });
     A.add(head, 0.2, 0.4, { x: -40, o: 0 }, { x: 0, o: 1 });

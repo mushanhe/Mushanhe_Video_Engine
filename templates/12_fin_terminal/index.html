@@ -73,7 +73,8 @@
     #screen-layer { position: absolute; inset: 0; z-index: 26; pointer-events: none; }
 
     /* 稳态人像：钢蓝细框 + 琥珀角标 + LIVE 机构铭牌 */
-    #avatar-stage { border-radius: 2px !important; border: 2px solid #26354F !important; box-shadow: 0 0 0 1px rgba(245,158,11,.28), 0 30px 70px rgba(0,0,0,.55) !important; background: #0A1222 !important; }
+    html:not([data-mh-pip="circle"]) #avatar-stage { border-radius: 2px !important; }
+    #avatar-stage { border: 2px solid #26354F !important; box-shadow: 0 0 0 1px rgba(245,158,11,.28), 0 30px 70px rgba(0,0,0,.55) !important; background: #0A1222 !important; }
     #avatar-stage.is-full { border: 0 solid transparent !important; box-shadow: none !important; }
     #avatar-silhouette { position: absolute; left: 50%; bottom: 0; height: 80%; transform: translateX(-50%); z-index: 2; pointer-events: none; }
     #avatar-tag { background: rgba(7,13,24,.92) !important; color: var(--bf-silver) !important; border: 1px solid var(--bf-steel) !important; border-left: 3px solid var(--bf-amber) !important; border-radius: 0 !important; backdrop-filter: none !important; font-family: var(--bf-font-mono) !important; font-weight: 800 !important; font-size: 15px !important; letter-spacing: 0.1em !important; padding: 7px 14px !important; }
@@ -94,6 +95,84 @@
     #subtitle-bar .w.active { color: #FBBF24 !important; text-shadow: 0 0 14px rgba(251,191,36,.45) !important; }
 
     #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; background: var(--bf-down); color: #fff; font-size: 28px; font-weight: 900; display: none; }
+
+    /* v3.5 · ?chrome=0（导出 / 抽帧）：终端外壳上的固定英文换成中文 / 符号；功能键页签已由 engine.css 隐藏，它的空底带也一起收掉 */
+    html.mh-chrome-off #bf-chrome { display: none; }
+    html.mh-chrome-off #subtitle-bar::before { content: '直播'; font-family: var(--bf-font-cn); letter-spacing: .08em; }
+
+    /* v3.5 · 跟词组件（core/cue-kit.js）的 12 造型：深海藏青终端面板 + 1px 钢蓝框 + 2px 直角 + 琥珀功能键号牌 + 等宽数字 + 扫描线纹理，完全不歪（只在剧本写了新字段时出现） */
+    :root {
+      --mk-ink: var(--bf-silver); --mk-paper: var(--bf-navy); --mk-panel: #0F1B2E; --mk-muted: #0A1222; --mk-muted-ink: var(--bf-mute);
+      --mk-c1: #0F1B2E; --mk-on1: var(--bf-silver); --mk-c2: var(--bf-amber); --mk-on2: #0B1220;
+      --mk-c3: #0B2A22; --mk-on3: #A7F3D0; --mk-c4: #16243B; --mk-on4: var(--bf-amber2);
+      --mk-accent: var(--bf-amber); --mk-dark: var(--bf-amber); --mk-on-dark: #0B1220;
+      --mk-bw: 1px; --mk-rad: 2px; --mk-tilt: 0;
+      --mk-sh: 0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+      --mk-sh-lg: 0 26px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+      --mk-sh-sm: 0 10px 26px rgba(0,0,0,.45);
+      --mk-font: var(--bf-font-cn); --mk-font-num: var(--bf-font-mono);
+      --mk-tex: repeating-linear-gradient(180deg, rgba(255,255,255,.028) 0 1px, transparent 1px 4px);
+      --mk-board: #0A1222; --mk-board-tex: linear-gradient(rgba(30,41,59,.9) 1px, transparent 1px), linear-gradient(90deg, rgba(30,41,59,.9) 1px, transparent 1px);
+      --mk-tape: var(--bf-amber); --mk-trim: rgba(148,163,184,.16); --mk-trim-c: var(--bf-amber);
+      /* 全屏画框：交易台上的监看屏——2px 钢蓝框 + 1px 琥珀外描线 + 深投影 + 直角 */
+      --mh-frame-bw: 2px; --mh-frame-color: #2E4366; --mh-frame-radius: 2;
+      --mh-frame-shadow: 0 0 0 1px rgba(245,158,11,.5), 0 30px 70px rgba(0,0,0,.6); --mh-frame-vig: .3;
+    }
+    .mk-zone { font-variant-numeric: tabular-nums; }
+    .mk-zone .mk-box { border-color: #2A3B57; }
+    .mk-zone .mh-focus-ring { inset: -10px; border: 2px solid var(--bf-amber); border-radius: 2px; box-shadow: 0 0 0 1px rgba(245,158,11,.25), 0 0 34px rgba(245,158,11,.35); }
+    html[data-mh-card="trim"] .mk-zone .mh-focus-ring:not(.row) { box-shadow: 0 0 0 1px rgba(245,158,11,.25), 0 0 40px 6px rgba(245,158,11,.32); }
+    .mk-stamp { padding: 10px 28px 12px; background: rgba(11,18,32,.94); color: var(--bf-amber2); border: 2px solid var(--bf-amber); outline: 1px solid var(--bf-amber); outline-offset: 4px; box-shadow: 0 18px 40px rgba(0,0,0,.5); }
+    .mk-cmp.wrong .mk-stamp { color: var(--bf-down); border-color: var(--bf-down); outline-color: var(--bf-down); }
+    .mk-sticker { padding: 10px 24px 12px; background: var(--bf-up); color: #06130D; border: 0; outline: 1px solid var(--bf-up); outline-offset: 3px; box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+    .mk-tape { border: 0; opacity: .9; background-image: repeating-linear-gradient(45deg, rgba(11,18,32,.32) 0 6px, transparent 6px 14px); }
+    .mk-arrow { color: var(--bf-amber); }
+    .mk-head { color: var(--bf-silver); }
+    /* cover：研报封面——藏青标题屏 + 琥珀功能键 + 网格 + 雷达环 + 绿色走势线 */
+    .mk-cv-title { color: var(--bf-silver); }
+    .mk-cv-dots { background-color: #0A1222; background-image: linear-gradient(rgba(30,41,59,.95) 1px, transparent 1px), linear-gradient(90deg, rgba(30,41,59,.95) 1px, transparent 1px); }
+    .mk-cv-ring { border: 3px solid var(--bf-amber); box-shadow: 0 0 26px rgba(245,158,11,.35); }
+    .mk-cv-ring::after { background: transparent; border: 2px dashed var(--bf-up); border-radius: 50%; opacity: .85; }
+    .mk-cv-wave path { stroke: var(--bf-up); stroke-width: 5; }
+    /* steps / intake：功能键号牌 + 绿色成交进度 */
+    .mk-ticket .no { font-weight: 800; }
+    .mk-ticket .ico { opacity: .85; }
+    .mk-ticket .pgb { background: #0A1222; border: 1px solid #2A3B57; border-radius: 0; }
+    .mk-ticket .pgb i { background: var(--bf-up); }
+    html[data-mh-card="trim"] .mk-ticket .pgb::before { background: var(--bf-amber2); }
+    .mk-file .ear { background: linear-gradient(225deg, var(--bf-navy) 0 50%, var(--bf-amber) 50% calc(50% + 2px), rgba(245,158,11,.25) calc(50% + 2px)); }
+    .mk-ai { border-color: var(--bf-amber) !important; box-shadow: 0 0 0 1px rgba(245,158,11,.5), 0 26px 60px rgba(0,0,0,.55); }
+    .mk-ai .mini u { border: 2px solid #0B1220; }
+    .mk-ai.lit { box-shadow: 0 0 0 1px rgba(245,158,11,.6), 0 26px 60px rgba(0,0,0,.55), 0 0 50px 12px rgba(245,158,11,.4); }
+    /* compare：卖出（暗） vs 买入（绿） */
+    .mk-cmp.wrong .rw { color: var(--bf-mute); }
+    .mk-cmp.right .rw { color: var(--bf-silver); }
+    .mk-cmp .rw i { border: 0; border-radius: 0; background: var(--bf-amber); }
+    .mk-cmp.wrong .rw i { background: var(--bf-down); }
+    .mk-cmp .badge { background: var(--bf-up); color: #06130D; border: 0; border-radius: 2px; box-shadow: 0 0 0 1px rgba(16,185,129,.5), 0 12px 30px rgba(0,0,0,.45); }
+    .mk-cmp .sw { background: #0A1222; border: 1px solid #2A3B57; border-radius: 2px; }
+    .mk-cmp .sw i { border-left: 1px solid #2A3B57; }
+    .mk-cmp .btn { background: var(--bf-amber); color: #0B1220; border: 0; border-radius: 2px; font-weight: 900; box-shadow: 0 0 0 1px rgba(245,158,11,.5), 0 12px 30px rgba(0,0,0,.45); }
+    .mk-cmp .tlx { background: #0A1222; border: 1px solid #2A3B57; border-radius: 0; }
+    .mk-cmp .tlx .trk { border-bottom: 1px solid #1E293B; }
+    .mk-cmp .tlx .clp { border: 0; border-radius: 0; }
+    .mk-cmp .tlx .ph { width: 3px; background: var(--bf-amber2); box-shadow: 0 0 10px var(--bf-amber); }
+    .mk-vs .dm { transform: none; border-radius: 2px; box-shadow: 0 0 0 1px rgba(245,158,11,.5), 0 12px 30px rgba(0,0,0,.45); }
+    .mk-vs .tx { font-weight: 800; }
+    .mk-ripple { border: 3px solid var(--bf-amber); }
+    .mk-cstat { border-color: rgba(245,158,11,.55); }
+    .mk-cstat .lb { border-radius: 0; }
+    .mk-cstat .num { color: var(--bf-amber2); }
+    .mk-cstat .num .u { color: var(--bf-silver); }
+    .mk-cstat .pg { background: #0A1222; border: 1px solid #2A3B57; border-radius: 0; }
+    .mk-cstat .pg i { background: var(--bf-up); }
+    /* outro：网格底板 + 琥珀角灯 + 终端铭牌 + 琥珀下单横条 */
+    .mk-screw { border: 0; border-radius: 0; background: var(--bf-amber); box-shadow: 0 0 8px rgba(245,158,11,.6); }
+    .mk-screw::after { display: none; }
+    .mk-banner { border-radius: 2px; font-weight: 900; box-shadow: 0 0 0 1px rgba(245,158,11,.5), 0 20px 50px rgba(0,0,0,.55); }
+    .mk-banner .ar { color: #0B1220; }
+      /* v3.5 收尾（12 套打分）：「换风格」色块点击前用本包的亮色，不在深色卡上像三个空格 */
+    :root { --mk-sw0: var(--bf-silver); --mk-sw1: var(--bf-amber); --mk-sw2: var(--bf-up); --mk-sw3: var(--bf-down); }
   </style>
 </head>
 <body>
@@ -141,6 +220,10 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="../../core/script-sync.js"></script>
+  <script src="../../core/talk.js"></script>
+  <script src="../../core/focus.js"></script>
+  <script src="../../core/cue-kit.js"></script>
+  <script src="../../core/host-kit.js"></script>
   <script src="components.js"></script>
   <script>
     const vp = document.getElementById('viewport');
@@ -156,6 +239,17 @@
     // 组件局部安全区 x60–1340 / y100–980 → 屏幕 x≈115–1295（避开人像框 1328+）/ y≈100–910（避开字幕）
     const CAM_DX = 60, CAM_ZOOM = 0.92;
     const params = new URLSearchParams(location.search);
+    // v3.5：牌子层 12 造型（印章 = 琥珀评级章（双线框）、贴纸 = 涨绿成交签、标签 = 终端标题条（琥珀左键 + 藏青底）、多色大字 = 琥珀 / 涨绿 / 银白行情色；全部不歪）
+    MHEngine.Badges.registerKinds('12', {
+      stamp: 'padding:10px 30px 12px;background:rgba(11,18,32,.94);color:var(--bf-amber2);border:2px solid var(--bf-amber);outline:1px solid var(--bf-amber);outline-offset:-8px;box-shadow:0 0 0 1px rgba(245,158,11,.35),0 18px 40px rgba(0,0,0,.5);font-family:var(--bf-font-cn);font-weight:900;',
+      sticker: 'padding:10px 26px 12px;background:var(--bf-up);color:#06130D;box-shadow:0 0 0 1px rgba(16,185,129,.5),0 12px 30px rgba(0,0,0,.45);font-family:var(--bf-font-cn);font-weight:900;',
+      tag: 'padding:12px 28px 14px 24px;background:rgba(7,13,24,.96);color:var(--bf-silver);border:1px solid #2A3B57;border-left:10px solid var(--bf-amber);box-shadow:0 18px 44px rgba(0,0,0,.55);font-family:var(--bf-font-cn);font-weight:900;',
+      label: 'padding:14px 34px 16px;background:#0F1B2E;color:var(--bf-amber2);border:1px solid #2A3B57;border-top:3px solid var(--bf-amber);box-shadow:0 24px 56px rgba(0,0,0,.55);font-family:var(--bf-font-cn);font-weight:900;',
+      big: { pal: ['var(--bf-amber2)', 'var(--bf-up)', 'var(--bf-silver)', 'var(--bf-amber)'], ink: '#0B1220', shadow: '0 0 26px rgba(245,158,11,.35)' },
+      rot: { stamp: 0, sticker: 0, tag: 0, label: 0, big: 0 }
+    });
+    // 「换风格」按钮的样色（只在 compare 写了 right.button 时用）：藏青琥珀 / 涨跌 / 研报白
+    MHEngine.CueKit.swatches = [['#0B1220', '#F59E0B', '#10B981', '#EF4444'], ['#070D18', '#FBBF24', '#1E293B', '#94A3B8'], ['#F1F5F9', '#0B1220', '#F59E0B', '#10B981']];
 
     /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
     function buildWordData(scenes) {
@@ -188,6 +282,7 @@
       try {
         const src = params.get('data') || 'demo_data.json';
         script = await (await fetch(src, { cache: 'no-store' })).json();
+        MHEngine.ScriptSync.resolveMedia(script, src); // v3.4：媒体路径以剧本文件为基准
       } catch (e) {
         const el = document.getElementById('load-error');
         el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
@@ -197,11 +292,14 @@
       const root = document.documentElement.style;
       ['navy', 'amber', 'amber2', 'up', 'down', 'silver', 'steel', 'mute'].forEach((k) => { if (theme[k]) root.setProperty(`--bf-${k}`, theme[k]); });
       FinTerminal.injectCSS();
+      const HK = MHEngine.HostKit.init(script, document.getElementById('avatar-stage'));   // v3.5：铺满版式 / 画框 / 利落散聚 / 牌子层（剧本写了才开）
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
       if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
-      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      document.getElementById('avatar-tag-tx').textContent = av.tag || (av.video ? '' : 'YOUR NAME');
+      if (av.video && !String(av.tag || '').trim()) document.getElementById('avatar-tag').style.display = 'none';   // v3.5：真人素材没填名牌 → 整块不出（占位剪影仍配占位名）
+      if (HK.CHROME_OFF) document.querySelector('#avatar-tag em').textContent = '直播';   // v3.5：导出时名牌上的 LIVE 换中文
       if (av.video) {
         const v = document.createElement('video');
         v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
@@ -210,8 +308,11 @@
       }
 
       // 跑马灯行情条（meta.ticker 可自定义）
-      const tick = meta.ticker && meta.ticker.length ? meta.ticker : [
+      // v3.5：导出时（?chrome=0）默认行情换成纯数字代码（不出英文缩写）；剧本自己写的 meta.ticker 照用
+      const tick = meta.ticker && meta.ticker.length ? meta.ticker : HK.CHROME_OFF ? [
+        { s: '600519', v: '+9.00', c: 1 }, { s: '000001', v: '100%', c: 1 }, { s: '300750', v: '1.00', c: 0 }, { s: '002594', v: '30.00', c: 0 }, { s: '601318', v: '-100%', c: -1 }] : [
         { s: 'MVE', v: '+9.0x', c: 1 }, { s: 'GPU', v: '100%', c: 1 }, { s: 'JSON', v: '1.00', c: 0 }, { s: 'FPS', v: '30.00', c: 0 }, { s: 'BUG', v: '-100%', c: -1 }];
+      if (HK.CHROME_OFF) document.querySelector('#bf-ticker .brand').innerHTML = '<i></i>行情终端';
       const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
       const tickHTML = tick.map((q) => `<span class="it"><b>${esc(q.s)}</b><span class="${q.c > 0 ? 'u' : q.c < 0 ? 'd' : 'z'}">${esc(q.v)} ${q.c > 0 ? '▲' : q.c < 0 ? '▼' : '■'}</span></span>`).join('');
       const run = document.querySelector('#bf-ticker .run');
@@ -222,15 +323,19 @@
       // 组装场景
       const world = document.getElementById('bf-world');
       const scenes = []; let acc = 0, zoneX = 0;
+      const COVER_AT = HK.coverAt(script.scenes, 0.4);   // 百叶条在段边界前 0.4s 开始刷入
       (script.scenes || []).forEach((sc, i) => {
-        const factory = FinTerminal.COMPONENTS[sc.type];
+        const factory = FinTerminal.COMPONENTS[sc.type] || MHEngine.ScriptSync.coreComponent(sc.type);
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
-        const comp = factory.create(sc.data || {}, { dur });
+        const ctx = MHEngine.ScriptSync.sceneCtx(sc, acc, dur);
+        ctx.area = HK.area(sc, { CAM_DX, CAM_ZOOM, SX, SY }); ctx.coverAt = COVER_AT[i];
+        const comp = MHEngine.CueKit.create(sc.type, sc.data, ctx) || factory.create(sc.data || {}, ctx);
+        const badges = HK.badges(sc, comp, ctx, document.getElementById('screen-layer'));
         const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1400) + ZONE_GAP;
         if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
         else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
-        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, badges, zx, zy, avatar: sc.avatar || comp.avatar });
         acc += dur;
       });
       const DURATION = acc;
@@ -251,17 +356,17 @@
       camRig.setKeyframes(kfs);
 
       // 人像形态：card / pip / corner / full（4 种形态全部走 core 点阵粒子散聚转场）
-      const avatar = new MHEngine.AvatarController({
+      const avatar = new MHEngine.AvatarController(HK.presets({
         card:   { left: 1328, top: 96,  width: 540, height: 776, borderRadius: 2,   borderWidth: 2, tagOpacity: 1 },
         pip:    { left: 1532, top: 642, width: 320, height: 320, borderRadius: 160, borderWidth: 2, tagOpacity: 0 },
         corner: { left: 1410, top: 530, width: 458, height: 342, borderRadius: 2,   borderWidth: 2, tagOpacity: 1 }
-      });
+      }));
       const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
       const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
       const tl = gsap.timeline({ paused: true });
       const AVSEG = MHEngine.ScriptSync.avatarSegments(scenes); // 无 avatarCues 时与 scenes 一一对应
       avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
-      AVSEG.forEach((s, i) => {
+      if (!HK.scheduleMorphs({ segs: AVSEG, avatar, morph: avatarMorph, tl, mapAv, seed: 121200 })) AVSEG.forEach((s, i) => {
         if (i === 0) return;
         const prev = mapAv(AVSEG[i - 1].avatar), cur = mapAv(s.avatar);
         if (prev !== cur) {
@@ -280,7 +385,7 @@
       const tabsEl = document.getElementById('bf-tabs');
       scenes.forEach((s, i) => {
         const tb = document.createElement('div'); tb.className = 'bf-tab';
-        tb.innerHTML = `<b>F${i + 1}</b>${s.type.toUpperCase()}<div class="fl"></div>`;
+        tb.innerHTML = `<b>F${i + 1}</b>${HK.typeText(s)}<div class="fl"></div>`;   // v3.5：导出时不出英文句型名（页签本身也被 engine.css 隐藏）
         tb.addEventListener('click', () => jumpTo(i));
         tabsEl.appendChild(tb); s.tab = tb;
       });
@@ -293,13 +398,14 @@
         let row = '';
         for (let j = 0; j < 14; j++) {
           const v = (R() * 400 - 120), cls = v > 30 ? 'u' : v < -10 ? 'd' : 'z';
-          row += `<span>${['MVE', 'GPU', 'FPS', 'SUB', 'AVT', 'CAM', 'JSN', 'REC'][Math.floor(R() * 8)]}</span><span class="${cls}">${v >= 0 ? '+' : ''}${(v / 10).toFixed(2)}%</span>`;
+          row += `<span>${(HK.CHROME_OFF ? ['600519', '000001', '300750', '002594', '601318', '688981', '000858', '600036'] : ['MVE', 'GPU', 'FPS', 'SUB', 'AVT', 'CAM', 'JSN', 'REC'])[Math.floor(R() * 8)]}</span><span class="${cls}">${v >= 0 ? '+' : ''}${(v / 10).toFixed(2)}%</span>`;
         }
         sl.innerHTML = `<div class="row">${row}</div>`;
         wipe.appendChild(sl); slats.push({ el: sl, row: sl.firstChild, order: Math.abs(k - 5.5) });
       }
       const board = document.getElementById('bf-board');
       const bNo = board.querySelector('.no'), bLb = board.querySelector('.lb'), bTy = board.querySelector('.ty'), bQ = board.querySelector('.q .u');
+      if (HK.CHROME_OFF) { board.querySelector('.k').textContent = '章节'; bTy.style.display = 'none'; }   // v3.5：导出时行情牌不出 SECTION / FN·xx 句型名
 
       const bg = document.getElementById('bf-bg-layer');
       const scan = document.getElementById('bf-scan');
@@ -320,7 +426,7 @@
         if (!tapeW) tapeW = run.scrollWidth / 3;
         if (tapeW) run.style.transform = `translateX(${(-(t * 90) % tapeW).toFixed(1)}px)`;
         const mm = Math.floor(t / 60), ss = (t % 60).toFixed(1).padStart(4, '0');
-        clk.textContent = `REC ${String(mm).padStart(2, '0')}:${ss}`;
+        clk.textContent = `${HK.CHROME_OFF ? '●' : 'REC'} ${String(mm).padStart(2, '0')}:${ss}`;
 
         let cur = scenes.length - 1;
         scenes.forEach((s, i) => { if (t >= s.start && t < s.start + s.dur) cur = i; });
@@ -334,8 +440,9 @@
         const S = scenes[cur];
         const AS = MHEngine.ScriptSync.avatarAt(AVSEG, t, S);
         const isFull = AS.avatar === 'full';
-        stageEl.classList.toggle('is-full', isFull && t >= AS.start + 0.2);
-        camViewport.style.opacity = isFull && t >= AS.start + 0.15 && t < AS.start + AS.dur ? '0' : '1';
+        stageEl.classList.toggle('is-full', isFull && t >= AS.start + HK.fullDelay(0.2));
+        camViewport.style.opacity = isFull && t >= AS.start + HK.fullDelay(0.15) && t < AS.start + AS.dur ? '0' : '1';
+        HK.updateBadges(scenes, cur, t);
 
         // 百叶条：由中间向上下两侧依次自右刷入 → 行情牌闪切 → 依次向左刷出
         let shown = false;
@@ -351,11 +458,11 @@
               sl.row.style.transform = `translateX(${(-((t - b + 0.4) * 900 + sl.order * 140) % 700).toFixed(1)}px)`;
             });
             const bp = clamp01((t - (b - 0.2)) / 0.12), bq = clamp01((t - (b + 0.2)) / 0.12);
-            board.style.opacity = (bp * (1 - bq)).toFixed(3);
+            board.style.opacity = HK.CHROME_OFF && !scenes[i].label ? '0' : (bp * (1 - bq)).toFixed(3);   // v3.5：导出时没写 label → 行情牌不出（只剩百叶条），不出空牌子
             board.style.transform = `scaleY(${(0.2 + 0.8 * easeOut(bp)).toFixed(3)}) translateX(${(-60 * easeIn(bq)).toFixed(1)}px)`;
             bNo.textContent = String(i + 1).padStart(2, '0');
-            bLb.textContent = scenes[i].label || scenes[i].type;
-            bTy.textContent = `FN·${String(i + 1).padStart(2, '0')}  ${scenes[i].type.toUpperCase()}`;
+            bLb.textContent = HK.label(scenes[i]);
+            bTy.textContent = `FN·${String(i + 1).padStart(2, '0')}  ${HK.typeText(scenes[i])}`;
             bQ.textContent = `▲ ${String(i + 1).padStart(2, '0')}/${String(scenes.length).padStart(2, '0')}`;
             wipe.style.display = 'block'; shown = true; break;
           }
@@ -363,6 +470,7 @@
         if (!shown) wipe.style.display = 'none';
 
         stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        HK.frame(t, stageEl, avatarMorph);
         document.getElementById('scrubber').value = t.toFixed(2);
         document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
       }
@@ -370,7 +478,7 @@
       // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
       let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
       const vid = document.getElementById('avatar-video');
-      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid }); // meta.avatar.offset + meta.audio
+      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid, scenes }); // meta.avatar.offset + meta.audio
       function seek(t) {
         cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
         scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });

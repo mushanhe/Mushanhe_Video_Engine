@@ -23,9 +23,17 @@ Mushanhe Video Engine — 口播对齐工具：音/视频 → 同源 words（逐
 结果（最后几行固定格式，便于 AI Agent 解析）：
   STATUS OK                              → ALIGN_DONE，退出码 0
   STATUS PARTIAL + 警告清单              → ALIGN_DONE，退出码 0（有段没回填 / 与录音差异较大）
-  STATUS FAIL <too-large|mismatch|io>   → 不写 --out，只写 <out>.failed.json 便于排查，退出码 1
+  STATUS FAIL <too-large|mismatch|io|cross-sentence>   → 不写 --out，只写 <out>.failed.json 便于排查，退出码 1
   参数错误 / 缺依赖：退出码 2
 长稿（全片草稿字数 × 口播字数 > 4e6，约 2000 字 / 7 分钟以上）自动改为逐段顺序对齐，不再整片失败。
+
+v3.4：
+  - 段边界检查（模式 B 且带 --script）：每一段的结尾都必须落在文字稿的句末标点（。！？…；）处，否则 STATUS FAIL cross-sentence，
+    逐条报出「第几段｜第几段」切在哪两个字之间（例：「写脚本、｜对齐」）。段边界只能按文字稿标点定，不能按停顿定。
+  - 静音幻听过滤：音量一次都没到说话阈值的连续几个词，只要其中有一个置信度 <0.2，整串丢掉（whisper 会在片尾静音里编出一句话）；
+    丢了几个词写进输出（模式 A：dropped；模式 B：meta.align.dropped）并打印 NOTE 行。
+  - --cuts cut_points.json（rough_cut.py 输出）→ 模式 B 写进 meta.avatar.cuts，引擎在不落在换段处的剪点做一次推近盖住跳切。
+  - meta.audio 一律写成「相对剧本文件」的路径（引擎从 v3.4 起按剧本文件解析媒体）；--page-dir 已废弃、被忽略。
 
 时间一律是全片绝对秒（音轨第 0 秒 = 剧本第 0 秒）。words 与 sub 由同一次识别产出，sub 的切行规则与
 core/script-sync.js 完全一致（有草稿 sub 时按字 LCS 映射断点；没有时按停顿 ≥0.3s / 每行宽度 ≤14 切）。
@@ -44,7 +52,7 @@ import time
 import wave
 from pathlib import Path
 
-VERSION = "3.3.1"
+VERSION = "3.4"
 
 # ============================== 与 core/script-sync.js 同口径的切行规则 ==============================
 LATIN = re.compile(r"^[A-Za-z0-9.\-_/@#:+%]+$")
@@ -362,6 +370,51 @@ def transcribe(model, audio, language, prompt):
         for w in s.words or []:
             words.append({"w": w.word, "start": float(w.start), "end": float(w.end), "p": float(w.probability)})
     return words, info
+
+
+def energy_curve(audio):
+    """10ms 一帧的音量（dB）+ 说话阈值（与 energy_refine 同一口径：底噪第 10 百分位 + 一半动态范围）。"""
+    import numpy as np
+    hop = 160
+    n = len(audio) // hop
+    if n < 10:
+        return None, None
+    e = 10 * np.log10(np.mean(audio[: n * hop].reshape(n, hop).astype(float) ** 2, 1) + 1e-12)
+    floor = float(np.percentile(e[e > -100], 10)) if (e > -100).sum() > 100 else float(np.percentile(e, 10))
+    return e, floor + 0.5 * (float(np.percentile(e, 90)) - floor)
+
+
+def drop_silence_hallucinations(raw, audio, p_max=0.2):
+    """whisper 在静音里「幻听」出的字（例：片尾数字静音里冒出「在我面前的一切」）。
+    静音词 = 词的时间窗（前后各放宽 50ms）里音量一次都没到说话阈值；连续的静音词算一串，
+    串里只要有一个词置信度 < p_max 就整串丢掉（幻听常整句出现，个别字置信度反而很高，如「前」0.994）。
+    真念出来的字至少有一帧过阈值，不会被丢。返回 (保留的词, 丢掉的词清单)。"""
+    import math
+    e, thr = energy_curve(audio)
+    if e is None or not raw:
+        return raw, []
+    n = len(e)
+
+    def silent(w):
+        a = max(0, int((w["start"] - 0.05) * 100))
+        b = min(n, int(math.ceil((max(w["end"], w["start"]) + 0.05) * 100)))
+        return b <= a or float(e[a:b].max()) < thr
+    flags = [silent(w) for w in raw]
+    drop, i = set(), 0
+    while i < len(raw):
+        if not flags[i]:
+            i += 1
+            continue
+        j = i
+        while j + 1 < len(raw) and flags[j + 1]:
+            j += 1
+        if any(raw[k]["p"] < p_max for k in range(i, j + 1)):
+            drop.update(range(i, j + 1))
+        i = j + 1
+    kept = [w for k, w in enumerate(raw) if k not in drop]
+    dropped = [{"text": raw[k]["w"].strip(), "start": round(raw[k]["start"], 3), "end": round(raw[k]["end"], 3),
+                "p": round(raw[k]["p"], 3)} for k in sorted(drop)]
+    return kept, dropped
 
 
 def words_to_units(words, t2s):
@@ -967,12 +1020,92 @@ def inject(draft, words, audio_rel, duration, warn):
     meta["audio"] = audio_rel
     if old and (old if isinstance(old, str) else old.get("src")) != audio_rel:
         warn(f"meta.audio 由 {old} 改为 {audio_rel}")
-    report = {"path": path, "voiced": len(voiced), "words": len(W), "filled": [i for i in voiced if assign[i]],
+    pos = {id(w): k for k, w in enumerate(W)}
+    ranges = [[i, pos[id(assign[i][0])], pos[id(assign[i][-1])]] for i in range(len(scenes)) if assign[i]]
+    report = {"path": path, "voiced": len(voiced), "words": len(W), "filled": [i for i in voiced if assign[i]], "ranges": ranges,
               "failed": failed, "weak": weak, "widened": widened,
               "segments": [{"scene": i + 1, "cov": round(info[i]["cov"], 3), "widened": bool(info[i].get("widened")),
                             "filled": bool(assign[i]), "why": info[i].get("why") if i in failed else None,
                             "text": " ".join(texts[i][1])[:60]} for i in voiced]}
     return draft, total, report
+
+
+# ============================== v3.4：段边界必须落在文字稿句末 ==============================
+SENT_END = re.compile(r"[。！？!?…；;]")   # v3.4.1：分号算句末，逗号 / 顿号仍不算
+CONTENT = re.compile(r"[0-9A-Za-z㐀-鿿豈-﫿]")
+
+
+def boundary_check(words, script_text, ranges, t2s):
+    """每段最后一个字 → 文字稿位置；它和下一段第一个字之间必须有句末标点（。！？…；），最后一段后面紧跟的必须是句末标点或稿子结尾。
+    返回问题清单 [{"scene", "next", "at", "left", "right", "msg"}]；对不上文字稿的字不参与判断。"""
+    S, SPAN = [], []
+    for m in UNIT.finditer(script_text):
+        tok = m.group(0)
+        if t2s and CJK.fullmatch(tok):
+            tok = t2s(tok)
+        for k in keys_of(tok):
+            S.append(k)
+            SPAN.append((m.start(), m.end()))
+    T, TW = [], []
+    for wi, w in enumerate(words):
+        for t in tokenize(w[0]):
+            for k in keys_of(t):
+                T.append(k)
+                TW.append(wi)
+    if not S or not T:
+        return []
+    ws, we = [None] * len(words), [None] * len(words)
+    for a, b, size in difflib.SequenceMatcher(None, T, S, autojunk=False).get_matching_blocks():
+        for q in range(size):
+            wi, (x0, x1) = TW[a + q], SPAN[b + q]
+            ws[wi] = x0 if ws[wi] is None else min(ws[wi], x0)
+            we[wi] = x1 if we[wi] is None else max(we[wi], x1)
+
+    def left_ctx(a):
+        k, n = a, 0
+        while k > 0 and n < 4 and CONTENT.match(script_text[k - 1]):
+            k -= 1
+            n += 1
+        return script_text[k:a]
+
+    def right_ctx(b):
+        out, k = "", b
+        while k < len(script_text) and len(out) < 2:
+            if CONTENT.match(script_text[k]):
+                out += script_text[k]
+            elif out and not script_text[k].isspace():
+                break
+            k += 1
+        return out
+
+    order = sorted(((r[0], (r[1], r[2])) for r in ranges), key=lambda kv: kv[1][0])
+    problems = []
+    for n, (si, (f, l)) in enumerate(order):
+        a = next((we[k] for k in range(l, f - 1, -1) if we[k] is not None), None)
+        if a is None:
+            continue
+        if n + 1 < len(order):
+            nsi, (nf, nl) = order[n + 1]
+            b = next((ws[k] for k in range(nf, nl + 1) if ws[k] is not None), None)
+            if b is None or b < a:
+                continue
+        else:
+            nsi, b = None, a
+            while b < len(script_text) and not CONTENT.match(script_text[b]):
+                b += 1
+            if b >= len(script_text):
+                continue   # 文字稿到头了
+        gap = script_text[a:b]
+        if SENT_END.search(gap):
+            continue
+        g = re.sub(r"\s+", "", gap)
+        g = g if len(g) <= 6 else g[:6] + "…"
+        left, right = left_ctx(a) + g, right_ctx(b)
+        where = f"第 {si + 1} 段｜第 {nsi + 1} 段" if nsi is not None else f"第 {si + 1} 段（最后一段）结尾"
+        problems.append({"scene": si + 1, "next": None if nsi is None else nsi + 1, "at": round(words[l][2], 3),
+                         "left": left, "right": right,
+                         "msg": f"{where} 切在「{left}｜{right}」之间（{words[l][2]:.2f}s），文字稿这里不是句末标点（。！？…；）"})
+    return problems
 
 
 # ============================== 输出 ==============================
@@ -1053,7 +1186,8 @@ def main():
     ap.add_argument("--out", required=True, help="输出 JSON（模式 A：aligned.json；模式 B：回填后的剧本）")
     ap.add_argument("--script", default=None, help="可选文稿 .txt：提取专有名词做提示词 + 保守纠正同音错字")
     ap.add_argument("--inject", default=None, help="模式 B：草稿剧本 JSON，回填每段 start / dur / words / sub 与 meta.audio")
-    ap.add_argument("--page-dir", default=None, help="meta.audio 的相对基准 = 模板页面目录（默认 = --out 所在目录；剧本放在风格包目录里时无需设置）")
+    ap.add_argument("--page-dir", default=None, help="已废弃（v3.4 起 meta.audio 一律相对剧本文件 = --out 所在目录），传了也会被忽略")
+    ap.add_argument("--cuts", default=None, help="模式 B：rough_cut.py 输出的 cut_points.json → 写进 meta.avatar.cuts（剪点推近盖跳切）")
     ap.add_argument("--extract-audio", default=None, help="另存 48kHz 立体声 WAV 作为 meta.audio（视频输入时默认存到 --out 同目录）")
     ap.add_argument("--model", default="medium", help="faster-whisper 模型名或本地目录（默认 medium）")
     ap.add_argument("--model-dir", default=None, help="模型缓存目录（不填则用 HF_HOME / 默认缓存）")
@@ -1079,7 +1213,17 @@ def main():
         print(f"[align] 找不到输入文件：{src}")
         sys.exit(2)
     out = Path(args.out)
-    page_dir = Path(args.page_dir) if args.page_dir else out.parent
+    page_dir = out.parent   # v3.4：媒体路径以剧本文件为基准
+    if args.page_dir:
+        print("[align] --page-dir 已废弃：v3.4 起 meta.audio 写成相对剧本文件（--out 所在目录）的路径，引擎也按剧本文件解析", flush=True)
+    cut_list = None
+    if args.cuts:
+        try:
+            cj = json.loads(Path(args.cuts).read_text(encoding="utf-8"))
+            cut_list = [round(float(c["t"] if isinstance(c, dict) else c), 3) for c in (cj.get("cuts", []) if isinstance(cj, dict) else cj)]
+        except (OSError, ValueError, KeyError, TypeError) as e:
+            print(f"[align] 读不了 --cuts {args.cuts}：{e}")
+            sys.exit(2)
     failed_path = out.with_name(out.name + ".failed.json")
     draft = None
     if args.inject:   # 先读草稿再识别：草稿坏了不用白等几分钟
@@ -1123,6 +1267,10 @@ def main():
     t_asr = time.time() - t0
     if args.raw_out:
         dump_json({"prompt": prompt, "words": [[w["w"], round(w["start"], 3), round(w["end"], 3), round(w["p"], 3)] for w in raw]}, args.raw_out)
+    raw, dropped = drop_silence_hallucinations(raw, audio)
+    if dropped:
+        print(f"[align] 静音幻听过滤：丢掉 {len(dropped)} 个词「{''.join(d['text'] for d in dropped)}」"
+              f"（{dropped[0]['start']:.2f}–{dropped[-1]['end']:.2f}s，音量没到说话阈值且含置信度 <0.2 的词）", flush=True)
     units = words_to_units(raw, t2s)
 
     corrections = []
@@ -1155,24 +1303,48 @@ def main():
         state, reason, msg = judge(report)
         if state == "FAIL":
             fail(reason, msg, failed_path, dict(debug, report=report, warnings=warnings))
+        if script_text:
+            probs = boundary_check(words, script_text, report["ranges"], t2s)
+            if probs:
+                for pb in probs:
+                    print(f"[align][段边界] {pb['msg']}", flush=True)
+                fail("cross-sentence", f"{len(probs)} 处段边界不在文字稿句末：" + "；".join(f"「{pb['left']}｜{pb['right']}」" for pb in probs)
+                     + "。段边界只能落在 。！？…； 处：把这几段合并或改到句末再重跑", failed_path,
+                     dict(debug, report=report, warnings=warnings, boundaries=probs))
         status = state
         final.setdefault("meta", {})["align"] = {"tool": f"core/tools/align.py v{VERSION}", "model": args.model,
                                                   "duration": round(duration, 3), "corrections": corrections}
+        if dropped:
+            final["meta"]["align"]["dropped"] = dropped
+        if cut_list is not None:
+            av = final["meta"].setdefault("avatar", {})
+            if not isinstance(av, dict):
+                av = final["meta"]["avatar"] = {}
+            av["cuts"] = cut_list
+            bounds = [sc["start"] for sc in final.get("scenes", [])[1:]]
+            cov = sum(1 for c in cut_list if any(abs(c - b) <= 0.35 for b in bounds))
+            print(f"[align] 剪点 {len(cut_list)} 个写进 meta.avatar.cuts：{cov} 个落在换段处（换段本身盖住跳切），"
+                  f"{len(cut_list) - cov} 个由引擎推近 1.0→1.08 盖住", flush=True)
         write_out(final, out, failed_path, debug)
         n_sc = sum(1 for sc in final.get("scenes", []) if sc.get("words"))
         print(f"[align] 模式 B：回填 {n_sc}/{len(final.get('scenes', []))} 段（口播段 {len(report['filled'])}/{report['voiced']}，"
-              f"{'全片单次比对' if report['path'] == 'full' else '长稿分段顺序对齐'}），meta.audio = {audio_rel}（相对页面目录 {page_dir}）", flush=True)
+              f"{'全片单次比对' if report['path'] == 'full' else '长稿分段顺序对齐'}），meta.audio = {audio_rel}（相对剧本文件 {out}）", flush=True)
     else:
         if not words:
             fail("mismatch", "录音里没识别出任何字（静音 / 音轨不对 / 语言参数不对？）", failed_path, debug)
         groups = auto_split([list(w) for w in words], [])
         sub = [display([w[0] for w in g]) for g in groups]
-        write_out({"version": VERSION, "duration": round(duration, 3), "audio": audio_rel_out, "language": args.language,
-                   "stats": stats, "prompt": prompt, "corrections": corrections, "sub": sub, "words": words}, out, failed_path, debug)
+        res = {"version": VERSION, "duration": round(duration, 3), "audio": audio_rel_out, "language": args.language,
+               "stats": stats, "prompt": prompt, "corrections": corrections, "sub": sub, "words": words}
+        if dropped:
+            res["dropped"] = dropped
+        write_out(res, out, failed_path, debug)
         print(f"[align] 模式 A：{len(words)} 个字 / 词，{len(sub)} 行字幕", flush=True)
     print(f"[align] 纠错 {len(corrections)} 处 · 模型 {args.model} · {stats['device']} · 加载 {stats['load_s']}s · 识别 {stats['asr_s']}s"
           f"（实时倍率 {stats['rtf']}）· 精修 {n_energy} · 均分短字 {n_short}" + (f" · 强制对齐 {n_refine} 字" if args.refine else ""), flush=True)
     print(f"[align] 写出 {out}", flush=True)
+    if dropped:
+        print(f"NOTE dropped {len(dropped)} 个静音幻听词：{''.join(d['text'] for d in dropped)}")
     if status == "PARTIAL":
         print(f"STATUS PARTIAL 口播段回填 {len(report['filled'])}/{report['voiced']}，{len(warnings)} 条警告：")
         for w in warnings:

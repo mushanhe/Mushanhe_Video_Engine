@@ -10,7 +10,7 @@
 
 1 套 `core/` 通用内核 · 10 大万能口播句型 · 4 种动态人像粒子变形 · **01–06 各 4 色实时换肤（24 套）+ 07–12 六大新流派**
 
-`v3.3.1` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 右上角 01–12 一键切风格 · 一键导出 1080p / 4K MP4 · 自带中英双语 AI Agent Skill（`SKILL.md` / `SKILL.en.md`）
+`v3.5` · 纯 HTML / CSS / JS · 零构建 · 任意时间点可 seek 还原 · 右上角 01–12 一键切风格 · 一键导出 1080p / 4K MP4 · 自带中英双语 AI Agent Skill（`SKILL.md` / `SKILL.en.md`）
 
 | 01 · 3D 工业实体画廊 | 02 · 瑞士印刷拼贴 |
 |---|---|
@@ -62,6 +62,8 @@ Mushanhe Video Engine 把口播视频拆成两层：
 | 🎛 **01–12 一键切风格（v3.2）** | 12 套展厅右上角都有「🎨 切换风格」胶囊：鼠标一点跳到任意流派，**自动携带当前 `?data=` 剧本**（路径自动换算）和当前播放时间；按 `H` 同步隐藏，抽帧 / 导出时不出现 |
 | 🎬 **一键导出 MP4（v3.2）** | `core/tools/export_mp4.py`：无头浏览器逐帧确定性截图 → FFmpeg 多进程分块编码，1080p / 4K（2 倍矢量渲染）、BT.709 色彩、人声 / 背景乐混流 |
 | 🎙 **真实词级时间轴（v3.2）** | 剧本可选 `sc.words` 词级时间戳（字幕按真实语速逐字点亮）、`sc.avatarCues` 段内切人像、`meta.audio` 人声音轨做主时钟、`meta.themeCues` 按时间换肤；不写这些字段时画面与旧版逐帧一致 |
+| ✂️ **原片粗剪 + 全屏真人句型（v3.4）** | `core/tools/rough_cut.py` 去头尾静音、压缩 >1s 长停顿，输出 1080p 全帧内人像（导出约 1–1.5× 实时）+ 剪点表；新增内核句型 `talk`（全屏真人 + 按词弹 1–2 个关键词）；图表元素可写 `cue` 按口播的词入场；剪点不在换段处时人像自动推近盖住跳切 |
+| 🛑 **防呆（v3.4）** | 段边界不在文字稿句末 → `align.py` 直接 `STATUS FAIL cross-sentence`；缺音轨 / 缺人像 / 任一媒体 404 → 导出 `STATUS FAIL missing-media`，不出无声废片；whisper 静音幻听自动丢掉；媒体路径按剧本文件解析，换风格不断素材 |
 | 🗣 **口播一键对齐（v3.3）** | `core/tools/align.py`：录音 / 录像 → 同源逐字 `words` + 字幕 `sub`，或直接回填草稿剧本的每段时长与 `meta.audio`；faster-whisper 本地识别，不需要 PyTorch |
 | 🤖 **AI Agent Skill** | 根目录 `SKILL.md`（English：`SKILL.en.md`）：Claude Code / Antigravity / Cursor 读完就会在 12 套里推荐最对味的风格、写剧本、抽帧验货、交付预览 |
 
@@ -69,6 +71,7 @@ Mushanhe Video Engine 把口播视频拆成两层：
 
 | 句型 | 适用口播 |
 |---|---|
+| `talk` 聊天（v3.4 内核句型） | **普通聊天 / 观点 / 过渡句的默认句型**：人像全屏，屏幕两侧按口播说到的词弹出 1–2 个关键词（避开画面中线 ±240px），12 套通用 |
 | `cover` 封面 | 开场标题、章节号 |
 | `stat` 大数字 | 「从 3 小时降到 20 分钟」这类数字钩子，数字滚动 + 比例条 |
 | `steps` 步骤 | 3–5 步操作流程 |
@@ -124,7 +127,7 @@ Mushanhe Video Engine 把口播视频拆成两层：
 
 ## 3 步本地预览
 
-不想下载？直接打开 [在线 Demo](https://mushanhe.github.io/Mushanhe_Video_Engine/)。想本地改剧本，需要 Python 3.8+，无需安装任何依赖：
+不想下载？直接打开 [在线 Demo](https://mushanhe.github.io/Mushanhe_Video_Engine/)。想本地改剧本，需要 Python 3.10+，无需安装任何依赖：
 
 ```bash
 # 1. 克隆仓库
@@ -146,11 +149,13 @@ python core/tools/serve.py
 
 ## 写你自己的剧本
 
-复制任意风格包里的 `demo_data.json`，改完用 `?data=` 参数加载：
+参考任意风格包里的 `demo_data.json`（**只参考字段名，不要照抄条数和文案**），剧本和素材放仓库根 `work/<期号>/`，用 `?data=` 参数加载：
 
 ```
-http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=my_script.json
+http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=../../work/ep01/ep01.json
 ```
+
+v3.4 起剧本里的 `meta.audio` / `meta.avatar.video` / `meta.avatar.bg` 都**相对剧本文件**解析（预览、抽帧、导出一致），切到任何一套风格包素材都不会断。
 
 剧本结构（节选）：
 
@@ -188,6 +193,11 @@ http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=my_script.json
 | `sc.avatarCues` | `[[绝对秒, "card\|pip\|corner\|full"], ...]` | 一段之内切换人像形态 |
 | `meta.audio` | `"voice.wav"` 或 `{ "src": "...", "offset": 0, "volume": 1 }` | 人声音轨，播放时作为主时钟 |
 | `meta.themeCues` | `[[绝对秒, "obsidian", "角标文字"], ...]` | 按时间实时换肤（01–06） |
+| `data` 里的 `cue`（v3.4） | `"词"` 或 `["词", 第几次]` | 这个元素在口播说到这个词的那一帧入场；本轮 06 的 steps / checklist / stat 和 `talk` 支持，其余 11 套下一轮接 |
+| `meta.avatar.focus`（v3.4） | `"50% 30%"` | 人像取景焦点；手机竖屏 / 带旋转信息的素材用 `full` 时必须写，否则只剩帽顶（不写 = `center top`） |
+| `meta.avatar.cuts`（v3.4） | `[秒, ...]`（`align.py --cuts` 自动写入） | 粗剪剪点：落在换段处由换段盖住，其余剪点那一帧人像推近 1.0→1.08 盖住跳切 |
+| `theme.pip`（v3.4） | `"circle"` / `"square"` | 画中画圆窗 / 方窗由皮肤参数决定；不写 = 风格包原样 |
+| `meta.transition`（v3.4，目前只有 06） | `"wipe"`（默认）/ `"cut"` | `cut`：换段直接切，只有 `"chapter": true` 的段保留四色色块 |
 
 > ⚠️ **人像 `<video>` 默认静音**：12 套模板都不会使用出镜视频自带的音轨。请用 `meta.audio` 或导出时 `--audio` 提供人声，否则成片无声。
 
@@ -212,8 +222,24 @@ python core/tools/align.py --input voice.wav --script script.txt --inject templa
 - **输入**：`.wav` `.mp3` `.m4a` `.mp4` `.mkv` `.mov`。视频输入会另存一份 48 kHz 立体声 WAV 作为 `meta.audio`（也可 `--extract-audio` 指定路径）。
 - **模型**：默认 `--model medium`；`--model-dir` 或 `HF_HOME` 指定缓存位置，`--offline` 只用本地模型。有 CUDA 自动用 float16，否则（或缺 cuBLAS / cuDNN）自动退回 CPU int8。
 - **文稿 `--script`**：提示词只放一句说明 + 文稿里的专有名词（Claude、WorkBuddy、JSON、Skill…），不塞全文；纠错很保守——只改一字对一字的同音错字、数字写法（十二→12）、英文大小写 / 拼写，多念、少念、改口一律以实际念的为准，每处都记进 `corrections`。
-- **模式 B 规则**：每段草稿文字取 `sub`（没有再取 `text`、`script`）；段与段首尾衔接无空隙；没有口播的段（片尾、纯画面）保持原时长顺延；长稿（约 2000 字 / 7 分钟以上）自动逐段顺序对齐。结果看最后几行：`STATUS OK` / `STATUS PARTIAL`（有段没回填或差异较大，列出警告清单）/ `STATUS FAIL too-large|mismatch|io`（退出码 1，不写正式输出，只写 `<out>.failed.json` 便于排查）。`meta.audio` 按模板页面目录写相对路径（剧本不在风格包目录时用 `--page-dir` 指定）。
+- **模式 B 规则**：每段草稿文字取 `sub`（没有再取 `text`、`script`）；段与段首尾衔接无空隙；没有口播的段（片尾、纯画面）保持原时长顺延；长稿（约 2000 字 / 7 分钟以上）自动逐段顺序对齐。结果看最后几行：`STATUS OK` / `STATUS PARTIAL`（有段没回填或差异较大，列出警告清单）/ `STATUS FAIL too-large|mismatch|io|cross-sentence`（退出码 1，不写正式输出，只写 `<out>.failed.json` 便于排查）。`meta.audio` 写成相对剧本文件的路径（v3.4 起 `--page-dir` 废弃）。
+- **段边界检查（v3.4）**：模式 B 带 `--script` 时，每段结尾都必须落在文字稿的句末标点（。！？…；）处，否则 `STATUS FAIL cross-sentence`，并逐条报出切在哪两个字之间（如「写脚本、｜对齐」）。
+- **静音幻听过滤（v3.4）**：音量一次都没到说话阈值的一串词，只要其中有置信度 <0.2 的就整串丢掉（例：片尾静音里冒出的「在我面前的一切」），丢了几个词写进 `dropped` / `meta.align.dropped` 并打印 `NOTE` 行。
+- **`--cuts cut_points.json`（v3.4）**：把 `rough_cut.py` 的剪点写进 `meta.avatar.cuts`。
 - **`--refine`（可选）**：再用 stable-ts 按最终文字强制对齐，需 `pip install stable-ts`，**会连带安装 PyTorch（约 0.5–2 GB）**；没装就自动跳过并提示。
+
+### 原片粗剪（v3.4）
+
+没剪过的原片先粗剪再对齐（只按音量切，口误 / 重说仍要自己剪）：
+
+```bash
+python core/tools/rough_cut.py --input raw/take.mkv --out-dir work/ep01
+# → work/ep01/avatar.mp4（1080p · 每帧关键帧）· voice.wav（48k）· cut_points.json
+python core/tools/align.py --input work/ep01/voice.wav --script work/ep01/script.txt --cuts work/ep01/cut_points.json --inject work/ep01/ep01_draft.json --out work/ep01/ep01.json
+```
+
+- 头尾静音各留约 0.3s；只压缩 >1.0s 的停顿（压到约 0.4s），更短的停顿不动；剪点吸附到帧边界，画面和声音同一刀。
+- 实测（4K 62.6s 原片）：切掉头 7.90s、尾 7.47s，压缩 1 处 1.18s 停顿 → 46.5s；第一个字 0.28s 出现，最后一个字后 0.30s 结束。
 
 > ⚠️ **硬约束**：align.py 必须跑在最终用于播放和导出的那条 `meta.audio` 音轨上。后期剪掉停顿、变速或重新拼接后，必须重新跑一次，否则全片时间会整体错位。
 
@@ -229,7 +255,9 @@ python core/tools/align.py --input voice.wav --script script.txt --inject templa
 
 ## 作为 AI Agent Skill 使用
 
-仓库根目录的 [`SKILL.md`](SKILL.md)（英文版 [`SKILL.en.md`](SKILL.en.md)）是一份标准 Agent Skill：12 大流派 + 30 套皮肤索引、10 大句型速查、剧本规范、5 步出片流程（含一键导出 MP4）和「开工前更新检查（先问你再更新）」都在里面。把仓库交给 AI 编程助手后，直接说人话就能出片。
+仓库根目录的 [`SKILL.md`](SKILL.md)（英文版 [`SKILL.en.md`](SKILL.en.md)）是一份标准 Agent Skill：12 大流派 + 30 套皮肤索引、10 大句型速查、剧本规范、出片流程（粗剪 → 对齐 → 剧本 → 预览 → 导出，4 个必停点）和「开工前更新检查（先问你再更新）」都在里面。把仓库交给 AI 编程助手后，用大白话说需求即可，AI 会在关键节点停下来问你。
+
+**v3.5 配方表**：Skill 里新加了照「金样片」定稿抄出来的 9 条句子配方（开场封面、痛点卡、输入 → AI、步骤、以前 / 现在对比、大数字、收尾铭牌 + 「接下来」横条、全屏点睛、普通过渡句），每条写死人像形态、用哪个句型、哪些元素跟哪个词出、什么时候退，并附金样片的秒数和剧本片段；还有 12 条全片规矩（全屏 ≤ 20%、上屏字只用口播原话等）。AI 先写「句子 → 配方」对照，再照配方填口播原话，不自己设计画面、不编字；同一份剧本 12 套风格通用。详见 [`SKILL.md`](SKILL.md) 第 2.5–2.7 节（英文 [`SKILL.en.md`](SKILL.en.md)）。
 
 **Claude Code**：把 `SKILL.md`（英文环境用 `SKILL.en.md`：复制后改名为 `SKILL.md`，并把中文版 `SKILL.md` 顶部的 frontmatter 粘到最前；`SKILL.en.md` 本身不带 frontmatter，避免两个 Skill 重名）复制到 `~/.claude/skills/mushanhe-video-engine/SKILL.md`（全局）或仓库内 `.claude/skills/mushanhe-video-engine/SKILL.md`，之后说到做口播视频时会自动调用；临时用也可以在对话里说“先读根目录 SKILL.md”。
 
@@ -245,7 +273,7 @@ python core/tools/align.py --input voice.wav --script script.txt --inject templa
 >
 > 这是一期讲宋词的读书视频，你挑一个最对味的风格。
 
-AI 会按 5 步走：① 确认或推荐风格与皮肤 → ② 把口播稿写成 `{ meta, theme, scenes }` 剧本 → ③ 跑 `inspect_frames.py` 抽帧，确认 `ZERO_ERRORS` 并逐张检查 → ④ 启动 `serve.py` 交付预览链接 → ⑤ 确认后用 `export_mp4.py` 导出成片。同一份剧本随时可以换成其他 11 套风格，01–06 还能换另外 3 套皮肤。
+AI 会这样走，标 ⛔ 的地方一定停下来等你回复：⛔ 确认或推荐风格与皮肤 → ⛔ 问原片要不要粗剪（`rough_cut.py`）→ 写剧本（段边界只落在句末、上屏文字只用口播原话、普通句默认 `talk`）→ `align.py` 回填并列出纠错清单 → `inspect_frames.py` 逐段对嘴验货 → ⛔ 给你能播的预览链接（不带 `clean`）再问要不要改 → ⛔ 报片长和预计耗时，等你说「导」再用 `export_mp4.py` 出 1 个成片。同一份剧本随时可以换成其他 11 套风格，01–06 还能换另外 3 套皮肤。
 
 ## 无头抽帧验货
 
@@ -255,7 +283,7 @@ AI 会按 5 步走：① 确认或推荐风格与皮肤 → ② 把口播稿写�
 python core/tools/inspect_frames.py --template 01_industrial_3d --times 3,9.5,17,25,32.5,40,48,56,63,69.5 --out preview_frames
 ```
 
-验非默认皮肤或自己的剧本，加 `--theme` / `--data`（剧本路径相对风格包目录，会自动拼成 `?data=..&theme=..&t=..&clean=1`）：
+验非默认皮肤或自己的剧本，加 `--theme` / `--data`（剧本路径相对风格包目录）。抽帧和导出会自动带 `clean=1&chrome=0`（隐藏控制栏、切换器和顶部英文句型页签），**这两个参数只给工具用，不要放进给别人的预览链接**；缺素材时直接 `STATUS FAIL missing-media`，控制台 warn 也会打印出来：
 
 ```bash
 python core/tools/inspect_frames.py --template 01_industrial_3d --data demo_variants.json --theme obsidian --times 3,9.5 --out scratch_verify/my_ep
@@ -268,8 +296,8 @@ python core/tools/inspect_frames.py --template 01_industrial_3d --data demo_vari
 依赖：`pip install playwright`（本机装了 Edge / Chrome 就直接用，否则再 `playwright install chromium`）+ PATH 里有 [FFmpeg](https://ffmpeg.org/download.html)。
 
 ```bash
-# 单模板默认展厅（时长自动读取剧本总长）
-python core/tools/export_mp4.py --template 01_industrial_3d --theme obsidian --out output/demo_obsidian.mp4
+# 单模板默认展厅（demo 没有人声，v3.4 起必须给一条音轨，例如背景乐）
+python core/tools/export_mp4.py --template 01_industrial_3d --theme obsidian --bgm my_music.mp3 --out output/demo_obsidian.mp4
 
 # 自己的剧本 + 人声音轨（剧本里写了 meta.audio 时可省略 --audio）
 python core/tools/export_mp4.py --template 05_pro_nle --data my_script.json --theme color_grade --audio my_voice.wav --out output/my_ep.mp4
@@ -280,13 +308,15 @@ python core/tools/export_mp4.py --template 08_song_ink --data my_script.json --r
 
 | 参数 | 说明 |
 |---|---|
-| `--template` / `--file` / `--url-path` / `--data` / `--theme` | 与 `inspect_frames.py` 相同的页面入口，自动带 `clean=1`（不出现控制栏和切换器） |
+| `--template` / `--file` / `--url-path` / `--data` / `--theme` | 与 `inspect_frames.py` 相同的页面入口，自动带 `clean=1&chrome=0`（不出现控制栏、切换器和顶部英文句型页签） |
 | `--res 1080p\|4k` · `--fps 30` | 输出 1920×1080 或 3840×2160，H.264 High · yuv420p · BT.709 |
 | `--start` / `--duration` | 只导出一段（冒烟测试很好用）；不填时长则读页面 `__MH_ENGINE__.duration` |
 | `--workers 4` · `--crf` · `--preset` | 多进程分块并行；CRF 默认 1080p = 18、4K = 16 |
 | `--audio` · `--bgm` · `--bgm-vol 0.10` | 外部人声 / 母带精准混流（默认用剧本 `meta.audio`），可选循环背景乐；AAC 48 kHz 320 kbps |
 
-**预期耗时**：本地无头逐帧渲染，1080p 约为实时时长的 3–10×（取决于机器与素材），4K 更久。启动时会先打印总帧数、workers 数与预估分钟数，之后每 5s 输出进度与 ETA。建议先加 `--duration 3` 冒烟确认画面和声音，再导全片。
+**预期耗时**：快慢主要看人像视频的关键帧间隔——人像是 `rough_cut.py` 出的全帧内 1080p 约 1–1.5× 实时；手机 / 相机原片直接当人像约 4–6×；4K 原片当人像 5–8×；`--res 4k` 再乘约 2.5。启动时会先打印片长、帧数和预计分钟数，不带 `--yes` 时等 5 秒（可 Ctrl+C 取消），之后每 5s 输出进度与 ETA。
+
+**缺素材直接失败（v3.4）**：`--audio` 指向的文件不存在、剧本声明的人像 / 人声 / 底图不存在、有人声却没有人像视频、整片没有任何音轨、页面加载时任一请求 404 → `STATUS FAIL missing-media`，退出码 1，不产出 mp4。没有静音兜底开关。
 
 原理：每帧 `seek(t)` → 等人像视频解码就绪 → 等 2 帧 `requestAnimationFrame` 落帧 → PNG 截图直接管道喂给 FFmpeg（不落盘），最后无损拼接分块并混流音频。结尾输出 `ZERO_ERRORS` 表示全程无页面报错。
 
@@ -320,11 +350,12 @@ Mushanhe_Video_Engine/
 │   ├── avatar-morph-fx.js     # 点阵粒子散聚转场
 │   ├── subtitle.js            # 词级逐字高亮字幕
 │   ├── timeline.js            # 词级时间轴
-│   ├── script-sync.js         # 真实词级字幕 / 人声主时钟 / 按时换肤 · 右上角 01–12 风格切换器
+│   ├── script-sync.js         # 真实词级字幕 / 人声主时钟 / 按时换肤 / 媒体路径按剧本解析 / cue / 剪点推近 · 右上角 01–12 风格切换器
+│   ├── talk.js                # 内核句型 talk：全屏真人 + 按词弹关键词（v3.4）
 │   ├── engine.css             # 1920×1080 画幅、图层、HUD
 │   ├── …                      # 3D 模块、画廊背景、前景特效、活体光标、拟音等扩展模块
 │   ├── vendor/                # 第三方库：GSAP、CustomEase、three.js
-│   └── tools/                 # serve.py 预览服务 · inspect_frames.py 抽帧验货 · smoke_test.py 12 套冒烟回归 · align.py 口播对齐 · export_mp4.py 一键导出 MP4 · check_update.py 更新检查
+│   └── tools/                 # serve.py 预览服务 · inspect_frames.py 抽帧验货 · smoke_test.py 12 套冒烟回归 · rough_cut.py 原片粗剪 · align.py 口播对齐 · export_mp4.py 一键导出 MP4 · check_update.py 更新检查
 └── templates/
     ├── 01_industrial_3d/      # 旗舰包 #1 · 3D 工业实体画廊
     ├── 02_swiss_print/        # 旗舰包 #2 · 瑞士印刷拼贴
@@ -371,6 +402,8 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 - [ ] **更多变体与垂类组件**：其余风格包的 `variant` 布局变体 + 垂类组件（财经 / 编程 / 读书）
 - [x] **v3.3**：`align.py` 口播对齐（faster-whisper，模式 A 独立输出 / 模式 B 回填剧本，同源 words + sub，文稿保守纠错，可选 `--refine` stable-ts 强制对齐）
 - [x] **v3.3.1**：fix：长稿分段对齐（>2000 字不再整片失败）、失败显式报错（`STATUS OK / PARTIAL / FAIL`）、更新检查复用本地结果、升级说明补旧目录清理
+- [x] **v3.4**：`rough_cut.py` 原片粗剪 · 内核句型 `talk` · 词级 `cue` · 段边界必须落在句末（否则 FAIL）· 缺素材导出直接 FAIL · 静音幻听过滤 · 媒体路径按剧本解析 · 人像 `focus` / 剪点推近 · 导出隐藏英文页签 · SKILL 必停点
+- [ ] 其余 11 套图表句型接 `cue`；`meta.transition` 铺到 12 套
 - [ ] BGM 自动闪避（人声段自动压低背景乐）
 - [ ] 剧本可视化编辑器
 

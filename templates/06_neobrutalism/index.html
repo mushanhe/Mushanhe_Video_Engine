@@ -48,7 +48,8 @@
     .nb-tab .fl { position: absolute; left: 0; bottom: 0; height: 5px; width: 0; background: var(--nb-ink); }
 
     /* 稳态粗黑画框人像 + 剪影占位 */
-    #avatar-stage { border-radius: 0 !important; border: 4px solid var(--nb-ink) !important; box-shadow: 12px 12px 0 var(--nb-ink) !important; }
+    html:not([data-mh-pip="circle"]) #avatar-stage { border-radius: 0 !important; }
+    #avatar-stage { border: 4px solid var(--nb-ink) !important; box-shadow: 12px 12px 0 var(--nb-ink) !important; }
     #avatar-stage.is-full { border: 0 solid transparent !important; box-shadow: none !important; }
     #avatar-silhouette { position: absolute; left: 50%; bottom: 0; height: 82%; transform: translateX(-50%); z-index: 2; pointer-events: none; }
     #avatar-tag { background: var(--nb-yellow) !important; color: var(--nb-ink) !important; border: 3px solid var(--nb-ink) !important; box-shadow: 4px 4px 0 var(--nb-ink) !important; border-radius: 0 !important; font-family: var(--nb-font-mono) !important; font-weight: 900 !important; font-size: 14px !important; letter-spacing: 0.1em !important; padding: 7px 14px !important; transform: rotate(-3deg); }
@@ -64,6 +65,24 @@
     #subtitle-bar .w { color: #FFFFFF; text-shadow: none; }
     #subtitle-bar .w.passed { color: #FFFFFF !important; text-shadow: none !important; }
     #subtitle-bar .w.active { color: #FFE500 !important; text-shadow: none !important; }
+
+    /* v3.4.1 · 全屏背景样片：meta.avatar.fullLook = "vignette"（A 暗角 + 外圈虚化）| "frame"（B 06 画框 + 轻暗角） */
+    #avatar-stage .mh-look { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+    #avatar-stage:not(.is-full) .mh-look { display: none; }
+    /* v3.4.1 · fullFrame "inset"：画框模式下暗角跟着人像框的实际尺寸淡入淡出（不靠 is-full 开关），各形态统一 10px 硬投影，换形态不跳 */
+    html[data-mh-full="frame"] #avatar-stage .mh-look { display: block; }
+    html[data-mh-full="frame"] #avatar-stage { box-shadow: 10px 10px 0 var(--nb-ink) !important; }
+    html[data-mh-full="vignette"] .mh-look-blur { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 29.17%, transparent 70.83%, #000 100%); mask-image: linear-gradient(90deg, #000 0%, transparent 29.17%, transparent 70.83%, #000 100%); }
+    html[data-mh-full="vignette"] .mh-look-dark { background:
+      linear-gradient(90deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 29.17%, rgba(0,0,0,0) 70.83%, rgba(0,0,0,.45) 100%),
+      linear-gradient(180deg, rgba(0,0,0,.22) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 82%, rgba(0,0,0,.22) 100%); }
+    html[data-mh-full="frame"] .mh-look-dark { background:
+      linear-gradient(90deg, rgba(0,0,0,.25) 0%, rgba(0,0,0,0) 29.17%, rgba(0,0,0,0) 70.83%, rgba(0,0,0,.25) 100%),
+      linear-gradient(180deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 82%, rgba(0,0,0,.12) 100%); }
+    html[data-mh-layout="fill"] #avatar-tag { font-size: 32px !important; padding: 9px 18px !important; left: 18px !important; bottom: 16px !important; }
+    html[data-mh-layout="fill"] #avatar-tag i { width: 16px; height: 16px; }
+    html[data-mh-full="frame"] #avatar-stage.is-full { border: 4px solid var(--nb-ink) !important; box-shadow: 10px 10px 0 var(--nb-ink) !important; }
 
     #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; background: var(--nb-coral); color: #fff; border: 4px solid var(--nb-ink); font-size: 28px; font-weight: 900; display: none; }
   </style>
@@ -111,6 +130,8 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="../../core/script-sync.js"></script>
+  <script src="../../core/talk.js"></script>
+  <script src="../../core/focus.js"></script>
   <script src="components.js"></script>
   <script src="themes.js"></script>
   <script>
@@ -156,6 +177,7 @@
       try {
         const src = params.get('data') || 'demo_data.json';
         script = await (await fetch(src, { cache: 'no-store' })).json();
+        MHEngine.ScriptSync.resolveMedia(script, src); // v3.4：媒体路径以剧本文件为基准
       } catch (e) {
         const el = document.getElementById('load-error');
         el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
@@ -171,7 +193,17 @@
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
       if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
-      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      // v3.4.1：名牌没填就整块不出（不再显示占位英文 YOUR NAME）
+      document.getElementById('avatar-tag-tx').textContent = av.tag || '';
+      if (!String(av.tag || '').trim()) document.getElementById('avatar-tag').style.display = 'none';
+      // v3.4.1 全屏背景样片（只在剧本写了才生效）
+      // meta.avatar.fullFrame = "inset"（全片全屏都缩进 06 画框）与样片字段 fullLook = "frame" 同一套
+      const LOOK = av.fullFrame === 'inset' ? 'frame' : (av.fullLook === 'vignette' || av.fullLook === 'frame' ? av.fullLook : '');
+      if (LOOK) {
+        document.documentElement.setAttribute('data-mh-full', LOOK);
+        const stg = document.getElementById('avatar-stage');
+        ['mh-look mh-look-blur', 'mh-look mh-look-dark'].forEach((c) => { const d = document.createElement('div'); d.className = c; stg.insertBefore(d, document.getElementById('avatar-tag')); });
+      }
       if (av.video) {
         const v = document.createElement('video');
         v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
@@ -180,17 +212,65 @@
       }
 
       // 组装场景
+      // v3.4.1 铺满版式：meta.layout = "fill" → 人像侧栏卡 520×700（右边距 60、上下居中）/ 圆窗直径 260（右、下边距 60），
+      //   组件区 = 屏幕 x 80→1260（侧栏卡）或 80→1500（圆窗），y 150→930，换算成组件局部坐标放进 ctx.area（不写 = 原版式，逐帧不变）
+      // v3.4.1：meta.cardDetail = "trim" → 卡片细节润色（内沿细线 / L 角标 / 聚光同色柔光 / 进度条边缘；不写 = 原样）
+      if (meta.cardDetail === 'trim') document.documentElement.setAttribute('data-mh-card', 'trim');
+      const FILL = meta.layout === 'fill';
+      if (FILL) document.documentElement.setAttribute('data-mh-layout', 'fill');
+      const AREA_X = { card: [80, 1260], pip: [80, 1500], corner: [80, 1360] };
+      const areaFor = (sc) => {
+        if (!FILL) return null;
+        const modes = [sc.avatar || 'card', ...((sc.avatarCues || []).map((c) => c && c[1]))].filter((m) => m && m !== 'full');
+        const m = modes[modes.length - 1];
+        if (!AREA_X[m]) return null;
+        const lx = (sx) => 700 - CAM_DX + (sx - SX) / CAM_ZOOM, ly = (sy) => 500 + (sy - SY) / CAM_ZOOM;
+        return { x0: lx(AREA_X[m][0]), x1: lx(AREA_X[m][1]), y0: ly(150), y1: ly(930), k: 1 / CAM_ZOOM, mode: m };
+      };
       const world = document.getElementById('nb-world');
+      // v3.4.1：每段被下一次色块横扫盖住的局部秒（与下面 WIPE 同一公式）→ ctx.coverAt，屏幕层牌子必须在它之前退完（牌子在色块上层）
+      const coverAtOf = (() => {
+        const SS = script.scenes || [], out = [];
+        let a0 = 0;
+        const wd = (s) => (Array.isArray(s.words) ? s.words : []).filter((w) => Array.isArray(w) && w.length >= 3);
+        SS.forEach((sc, i) => {
+          const du = sc.dur || 6, nx = SS[i + 1], b = a0 + du;
+          let c = null;
+          if (nx) {
+            const tk = (nx.transition === 'cut' || nx.transition === 'wipe') ? nx.transition : (meta.transition === 'cut' ? (nx.chapter ? 'wipe' : 'cut') : 'wipe');
+            if (tk === 'wipe') {
+              const pw = wd(sc), nw = wd(nx);
+              let LD = 0.36;
+              if (pw.length && nw.length) {
+                const pe = Math.max(...pw.map((w) => +w[2])), hold = sc.hold != null && Number.isFinite(+sc.hold) ? +sc.hold : 0.25, minLd = sc.hold != null ? 0.1 : 0.16;
+                LD = Math.max(minLd, Math.min(0.36, b - (pe + hold)));
+              }
+              c = du - LD;
+            }
+          }
+          out.push(c); a0 = b;
+        });
+        return out;
+      })();
       const scenes = []; let acc = 0, zoneX = 0;
       (script.scenes || []).forEach((sc, i) => {
-        const factory = NeoBrutalism.COMPONENTS[sc.type];
+        const factory = NeoBrutalism.COMPONENTS[sc.type] || MHEngine.ScriptSync.coreComponent(sc.type);
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
-        const comp = factory.create(sc.data || {}, { dur });
+        const ctx = MHEngine.ScriptSync.sceneCtx(sc, acc, dur);
+        ctx.area = areaFor(sc);
+        ctx.coverAt = coverAtOf[i];
+        const comp = factory.create(sc.data || {}, ctx);
+        // v3.4.1 牌子层：图表句型的 data.badges（关键词牌 / 多色大字 / 印章 / 贴纸 / 标签）叠在屏幕层，分句念完就退场
+        let badges = null;
+        if (!comp.handlesBadges && MHEngine.Badges && sc.data && Array.isArray(sc.data.badges) && sc.data.badges.length) {
+          badges = MHEngine.Badges.create(sc.data.badges, ctx);
+          badges.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(badges.el);
+        }
         const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1400) + ZONE_GAP;
         if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
         else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
-        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, badges, zx, zy, avatar: sc.avatar || comp.avatar });
         acc += dur;
       });
       const DURATION = acc;
@@ -211,23 +291,44 @@
       camRig.setKeyframes(kfs);
 
       // 人像形态：card / pip / corner / full（4 种形态全部支持 core 点阵粒子散聚转场！）
-      const avatar = new MHEngine.AvatarController({
+      const avatar = new MHEngine.AvatarController(Object.assign({
         card:   { left: 1328, top: 82,  width: 540, height: 790, borderRadius: 0,   borderWidth: 4, tagOpacity: 1 },
         pip:    { left: 1532, top: 642, width: 320, height: 320, borderRadius: 160, borderWidth: 4, tagOpacity: 0 },
         corner: { left: 1410, top: 530, width: 458, height: 342, borderRadius: 0,   borderWidth: 4, tagOpacity: 1 }
-      });
+      }, FILL ? {
+        card:   { left: 1340, top: 190, width: 520, height: 700, borderRadius: 0,   borderWidth: 4, tagOpacity: 1 },
+        pip:    { left: 1600, top: 760, width: 260, height: 260, borderRadius: 130, borderWidth: 4, tagOpacity: 0 }
+      } : {}, LOOK === 'frame' ? {
+        fullscreen: { left: 48, top: 48, width: 1824, height: 984, borderRadius: 0, borderWidth: 4, tagOpacity: 0 }
+      } : {}));
       const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
+      // v3.4.1：meta.avatar.morph = 换形态粒子转场时长（秒，默认 0.5 = 原样）；其余时刻点按比例缩放
+      const MD = Number.isFinite(+av.morph) && +av.morph > 0.1 ? +av.morph : 0.5, MK = MD / 0.5;
+      // v3.4.1：meta.avatar.morphStyle = "snap" → 利落版散聚（人像网点缩散 / 长回、粒子先快后慢；不写 = 原样逐帧不变）
+      const SNAP = av.morphStyle === 'snap', SWAP = SNAP ? MD * MHEngine.AvatarMorphFX.SNAP_SWAP : 0;
       const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
       const tl = gsap.timeline({ paused: true });
       const AVSEG = MHEngine.ScriptSync.avatarSegments(scenes); // 无 avatarCues 时与 scenes 一一对应
+      // v3.4 转场（U3 待定，两种都可选）：meta.transition = "wipe"（默认：四色色块横扫 + 人像粒子散聚）| "cut"（换段直接切，
+      //       只有标了 "chapter": true 的段保留色块）；单段 "transition": "wipe" | "cut" 可覆盖。不写 = 原样（逐帧不变）
+      const TRANS = meta.transition === 'cut' ? 'cut' : 'wipe';
+      const CHROME_OFF = document.documentElement.classList.contains('mh-chrome-off');
+      const kindAt = (sc) => (sc.transition === 'cut' || sc.transition === 'wipe') ? sc.transition : (TRANS === 'cut' && sc.chapter ? 'wipe' : TRANS);
       avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
       AVSEG.forEach((s, i) => {
         if (i === 0) return;
         const prev = mapAv(AVSEG[i - 1].avatar);
         const cur = mapAv(s.avatar);
+        s.cut = (s.scene !== AVSEG[i - 1].scene ? kindAt(s.scene) : TRANS) === 'cut';
         if (prev !== cur) {
-          avatarMorph.addMorph({ time: s.start + 0.02, duration: 0.5, fromMode: prev, toMode: cur, count: 1000, seed: 60600 + i });
-          avatar.animateOnTimeline(tl, cur, s.start + 0.06, 0.48);
+          if (s.cut) { avatar.animateOnTimeline(tl, cur, s.start, 0.001); return; }   // 硬切：人像在段首这一帧直接换形态
+          if (SNAP) {   // 利落版：从 cue 那一刻起散；人像全散开的中点一次性换形态（看不见时换，不出现拉伸中的框）
+            avatarMorph.addMorph({ time: s.start, duration: MD, fromMode: prev, toMode: cur, count: 1000, seed: 60600 + i, snap: true });
+            avatar.animateOnTimeline(tl, cur, s.start + SWAP, 0.001, 0.001);
+            return;
+          }
+          avatarMorph.addMorph({ time: s.start + 0.02 * MK, duration: MD, fromMode: prev, toMode: cur, count: 1000, seed: 60600 + i });
+          avatar.animateOnTimeline(tl, cur, s.start + 0.06 * MK, 0.48 * MK);
         }
       });
       tl.to({}, { duration: 0.05 }, DURATION);
@@ -254,6 +355,19 @@
       const clamp01 = (x) => Math.max(0, Math.min(1, x));
       const easeOut = (x) => 1 - Math.pow(1 - x, 3), easeIn = (x) => x * x * x;
 
+      // v3.4.1：有词级时间时，色块横扫让开口播 —— 盖上不早于上一句最后一个字念完 0.25s，掀开不晚于下一句第一个字；
+      //         没有 words 时与原来逐帧一致（盖 0.36s / 掀 0.44s）
+      const wordsOf = (s) => (Array.isArray(s.words) ? s.words : []).filter((w) => Array.isArray(w) && w.length >= 3);
+      const WIPE = scenes.map((s, i) => {
+        if (!i) return null;
+        const pw = wordsOf(scenes[i - 1]), nw = wordsOf(s);
+        if (!pw.length || !nw.length) return [0.36, 0.44];
+        const pe = Math.max(...pw.map((w) => +w[2])), ns = Math.min(...nw.map((w) => +w[1]));
+        // 上一段写了 hold（秒）：它的内容要在最后一个字后完整挂满 hold 秒 → 色块可以盖得更快（最短 0.1s）
+        const prev = scenes[i - 1], hold = Number.isFinite(+prev.hold) && prev.hold != null ? +prev.hold : 0.25, minLd = prev.hold != null ? 0.1 : 0.16;
+        return [Math.max(minLd, Math.min(0.36, s.start - (pe + hold))), Math.max(0.2, Math.min(0.44, ns - s.start))];
+      });
+
       function updateUI(t) {
         MHEngine.ScriptSync.renderCues(script, t);
         tl.time(Math.min(t, DURATION));
@@ -269,6 +383,7 @@
         scenes.forEach((s, i) => {
           if (Math.abs(i - cur) <= 1) s.comp.update(t - s.start);
           if (s.comp.layer === 'screen') s.comp.el.style.display = i === cur ? 'block' : 'none';
+          if (s.badges) { s.badges.el.style.display = i === cur ? 'block' : 'none'; if (i === cur) s.badges.update(t - s.start); }
           s.tab.classList.toggle('on', i === cur);
           s.tab.classList.toggle('done', i < cur);
           s.tab.querySelector('.fl').style.width = `${(clamp01((t - s.start) / s.dur) * 100).toFixed(1)}%`;
@@ -276,28 +391,39 @@
         const S = scenes[cur];
         const AS = MHEngine.ScriptSync.avatarAt(AVSEG, t, S);
         const isFull = AS.avatar === 'full';
-        stageEl.classList.toggle('is-full', isFull && t >= AS.start + 0.2);
-        camViewport.style.opacity = isFull && t >= AS.start + 0.15 && t < AS.start + AS.dur ? '0' : '1';
+        stageEl.classList.toggle('is-full', isFull && t >= AS.start + (AS.cut ? 0 : (SNAP ? SWAP : 0.2 * MK)));
+        camViewport.style.opacity = isFull && t >= AS.start + (AS.cut ? 0 : (SNAP ? SWAP : 0.15 * MK)) && t < AS.start + AS.dur ? '0' : '1';
+        if (LOOK === 'frame') {   // 暗角按人像框当前宽度渐变：全屏（1824）满、侧栏卡 / 圆窗（≤520）无
+          const sw = parseFloat(stageEl.style.width) || 0, va = Math.max(0, Math.min(1, (sw - 600) / (1824 - 600)));
+          stageEl.querySelectorAll('.mh-look').forEach((e) => { e.style.opacity = va.toFixed(3); });
+        }
 
         // 四色色块横扫：依次盖上（黄色在最上层带段号）→ 反序抽离
         let shown = false;
         for (let i = 1; i < scenes.length; i++) {
           const b = scenes[i].start;
-          if (t >= b - 0.36 && t < b + 0.44) {
+          if (kindAt(scenes[i]) === 'cut') continue;
+          const [LD, TL] = WIPE[i], sa = LD / 0.36, sb = TL / 0.44;
+          if (t >= b - LD && t < b + TL) {
             slabs.forEach((sl, k) => {
               let x;
-              if (t < b) x = 1960 * (1 - easeOut(clamp01((t - (b - 0.36) - k * 0.04) / 0.2)));
-              else x = -2100 * easeIn(clamp01((t - b - (3 - k) * 0.05) / 0.26));
+              if (t < b) x = 1960 * (1 - easeOut(clamp01((t - (b - LD) - k * 0.04 * sa) / (0.2 * sa))));
+              else x = -2100 * easeIn(clamp01((t - b - (3 - k) * 0.05 * sb) / (0.26 * sb)));
               sl.style.transform = `translateX(${x.toFixed(1)}px) skewX(-6deg)`;
             });
-            slabs[3].querySelector('.no').textContent = String(i + 1).padStart(2, '0');
-            slabs[3].querySelector('.lb').textContent = scenes[i].label || scenes[i].type;
+            const noEl = slabs[3].querySelector('.no');
+            noEl.textContent = String(i + 1).padStart(2, '0');
+            noEl.style.display = CHROME_OFF && !scenes[i].label ? 'none' : '';   // 导出时没写 label 的段不出段号
+            // v3.4：导出 / 抽帧（?chrome=0）时没写 label 就不显示英文句型名（预览页照旧显示，便于对照）
+            const lbTx = scenes[i].label || (CHROME_OFF ? '' : scenes[i].type), lbEl = slabs[3].querySelector('.lb');
+            lbEl.textContent = lbTx; lbEl.style.display = lbTx ? '' : 'none';
             wipe.style.display = 'block'; shown = true; break;
           }
         }
         if (!shown) wipe.style.display = 'none';
 
         stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        if (SNAP) MHEngine.AvatarMorphFX.applyHalftone(stageEl, avatarMorph.halftone);
         document.getElementById('scrubber').value = t.toFixed(2);
         document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
       }
@@ -305,7 +431,7 @@
       // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
       let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
       const vid = document.getElementById('avatar-video');
-      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid }); // meta.avatar.offset + meta.audio
+      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid, scenes }); // meta.avatar.offset + meta.audio
       function seek(t) {
         cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
         scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });

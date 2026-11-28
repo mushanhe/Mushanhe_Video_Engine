@@ -73,6 +73,55 @@
     #subtitle-bar .w.active { color: #FFE14D !important; text-shadow: none !important; }
 
     #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; font-size: 28px; font-weight: 900; color: var(--vx-red); display: none; }
+
+    /* v3.5 · 跟词组件（core/cue-kit.js）的 03 造型：案桌上的真实纸件——米白文档纸 / 深墨卡 / 荧光黄便签 / 马尼拉牛皮纸轮换，
+       1.5px 牛皮纸细边 + 4px 小圆角 + 暖棕纸张投影 + 索引卡蓝格线，随手摆放的轻微歪斜；聚光 = 红笔圈、印章 = 红色橡皮章、
+       贴纸 = 黄便签、胶带 = 牛皮纸胶带、铭牌底板 = 软木板 + 黄铜图钉（只在剧本写了新字段时出现） */
+    :root {
+      --mk-ink: var(--vx-ink); --mk-paper: var(--vx-paper); --mk-panel: var(--vx-paper); --mk-muted: #E6DECD; --mk-muted-ink: var(--vx-muted);
+      --mk-c1: var(--vx-paper); --mk-on1: var(--vx-ink); --mk-c2: var(--vx-ink); --mk-on2: #FCF9F2;
+      --mk-c3: var(--vx-yellow); --mk-on3: #231C15; --mk-c4: #E2C487; --mk-on4: #231C15;
+      --mk-accent: var(--vx-red); --mk-dark: var(--vx-ink); --mk-on-dark: #FFE499;
+      --mk-bw: 1.5px; --mk-rad: 4px; --mk-tilt: 0.8;
+      --mk-sh: var(--vx-shadow); --mk-sh-lg: var(--vx-shadow-lg); --mk-sh-sm: 0 2px 3px rgba(46,30,12,.14), 0 10px 18px -8px rgba(46,30,12,.32);
+      --mk-font: var(--vx-font-cn); --mk-font-num: var(--vx-font-num);
+      --mk-tex: repeating-linear-gradient(180deg, transparent 0 35px, rgba(70,120,200,.09) 35px 37px);
+      --mk-board: #C49A63; --mk-board-tex: radial-gradient(rgba(92,58,22,.28) 1.6px, transparent 2.2px), radial-gradient(rgba(255,236,200,.22) 1.2px, transparent 1.8px);
+      --mk-tape: rgba(222,198,148,.82);
+      --mk-trim: rgba(120,92,58,.28); --mk-trim-c: var(--vx-red);
+      /* 全屏画框：宝丽来米白相框（12px 米白边 + 牛皮细线 + 暖棕落地投影），画框外 48px 露出切割垫方格桌面 */
+      --mh-frame-bw: 12px; --mh-frame-color: #FCF9F2; --mh-frame-radius: 4; --mh-frame-vig: .2;
+      --mh-frame-shadow: 0 0 0 1.5px rgba(120,92,58,.30), 0 30px 64px rgba(42,28,14,.34), 0 8px 18px rgba(42,28,14,.16);
+    }
+    html[data-mh-full="frame"] #viewport {
+      background-image: linear-gradient(rgba(96,68,38,0.075) 1px, transparent 1px), linear-gradient(90deg, rgba(96,68,38,0.075) 1px, transparent 1px),
+        linear-gradient(rgba(96,68,38,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(96,68,38,0.035) 1px, transparent 1px);
+      background-size: 240px 240px, 240px 240px, 48px 48px, 48px 48px;
+    }
+    .mk-box { border-color: rgba(120,92,58,.26); }
+    .mk-zone .mh-focus-ring { inset: -16px; border: 5px solid var(--vx-red); border-radius: 14px 22px 12px 20px; box-shadow: none; opacity: .92; }
+    html[data-mh-card="trim"] .mk-zone .mh-focus-ring:not(.row) { box-shadow: 0 0 30px 6px color-mix(in srgb, var(--mk-glow, var(--vx-yellow)) 45%, transparent); }
+    .mk-stamp { background: rgba(252,249,242,.9); color: var(--vx-red); border: 5px solid var(--vx-red); outline: none; border-radius: 8px; box-shadow: none; letter-spacing: .04em;
+      -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.1 1.85'/></filter><rect width='200' height='200' filter='url(%23g)'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.1 1.85'/></filter><rect width='200' height='200' filter='url(%23g)'/></svg>"); }
+    .mk-stamp::after { content: ''; position: absolute; inset: 4px; border: 1.5px solid var(--vx-red); border-radius: 4px; opacity: .7; }
+    .mk-sticker { background: linear-gradient(180deg, #FFF6B8 0%, #FCEA88 100%); color: var(--vx-ink); border: 1px solid rgba(180,136,36,.32); border-radius: 3px 3px 16px 3px;
+      box-shadow: 0 16px 28px -10px rgba(58,40,14,.38), 0 3px 8px rgba(58,40,14,.14); }
+    .mk-tape { border: 0; opacity: 1; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,.12) 0 6px, transparent 6px 14px); box-shadow: 0 1px 2px rgba(60,40,20,.16);
+      clip-path: polygon(0 10%,3% 0,7% 12%,11% 0,89% 0,93% 12%,97% 0,100% 10%,100% 90%,97% 100%,93% 88%,89% 100%,11% 100%,7% 88%,3% 100%,0 90%); }
+    .mk-cmp .rw i, .mk-cmp .badge, .mk-ticket .pgb, .mk-cstat .pg, .mk-cmp .sw, .mk-cmp .btn, .mk-cmp .tlx { border-width: 1.5px; border-color: rgba(35,28,21,.45); }
+    .mk-cmp .rw i { border-radius: 50%; background: radial-gradient(circle at 32% 32%, #FF8A9E 0%, #E02848 58%, #7A0C20 100%); border: 0; box-shadow: 0 3px 5px rgba(42,24,8,.35); }
+    .mk-cmp.wrong { filter: saturate(.75); }
+    .mk-cv-block { background-image: linear-gradient(90deg, transparent 22px, rgba(217,43,75,.38) 22px 23.5px, transparent 23.5px 28px, rgba(217,43,75,.38) 28px 29.5px, transparent 29.5px), repeating-linear-gradient(180deg, transparent 0 46px, rgba(70,120,200,.10) 46px 48px); background-size: auto; }
+    .mk-cv-dots { background-image: radial-gradient(rgba(120,82,30,.22) 2px, transparent 2.5px); }
+    .mk-cv-ring { box-shadow: var(--vx-shadow); }
+    .mk-cv-wave path { stroke: var(--vx-red); }
+    .mk-cv-chip { border-color: rgba(120,92,58,.26); }
+    .mk-banner { border-left: 10px solid var(--vx-yellow); color: #FCF9F2; }
+    .mk-banner .ar { color: var(--vx-yellow); }
+    .mk-cstat .lb { color: #FFE499; }
+    .mk-screw { background: radial-gradient(circle at 32% 32%, #FFE8A3 0%, #D49B38 55%, #7D5212 100%); border: 0; box-shadow: 0 4px 6px rgba(42,24,8,.42), inset 0 1px 2px rgba(255,255,255,.8); }
+    .mk-screw::after { display: none; }
+    .mk-ripple { border-color: var(--vx-red); }
   </style>
 </head>
 <body>
@@ -113,6 +162,10 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="../../core/script-sync.js"></script>
+  <script src="../../core/talk.js"></script>
+  <script src="../../core/focus.js"></script>
+  <script src="../../core/cue-kit.js"></script>
+  <script src="../../core/host-kit.js"></script>
   <script src="components.js"></script>
   <script src="themes.js"></script>
   <script>
@@ -132,6 +185,15 @@
     // 转场飞行窗口：边界前 FLY_A 秒起飞，边界后 FLY_B 秒落定；途中拉远 + 抬高俯角
     const FLY_A = 0.45, FLY_B = 0.55, FLY_DIP = 0.46, FLY_TILT = 9;
     const params = new URLSearchParams(location.search);
+    // v3.5：牌子层 03 造型（印章 = 红色橡皮章（带纸底，压在视频上也看得清）、贴纸 = 黄便签、标签 = 深墨纸条 + 荧光黄竖条、长标签 = 米白文档纸条、多色大字 = 红 / 墨 + 纸白描边）
+    MHEngine.Badges.registerKinds('03', {
+      stamp: `padding:8px 26px 10px;background:rgba(252,249,242,.92);color:var(--vx-red);border:6px solid var(--vx-red);border-radius:8px;box-shadow:inset 0 0 0 4px rgba(252,249,242,.92),inset 0 0 0 6px var(--vx-red);-webkit-mask-image:url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.1 1.85'/></filter><rect width='200' height='200' filter='url(%23g)'/></svg>\");mask-image:url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.1 1.85'/></filter><rect width='200' height='200' filter='url(%23g)'/></svg>\");font-family:var(--vx-font-cn);font-weight:900;letter-spacing:.04em;`,
+      sticker: 'padding:12px 28px 16px;background:linear-gradient(180deg,#FFF6B8 0%,#FCEA88 100%);color:var(--vx-ink);border:1px solid rgba(180,136,36,.32);border-radius:3px 3px 18px 3px;box-shadow:0 22px 38px -10px rgba(58,40,14,.38),0 3px 8px rgba(58,40,14,.14);font-family:var(--vx-font-cn);font-weight:900;',
+      tag: 'padding:12px 30px 14px 24px;background:var(--vx-ink);color:#FCF9F2;border-left:10px solid var(--vx-yellow);border-radius:4px;box-shadow:0 2px 3px rgba(35,28,21,.2),0 14px 28px -8px rgba(35,28,21,.45);font-family:var(--vx-font-cn);font-weight:900;',
+      label: 'padding:14px 34px 16px;background:var(--vx-paper);color:var(--vx-ink);border:1.5px solid rgba(120,92,58,.22);border-radius:4px;box-shadow:var(--vx-shadow-lg);font-family:var(--vx-font-cn);font-weight:900;',
+      big: { pal: ['var(--vx-red)', 'var(--vx-ink)'], ink: '#FCF9F2', shadow: '0 8px 18px rgba(46,30,12,.35)' },
+      rot: { stamp: -7, sticker: 3, tag: -1, label: -1.2, big: -2 }
+    });
 
     /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
     function buildWordData(scenes) {
@@ -161,6 +223,7 @@
       try {
         const src = params.get('data') || 'demo_data.json';
         script = await (await fetch(src, { cache: 'no-store' })).json();
+        MHEngine.ScriptSync.resolveMedia(script, src); // v3.4：媒体路径以剧本文件为基准
       } catch (e) {
         const el = document.getElementById('load-error');
         el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
@@ -176,11 +239,14 @@
       InvestigativeDesk.injectCSS();
       // 换肤：URL ?theme= ＞ 剧本 theme.preset ＞ linen（linen = 不覆盖，无参数访问与原版逐像素一致）
       if (window.InvestigativeDeskThemes) InvestigativeDeskThemes.init(script);
+      const HK = MHEngine.HostKit.init(script, document.getElementById('avatar-stage'));   // v3.5：铺满版式 / 画框 / 利落散聚 / 牌子层（剧本写了才开）
+      if (HK.CHROME_OFF) { const silTx = document.querySelector('#avatar-silhouette text'); if (silTx) silTx.textContent = '人像占位'; }   // v3.5：导出时占位剪影不出英文
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
       if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
-      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      document.getElementById('avatar-tag-tx').textContent = av.tag || (av.video ? '' : 'YOUR NAME');
+      if (av.video && !String(av.tag || '').trim()) document.getElementById('avatar-tag').style.display = 'none';   // v3.5：真人素材没填名牌 → 整块不出（占位剪影仍配占位名）
       if (av.video) {
         const v = document.createElement('video');
         v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
@@ -191,16 +257,20 @@
       // 组装场景（锯齿排布在大桌面上）
       const world = document.getElementById('desk-world');
       const scenes = []; let acc = 0, zoneX = 220;
-      (script.scenes || []).forEach((sc) => {
-        const factory = InvestigativeDesk.COMPONENTS[sc.type];
+      const COVER_AT = HK.coverAt(script.scenes, FLY_A);   // 桌面穿梭在段边界前 FLY_A 秒起飞（牌子在起飞前退完）
+      (script.scenes || []).forEach((sc, i) => {
+        const factory = InvestigativeDesk.COMPONENTS[sc.type] || MHEngine.ScriptSync.coreComponent(sc.type);
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
-        const comp = factory.create(sc.data || {}, { dur });
+        const ctx = MHEngine.ScriptSync.sceneCtx(sc, acc, dur);
+        ctx.area = HK.area(sc, { CAM_DX, CAM_ZOOM, SX, SY }); ctx.coverAt = COVER_AT[i];
+        const comp = MHEngine.CueKit.create(sc.type, sc.data, ctx) || factory.create(sc.data || {}, ctx);
+        const badges = HK.badges(sc, comp, ctx, document.getElementById('screen-layer'));
         const k = scenes.length;
         const zx = zoneX, zy = ZONE_Y + (k % 2) * ZONE_DY, zw = comp.w || 1400; zoneX += zw + ZONE_GAP;
         if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
         else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
-        scenes.push({ ...sc, idx: k, start: acc, dur, comp, zx, zy, zw, avatar: sc.avatar || comp.avatar });
+        scenes.push({ ...sc, idx: k, start: acc, dur, comp, badges, zx, zy, zw, avatar: sc.avatar || comp.avatar });
         acc += dur;
       });
       const DURATION = acc;
@@ -217,8 +287,14 @@
       scenes.forEach((s, i) => {
         const no = String(i + 1).padStart(2, '0');
         // 只在转场拉远俯拍时入画：证物编号贴在分区下方 / 上方的桌面空白处，常规机位下完全出画
-        deco += `<div class="desk-ex" style="left:${s.zx + 60}px;top:${s.zy + (i % 2 ? 1330 : -150)}px;"><b>EXHIBIT ${no}</b>${(s.type || '').toUpperCase()} · ${s.label || ''}</div>`;
-        deco += `<div class="desk-wm" style="left:${s.zx + 40}px;top:${s.zy + (i % 2 ? 1420 : -300)}px;font-size:96px;">CASE FILE // ${no} ${(s.type || '').toUpperCase()}</div>`;
+        // v3.5：导出时（?chrome=0）证物编号 / 暗纹水印只留数字和写了的 label，不出 EXHIBIT / CASE FILE / 英文句型名；预览页照旧
+        if (HK.CHROME_OFF) {
+          deco += `<div class="desk-ex" style="left:${s.zx + 60}px;top:${s.zy + (i % 2 ? 1330 : -150)}px;"><b>§ ${no}</b>${String(s.label || '').replace(/[&<>"]/g, '')}</div>`;
+          deco += `<div class="desk-wm" style="left:${s.zx + 40}px;top:${s.zy + (i % 2 ? 1420 : -300)}px;font-size:96px;">// ${no}</div>`;
+        } else {
+          deco += `<div class="desk-ex" style="left:${s.zx + 60}px;top:${s.zy + (i % 2 ? 1330 : -150)}px;"><b>EXHIBIT ${no}</b>${(s.type || '').toUpperCase()} · ${s.label || ''}</div>`;
+          deco += `<div class="desk-wm" style="left:${s.zx + 40}px;top:${s.zy + (i % 2 ? 1420 : -300)}px;font-size:96px;">CASE FILE // ${no} ${(s.type || '').toUpperCase()}</div>`;
+        }
         deco += `<svg style="position:absolute;left:${s.zx + s.zw - 160}px;top:${s.zy + (i % 2 ? 1180 : -330)}px;" width="230" height="230" viewBox="0 0 220 220"><circle cx="110" cy="110" r="92" fill="none" stroke="rgba(132,86,38,.14)" stroke-width="10"/><path d="M30 140 A92 92 0 0 1 60 40" fill="none" stroke="rgba(132,86,38,.2)" stroke-width="5"/></svg>`;
         anchors.push({ inX: s.zx + 20, inY: s.zy + 870, outX: s.zx + s.zw + 30, outY: s.zy + 870 });
       });
@@ -271,17 +347,17 @@
       };
 
       // 人像形态：card / pip / corner / full（4 种形态全部支持 core 点阵粒子散聚转场！）
-      const avatar = new MHEngine.AvatarController({
+      const avatar = new MHEngine.AvatarController(HK.presets({
         card:   { left: 1328, top: 82,  width: 540, height: 790, borderRadius: 6,   borderWidth: 12, tagOpacity: 1 },
         pip:    { left: 1532, top: 642, width: 320, height: 320, borderRadius: 160, borderWidth: 8,  tagOpacity: 0 },
         corner: { left: 1410, top: 530, width: 458, height: 342, borderRadius: 6,   borderWidth: 10, tagOpacity: 1 }
-      });
+      }));
       const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
       const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
       const tl = gsap.timeline({ paused: true });
       const AVSEG = MHEngine.ScriptSync.avatarSegments(scenes); // 无 avatarCues 时与 scenes 一一对应
       avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
-      AVSEG.forEach((s, i) => {
+      if (!HK.scheduleMorphs({ segs: AVSEG, avatar, morph: avatarMorph, tl, mapAv, seed: 30300 })) AVSEG.forEach((s, i) => {
         if (i === 0) return;
         const prev = mapAv(AVSEG[i - 1].avatar);
         const cur = mapAv(s.avatar);
@@ -332,10 +408,12 @@
         const S = scenes[cur];
         const AS = MHEngine.ScriptSync.avatarAt(AVSEG, t, S);
         const isFull = AS.avatar === 'full';
-        stageEl.classList.toggle('is-full', isFull && t >= AS.start + 0.2);
-        camViewport.style.opacity = isFull && t >= AS.start + 0.15 && t < AS.start + AS.dur ? '0' : '1';
+        stageEl.classList.toggle('is-full', isFull && t >= AS.start + HK.fullDelay(0.2));
+        camViewport.style.opacity = isFull && t >= AS.start + HK.fullDelay(0.15) && t < AS.start + AS.dur ? '0' : '1';
+        HK.updateBadges(scenes, cur, t);
 
         stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        HK.frame(t, stageEl, avatarMorph);
         document.getElementById('scrubber').value = t.toFixed(2);
         document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
       }
@@ -343,7 +421,7 @@
       // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
       let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
       const vid = document.getElementById('avatar-video');
-      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid }); // meta.avatar.offset + meta.audio
+      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid, scenes }); // meta.avatar.offset + meta.audio
       function seek(t) {
         cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
         scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });

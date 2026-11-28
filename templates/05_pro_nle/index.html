@@ -132,6 +132,84 @@
 
     #screen-layer { position: absolute; inset: 0; z-index: 26; pointer-events: none; }
     #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; background: #1A0A10; color: #fff; border: 2px solid var(--pn-crimson); border-radius: 10px; font-size: 26px; font-weight: 900; display: none; }
+    html.mh-chrome-off #avatar-silhouette text { display: none; }   /* v3.5：导出时剪影占位不出英文 */
+    /* v3.5：全屏画框时，监视器 / 检查器 / 时间轴三块面板让位（框外 48px 只露剪辑台底色 + 扫描线，顶栏仍在框上方） */
+    #viewport.pn-framed #pn-monitor, #viewport.pn-framed #pn-inspector, #viewport.pn-framed #pn-timeline { visibility: hidden; }
+
+    /* v3.5 · 跟词组件（core/cue-kit.js）的 05 造型：剪辑台深色面板（10px 圆角 + 1.5px 细边 + 顶部高光）+ 时间轴片段式渐变色块（青 / 紫 / 翡翠 / 琥珀）+ 等宽时间码数字；不歪（只在剧本写了新字段时出现） */
+    :root {
+      --pn-on-acc: #061014; --pn-panel-a: #171D28; --pn-panel-b: #10151E;
+      --mk-ink: var(--pn-text); --mk-paper: var(--pn-bg); --mk-panel: color-mix(in srgb, var(--pn-bg) 75%, #000); --mk-muted: color-mix(in srgb, var(--pn-crimson) 6%, var(--pn-panel-b)); --mk-muted-ink: #8391A7;
+      --mk-c1: color-mix(in srgb, var(--pn-cyan) 18%, var(--pn-panel-b)); --mk-on1: var(--pn-text);
+      --mk-c2: color-mix(in srgb, var(--pn-violet) 18%, var(--pn-panel-b)); --mk-on2: var(--pn-text);
+      --mk-c3: color-mix(in srgb, var(--pn-jade) 16%, var(--pn-panel-b)); --mk-on3: var(--pn-text);
+      --mk-c4: color-mix(in srgb, var(--pn-amber) 16%, var(--pn-panel-b)); --mk-on4: var(--pn-text);
+      --mk-accent: var(--pn-cyan); --mk-dark: color-mix(in srgb, var(--pn-bg) 70%, #000); --mk-on-dark: var(--pn-amber);
+      --mk-bw: 1.5px; --mk-rad: 10px; --mk-tilt: 0;
+      --mk-sh: 0 22px 50px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08); --mk-sh-lg: 0 28px 64px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.08); --mk-sh-sm: 0 10px 26px rgba(0,0,0,.5);
+      --mk-font: var(--pn-font-cn); --mk-font-num: var(--pn-font-mono);
+      --mk-board: linear-gradient(180deg, var(--pn-panel-a), var(--pn-panel-b)); --mk-board-tex: linear-gradient(90deg, color-mix(in srgb, var(--pn-cyan) 5%, transparent) 1px, transparent 1px); --mk-tape: color-mix(in srgb, var(--pn-amber) 30%, var(--pn-panel-b));
+      --mk-trim: rgba(255,255,255,.1); --mk-trim-c: color-mix(in srgb, var(--pn-cyan) 70%, transparent);
+      /* 全屏画框：监视器满屏预览——1.5px 冷光青边 + 深投影 + 青色外发光，12px 圆角；框外 48px 露出剪辑台底色 */
+      --mh-frame-bw: 1.5px; --mh-frame-color: color-mix(in srgb, var(--pn-cyan) 60%, transparent); --mh-frame-radius: 12; --mh-frame-vig: .3;
+      --mh-frame-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 30px 70px rgba(0,0,0,.7), 0 0 40px color-mix(in srgb, var(--pn-cyan) 22%, transparent);
+    }
+    html[data-pn-theme="light_silver"] { --pn-on-acc: #FFFFFF; --pn-panel-a: #FFFFFF; --pn-panel-b: #F3F4F6; --mk-muted-ink: #6B7280; --mk-dark: #1F2937; --mk-panel: #E5E7EB;
+      --mk-sh: 0 1px 2px rgba(15,23,42,.06), 0 14px 34px rgba(15,23,42,.12); --mk-sh-lg: 0 1px 2px rgba(15,23,42,.06), 0 20px 44px rgba(15,23,42,.14); --mk-sh-sm: 0 8px 20px rgba(15,23,42,.1); --mk-trim: rgba(15,23,42,.12); }
+    .mk-board { background: var(--mk-board); background-size: auto; }
+    .mk-board::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background-image: var(--mk-board-tex); background-size: 40px 40px; pointer-events: none; }
+    /* 卡片信号色：按组件写进 style 的 --mk-cN 认出这是哪一路（青 / 紫 / 翡翠 / 琥珀） */
+    .mk-zone [style*="var(--mk-c1)"] { --pn-a: var(--pn-cyan); }
+    .mk-zone [style*="var(--mk-c2)"] { --pn-a: var(--pn-violet); }
+    .mk-zone [style*="var(--mk-c3)"], .mk-zone .mk-cmp.right { --pn-a: var(--pn-jade); }
+    .mk-zone [style*="var(--mk-c4)"], .mk-zone .mk-ai { --pn-a: var(--pn-amber); }
+    .mk-zone .mk-cmp.wrong { --pn-a: var(--pn-crimson); }
+    .mk-zone .mk-cstat { --pn-a: var(--pn-cyan); }
+    .mk-zone .mk-box { border-color: color-mix(in srgb, var(--pn-a, var(--pn-text)) 60%, transparent); }
+    .mk-zone .mk-ticket, .mk-zone .mk-file, .mk-zone .mk-plate, .mk-zone .mk-cmp { background-image: linear-gradient(180deg, color-mix(in srgb, var(--pn-a, var(--pn-cyan)) 22%, transparent) 0%, transparent 70%); }
+    .mk-zone .mh-focus-ring { inset: -12px; border: 2px solid var(--pn-a, var(--pn-cyan)); border-radius: 18px; box-shadow: 0 0 30px color-mix(in srgb, var(--pn-a, var(--pn-cyan)) 50%, transparent); }
+    html[data-mh-card="trim"] .mk-zone .mh-focus-ring:not(.row) { box-shadow: 0 0 36px 6px color-mix(in srgb, var(--pn-a, var(--pn-cyan)) 45%, transparent); }
+    .mk-head { color: var(--pn-text); text-shadow: 0 4px 24px rgba(0,0,0,.6); }
+    .mk-ticket .no { background: var(--pn-a, var(--pn-cyan)); color: var(--pn-on-acc); border-radius: 10px 0 8px 0; }
+    .mk-ticket .ico, .mk-file .ic, .mk-plate .ic { color: var(--pn-a, var(--pn-cyan)); }
+    .mk-ticket .pgb { background: var(--mk-panel); border: 1px solid color-mix(in srgb, var(--pn-text) 14%, transparent); border-radius: 4px; }
+    .mk-ticket .pgb i { background: linear-gradient(90deg, var(--pn-jade) 0%, var(--pn-jade) 60%, var(--pn-amber) 85%, var(--pn-crimson) 100%); }
+    .mk-stamp { background: color-mix(in srgb, var(--pn-bg) 88%, #000); color: var(--pn-amber); border: 3px solid var(--pn-amber); outline: none; border-radius: 10px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--pn-bg) 85%, transparent), 0 0 34px color-mix(in srgb, var(--pn-amber) 55%, transparent), inset 0 0 20px color-mix(in srgb, var(--pn-amber) 22%, transparent); text-shadow: 0 0 16px color-mix(in srgb, var(--pn-amber) 70%, transparent); }
+    .mk-cmp.wrong .mk-stamp { color: var(--pn-crimson); border-color: var(--pn-crimson); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pn-bg) 85%, transparent), 0 0 34px color-mix(in srgb, var(--pn-crimson) 55%, transparent), inset 0 0 20px color-mix(in srgb, var(--pn-crimson) 22%, transparent); text-shadow: 0 0 16px color-mix(in srgb, var(--pn-crimson) 70%, transparent); }
+    .mk-sticker { background: var(--pn-crimson); color: #FFFFFF; border: 0; border-radius: 8px; box-shadow: 0 0 24px color-mix(in srgb, var(--pn-crimson) 50%, transparent), 0 10px 26px rgba(0,0,0,.5); }
+    .mk-tape { border: 1px solid color-mix(in srgb, var(--pn-amber) 55%, transparent); border-radius: 4px; background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--pn-amber) 35%, transparent) 0 1px, transparent 1px 8px); opacity: 1; }
+    .mk-arrow { color: var(--pn-cyan); }
+    .mk-file .ear { background: linear-gradient(225deg, var(--pn-bg) 0 50%, var(--pn-a, var(--pn-cyan)) 50% calc(50% + 2px), color-mix(in srgb, var(--pn-a, var(--pn-cyan)) 28%, transparent) calc(50% + 2px)); }
+    .mk-ai { border-color: var(--pn-amber) !important; box-shadow: var(--mk-sh-lg), 0 0 30px color-mix(in srgb, var(--pn-amber) 25%, transparent); }
+    .mk-ai b { text-shadow: 0 0 26px color-mix(in srgb, var(--pn-amber) 55%, transparent); }
+    .mk-ai .mini u { border-width: 1.5px; border-radius: 3px; }
+    .mk-cmp .rw i { width: 14px; height: 14px; border: 0; border-radius: 3px; transform: rotate(45deg); background: var(--pn-a); box-shadow: 0 0 10px var(--pn-a); }
+    .mk-cmp .badge { color: var(--pn-on-acc); background: var(--pn-jade); border: 0; border-radius: 10px; box-shadow: 0 0 22px color-mix(in srgb, var(--pn-jade) 60%, transparent); }
+    .mk-cmp .btn { background: color-mix(in srgb, var(--pn-cyan) 18%, var(--pn-panel-b)); color: var(--pn-text); border: 1.5px solid var(--pn-cyan); border-radius: 8px; box-shadow: 0 0 18px color-mix(in srgb, var(--pn-cyan) 35%, transparent); }
+    .mk-cmp .sw { border: 1.5px solid color-mix(in srgb, var(--pn-text) 22%, transparent); border-radius: 8px; }
+    .mk-cmp .sw i { border-left-width: 1.5px; border-left-color: color-mix(in srgb, var(--pn-bg) 70%, #000); }
+    .mk-cmp .tlx { border: 1px solid color-mix(in srgb, var(--pn-text) 14%, transparent); background: color-mix(in srgb, var(--pn-bg) 75%, #000); border-radius: 6px; }
+    .mk-cmp .tlx .trk { border-bottom: 1px solid color-mix(in srgb, var(--pn-text) 8%, transparent); }
+    .mk-cmp .tlx .clp { border: 1px solid var(--pn-a, var(--pn-cyan)); border-radius: 4px; background-image: linear-gradient(180deg, color-mix(in srgb, var(--pn-a, var(--pn-cyan)) 30%, transparent), transparent); }
+    .mk-cmp .tlx .ph { width: 2.5px; background: var(--pn-crimson); box-shadow: 0 0 12px var(--pn-crimson); }
+    .mk-vs .dm { border: 1.5px solid var(--pn-amber); border-radius: 14px; box-shadow: 0 0 26px color-mix(in srgb, var(--pn-amber) 35%, transparent), var(--mk-sh-sm); }
+    .mk-vs .tx { color: var(--pn-amber); }
+    .mk-ripple { border: 2px solid var(--pn-crimson); box-shadow: 0 0 16px var(--pn-crimson); }
+    .mk-cstat .lb { background: var(--pn-cyan); color: var(--pn-on-acc); border-radius: 5px; }
+    .mk-cstat .pg { border: 1px solid color-mix(in srgb, var(--pn-text) 14%, transparent); border-radius: 4px; }
+    .mk-cstat .pg i { background: linear-gradient(90deg, var(--pn-jade) 0%, var(--pn-jade) 60%, var(--pn-amber) 85%, var(--pn-crimson) 100%); }
+    .mk-screw { border: 0; width: 10px !important; height: 10px !important; background: var(--pn-crimson); box-shadow: 0 0 10px var(--pn-crimson); }
+    .mk-screw::after { display: none; }
+    .mk-banner { border: 1.5px solid color-mix(in srgb, var(--pn-amber) 55%, transparent); border-left: 6px solid var(--pn-amber); box-shadow: var(--mk-sh), 0 0 26px color-mix(in srgb, var(--pn-amber) 20%, transparent); }
+    .mk-cv-block { background-image: linear-gradient(180deg, rgba(255,255,255,.04), transparent 40%); }
+    .mk-cv-blue { color: var(--pn-violet); }
+    .mk-cv-dots { background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--pn-amber) 55%, transparent) 0 2px, transparent 2px 9px); background-size: auto; }
+    .mk-cv-chip { border-width: 1px; border-color: var(--pn-a, var(--pn-cyan)); border-radius: 6px; background-image: linear-gradient(180deg, color-mix(in srgb, var(--pn-a, var(--pn-cyan)) 30%, transparent), transparent); }
+    .mk-cv-ring { border: 3px solid var(--pn-crimson); box-shadow: 0 0 22px color-mix(in srgb, var(--pn-crimson) 50%, transparent); }
+    .mk-cv-ring::after { background: var(--pn-crimson); opacity: .35; }
+    .mk-cv-wave path { stroke: var(--pn-amber); stroke-width: 5; }
+      /* v3.5 收尾（12 套打分）：「换风格」色块点击前用本包的亮色，不在深色卡上像三个空格 */
+    :root { --mk-sw0: var(--pn-text); --mk-sw1: var(--pn-cyan); --mk-sw2: var(--pn-jade); --mk-sw3: var(--pn-amber); }
   </style>
 </head>
 <body>
@@ -215,6 +293,10 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="../../core/script-sync.js"></script>
+  <script src="../../core/talk.js"></script>
+  <script src="../../core/focus.js"></script>
+  <script src="../../core/cue-kit.js"></script>
+  <script src="../../core/host-kit.js"></script>
   <script src="components.js"></script>
   <script src="themes.js"></script>
   <script>
@@ -233,6 +315,17 @@
     const clamp01 = (x) => Math.max(0, Math.min(1, x));
     const tc = (t) => { const f = Math.max(0, Math.round(t * FPS)), s = Math.floor(f / FPS); return `00:${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}:${String(f % FPS).padStart(2, '0')}`; };
     const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+    // v3.5：牌子层 05 造型（印章 = 监视器高光描边胶囊、贴纸 = 红色录制条、标签 = 深色面板 + 琥珀左边线、多色大字 = 时间轴片段色 + 暗描边；全部不歪）
+    MHEngine.Badges.registerKinds('05', {
+      stamp: 'padding:10px 28px 12px;background:rgba(10,13,18,.95);color:var(--pn-amber);border:3px solid var(--pn-amber);border-radius:10px;box-shadow:0 0 0 4px rgba(10,13,18,.85),0 0 34px color-mix(in srgb,var(--pn-amber) 55%,transparent),inset 0 0 20px color-mix(in srgb,var(--pn-amber) 22%,transparent);text-shadow:0 0 16px color-mix(in srgb,var(--pn-amber) 70%,transparent);font-family:var(--pn-font-cn);font-weight:900;',
+      sticker: 'padding:12px 28px 14px;background:var(--pn-crimson);color:#FFFFFF;border-radius:8px;box-shadow:0 0 24px color-mix(in srgb,var(--pn-crimson) 50%,transparent),0 12px 30px rgba(0,0,0,.5);font-family:var(--pn-font-cn);font-weight:900;',
+      tag: 'padding:12px 28px 14px 24px;background:linear-gradient(180deg,#19202D,#10151E);color:#FFFFFF;border:1.5px solid rgba(255,255,255,.14);border-left:6px solid var(--pn-amber);border-radius:8px;box-shadow:0 18px 42px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08);font-family:var(--pn-font-cn);font-weight:900;',
+      label: 'padding:14px 34px 16px 28px;background:rgba(6,9,14,.94);color:#FFFFFF;border:1.5px solid color-mix(in srgb,var(--pn-cyan) 50%,transparent);border-left:6px solid var(--pn-cyan);border-radius:8px;box-shadow:0 22px 50px rgba(0,0,0,.6),0 0 26px color-mix(in srgb,var(--pn-cyan) 20%,transparent);font-family:var(--pn-font-cn);font-weight:900;',
+      big: { pal: ['var(--pn-amber)', 'var(--pn-cyan)', 'var(--pn-jade)', 'var(--pn-violet)'], ink: '#0A0D12', shadow: '0 0 26px rgba(0,0,0,.55)' },
+      rot: { stamp: 0, sticker: 0, tag: 0, label: 0, big: 0 }
+    });
+    // v3.5：「换风格」按钮点完换上的色块 = 05 自己的 4 套 LUT 皮肤（深蓝黑 / 调色台 / 浅银 / 导播台）
+    MHEngine.CueKit.swatches = [['#0A0D12', '#38BDF8', '#00E5C3', '#FFB84D'], ['#0B0B0D', '#FF7A00', '#00C2FF', '#FF3B5C'], ['#E5E7EB', '#007AFF', '#34C759', '#FF9500'], ['#09111F', '#EC4899', '#22D3EE', '#FACC15']];
 
     /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
     function buildWordData(scenes) {
@@ -262,6 +355,7 @@
       try {
         const src = params.get('data') || 'demo_data.json';
         script = await (await fetch(src, { cache: 'no-store' })).json();
+        MHEngine.ScriptSync.resolveMedia(script, src); // v3.4：媒体路径以剧本文件为基准
       } catch (e) {
         const el = document.getElementById('load-error');
         el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
@@ -273,14 +367,31 @@
       ProNLE.injectCSS();
       // 换肤：URL ?theme= ＞ 剧本 theme.preset ＞ studio_dark（studio_dark = 不覆盖，无参数访问与原版逐像素一致；旧皮肤名经 normalize 自动兼容）
       if (window.ProNLEThemes) ProNLEThemes.init(script);
+      const HK = MHEngine.HostKit.init(script, document.getElementById('avatar-stage'));   // v3.5：铺满版式 / 画框 / 利落散聚 / 牌子层（剧本写了才开）
+      const OFF = HK.CHROME_OFF;   // v3.5：导出 / 抽帧（?chrome=0）时剪辑台 HUD 不出英文（句型名 / 固定英文字样 → 段名 / 数字 / 符号）
       const CV0 = { scopeGrid: 'rgba(255,255,255,0.06)', scope: ['rgba(0,229,195,0.55)', 'rgba(56,189,248,0.5)', 'rgba(255,184,77,0.4)'], waveA1: 'rgba(196,181,253,0.85)', waveA2: 'rgba(255,200,120,0.6)' };
       const CV = () => (window.ProNLEThemes && ProNLEThemes.canvas()) || CV0;
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
       if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
-      document.getElementById('avatar-tag-tx').textContent = av.tag || 'CAM A · YOUR NAME';
-      document.getElementById('nt-proj').textContent = meta.project || meta.title || 'PROJECT.proj';
+      document.getElementById('avatar-tag-tx').textContent = av.tag || (av.video ? '' : 'CAM A · YOUR NAME');
+      if (av.video && !String(av.tag || '').trim()) document.getElementById('avatar-tag').style.display = 'none';   // v3.5：真人素材没填名牌 → 整块不出（占位剪影仍配占位名）
+      document.getElementById('nt-proj').textContent = OFF ? (meta.project || '') : (meta.project || meta.title || 'PROJECT.proj');   // v3.5 收尾：导出时不把剧本内部标题（含版本名）挂在顶栏；写了 meta.project 才显示
+      if (OFF) {
+        const setTx = (sel, tx) => document.querySelectorAll(sel).forEach((e, i) => { e.textContent = Array.isArray(tx) ? tx[i] : tx; });
+        setTx('.nt-logo', '▶▶');
+        setTx('.nt-ico', ['✂', '⌁', '⊞']);
+        setTx('.nt-hdr-tag', '709');
+        setTx('.mon-badge', '● 1920×1080 · 30');
+        setTx('.mf-btns + span', '100%');
+        setTx('.ins-hdr span:first-child', '◉ ▤');
+        setTx('.ins-src', '◉ 48000');
+        document.querySelectorAll('.ins-vu b').forEach((e) => { e.style.display = 'none'; });
+        setTx('.tl-ruler .seq', '▤ 01');
+        document.querySelectorAll('.tl-lbl').forEach((e, i) => { e.firstChild.textContent = ['▭ 2', '▭ 1', '♪ 1', '♪ 2'][i]; e.querySelector('em').style.display = 'none'; });
+        document.querySelectorAll('.tl-c').forEach((e) => { if (/^[A-Z]$/.test(e.textContent)) e.textContent = '◉'; });
+      }
       if (av.video) {
         const v = document.createElement('video');
         v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
@@ -291,15 +402,41 @@
       // 组装场景
       const world = document.getElementById('pn-world');
       const scenes = []; let acc = 0, zoneX = ZONE_X0;
+      // v3.5：组件区放进 Program Monitor 画面区。05 的世界画布凝视点 = 监视器画面中心（不是整屏 SX/SY），所以 ctx.area 不走 HK.area 的整屏换算：
+      //   屏幕 x 80→1260 / y 150→715（监视器画面区内、避开右侧检查器列与下方时间轴）→ 局部坐标 u = cx + (屏幕 x − 画面中心) / 0.97；
+      //   k 按「金样片 1180×780 设计单位竖向装得下」取（≈0.72 屏幕 px / 单位）。cover / outro 跟词版不开铺满也用这块（否则会被监视器裁切）。
+      const monBody = document.getElementById('pn-mon-body'), MB = monBody.getBoundingClientRect(), VB = vp.getBoundingClientRect();
+      const MSC = VB.width / 1920, MBX = (MB.left - VB.left) / MSC, MBY = (MB.top - VB.top) / MSC, MBW = monBody.clientWidth, MBH = monBody.clientHeight;
+      const MON = { sx0: 80, sx1: 1260, sy0: 150, sy1: 715 }, MK = (MON.sy1 - MON.sy0) / 780;
+      const monArea = (sc) => {
+        const hk = HK.area(sc, { CAM_DX: 0, CAM_ZOOM, SX: 960, SY: 540 });
+        if (!hk && !(sc.type === 'cover' || sc.type === 'outro')) return null;
+        if (!hk && HK.FILL) return null;   // 铺满版式下全屏段：不给区（与 HK.area 一致）
+        const lx = (sx) => 700 + (sx - MBX - MBW / 2) / CAM_ZOOM, ly = (sy) => 500 + (sy - MBY - MBH / 2) / CAM_ZOOM;
+        return { x0: lx(MON.sx0), x1: lx(MON.sx1), y0: ly(MON.sy0), y1: ly(MON.sy1), k: MK / CAM_ZOOM, mode: hk ? hk.mode : 'card' };
+      };
+      // 铺满版式的牌子 xy 是按整屏组件区（y 150→930）写的：05 的组件区压在监视器里（y 150→715），竖向同比例换算，牌子仍落在同一块组件上
+      const monY = (y) => +(MON.sy0 + (y - MON.sy0) * (MON.sy1 - MON.sy0) / 780).toFixed(1);
+      const monXY = (xy) => (Array.isArray(xy) && xy.length >= 2 ? [xy[0], monY(+xy[1])] : xy);
+      const monBadges = (sc) => {
+        if (!sc.data || !Array.isArray(sc.data.badges)) return sc;
+        const list = sc.data.badges.map((b) => (b && typeof b === 'object' ? Object.assign({}, b, b.xy ? { xy: monXY(b.xy) } : {}, b.dock && b.dock.xy ? { dock: Object.assign({}, b.dock, { xy: monXY(b.dock.xy) }) } : {}) : b));
+        return Object.assign({}, sc, { data: Object.assign({}, sc.data, { badges: list }) });
+      };
+      const COVER_AT = HK.coverAt(script.scenes, 0.34);   // 四色扫描条在段边界前 0.34s 开始盖
       (script.scenes || []).forEach((sc, i) => {
-        const factory = ProNLE.COMPONENTS[sc.type];
+        const factory = ProNLE.COMPONENTS[sc.type] || MHEngine.ScriptSync.coreComponent(sc.type);
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
-        const comp = factory.create(sc.data || {}, { dur });
-        const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1240) + ZONE_GAP;
+        const ctx = MHEngine.ScriptSync.sceneCtx(sc, acc, dur);
+        ctx.area = monArea(sc); ctx.coverAt = COVER_AT[i];
+        const kit = MHEngine.CueKit.create(sc.type, sc.data, ctx);
+        const comp = kit || factory.create(sc.data || {}, ctx);
+        const badges = HK.badges(HK.FILL ? monBadges(sc) : sc, comp, ctx, document.getElementById('screen-layer'));
+        const zx = zoneX, zy = ZONE_Y; zoneX += (kit ? 1400 : (comp.w || 1240)) + ZONE_GAP;
         if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
         else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
-        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, badges, zx, zy, avatar: sc.avatar || comp.avatar });
         acc += dur;
       });
       const DURATION = acc, N = scenes.length;
@@ -322,18 +459,22 @@
       camRig.setKeyframes(kfs);
 
       // 人像形态：card / pip / corner / full（4 种形态全部走 core 点阵粒子散聚转场）
-      const avatar = new MHEngine.AvatarController({
+      // v3.5：HK.presets 包住原形态；05 的侧栏卡 / 圆窗本来就在右侧检查器列（不压监视器、不压时间轴），铺满版式下保留 05 自己的版位（HK 的 1340,190 / 1600,760 会压到下方时间轴）
+      const AV0 = {
         card:         { left: 1324, top: 60,  width: 560,  height: 704,  borderRadius: 14,  borderWidth: 1.5, tagOpacity: 1 },
         'pip-circle': { left: 1474, top: 496, width: 260,  height: 260,  borderRadius: 130, borderWidth: 2,   tagOpacity: 0 },
         corner:       { left: 1324, top: 452, width: 560,  height: 312,  borderRadius: 14,  borderWidth: 1.5, tagOpacity: 1 },
         fullscreen:   { left: 0,    top: 0,   width: 1920, height: 1080, borderRadius: 0,   borderWidth: 0,   tagOpacity: 0 }
-      });
+      };
+      const AVP = HK.presets(AV0);
+      if (HK.FILL) { AVP.card = AV0.card; delete AVP.pip; }
+      const avatar = new MHEngine.AvatarController(AVP);
       const mapAv = (m) => m === 'full' ? 'fullscreen' : m === 'pip' ? 'pip-circle' : m === 'corner' ? 'corner' : 'card';
       const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
       const tl = gsap.timeline({ paused: true });
       const AVSEG = MHEngine.ScriptSync.avatarSegments(scenes); // 无 avatarCues 时与 scenes 一一对应
       avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
-      AVSEG.forEach((s, i) => {
+      if (!HK.scheduleMorphs({ segs: AVSEG, avatar, morph: avatarMorph, tl, mapAv, seed: 50500 })) AVSEG.forEach((s, i) => {
         if (i === 0) return;
         const prev = mapAv(AVSEG[i - 1].avatar), cur = mapAv(s.avatar);
         if (prev !== cur) {
@@ -352,7 +493,7 @@
       const tabsEl = document.getElementById('nt-stages');
       scenes.forEach((s, i) => {
         const tb = document.createElement('span'); tb.className = 'nt-st';
-        tb.innerHTML = `${String(i + 1).padStart(2, '0')} ${s.label || s.type}<i class="fl"></i>`;
+        tb.innerHTML = `${String(i + 1).padStart(2, '0')} ${HK.label(s)}<i class="fl"></i>`;
         tb.addEventListener('click', () => jumpTo(i));
         tabsEl.appendChild(tb); s.tab = tb;
       });
@@ -364,11 +505,12 @@
       scenes.forEach((s, i) => {
         const c = document.createElement('div'); c.className = `tl-clip ${CLIPC[i % 4]}`;
         c.style.left = `calc(${pct(s.start)} + 1px)`; c.style.width = `calc(${pct(s.dur)} - 2px)`;
-        c.textContent = `${String(i + 1).padStart(2, '0')} ${s.type.toUpperCase()} · ${s.label || ''}`;
+        c.textContent = OFF ? `${String(i + 1).padStart(2, '0')}${s.label ? ` · ${s.label}` : ''}` : `${String(i + 1).padStart(2, '0')} ${s.type.toUpperCase()} · ${s.label || ''}`;
         v2.appendChild(c); s.clip = c;
         if (i > 0) { const m = document.createElement('i'); m.className = 'tl-sfx'; m.style.left = pct(s.start); a2.appendChild(m); }
       });
       // V1：按人像形态合并成连续镜头片段
+      const AVSYM = { card: '▮', pip: '●', corner: '◢', full: '■' };
       let runStart = 0;
       scenes.forEach((s, i) => {
         const last = i === N - 1 || scenes[i + 1].avatar !== s.avatar;
@@ -376,7 +518,7 @@
         const t0 = scenes[runStart].start, t1 = s.start + s.dur;
         const c = document.createElement('div'); c.className = 'tl-clip c-blue';
         c.style.left = `calc(${pct(t0)} + 1px)`; c.style.width = `calc(${pct(t1 - t0)} - 2px)`;
-        c.textContent = `CAM A · ${String(s.avatar || 'card').toUpperCase()}`;
+        c.textContent = OFF ? `◉ ${AVSYM[s.avatar] || AVSYM.card}` : `CAM A · ${String(s.avatar || 'card').toUpperCase()}`;
         v1.appendChild(c); runStart = i + 1;
       });
       // 标尺时间码
@@ -407,7 +549,7 @@
 
       // ========== Inspector ==========
       const kvEl = document.getElementById('ins-kv');
-      const KV = ['CLIP', 'TYPE', 'DURATION', 'IN → OUT', 'AVATAR'];
+      const KV = OFF ? ['#', '◆', '◷', '⇥', '◉'] : ['CLIP', 'TYPE', 'DURATION', 'IN → OUT', 'AVATAR'];
       const kvVals = KV.map((k) => { const r = document.createElement('div'); r.className = 'ins-kv'; r.innerHTML = `<span>${k}</span><span></span>`; kvEl.appendChild(r); return r.lastChild; });
       const scope = document.getElementById('ins-scope').getContext('2d');
       const vuL = document.getElementById('vu-l'), vuR = document.getElementById('vu-r');
@@ -452,7 +594,9 @@
         });
         const S = scenes[cur];
         const AS = MHEngine.ScriptSync.avatarAt(AVSEG, t, S);
-        stageEl.classList.toggle('is-full', AS.avatar === 'full' && t >= AS.start + 0.2);
+        stageEl.classList.toggle('is-full', AS.avatar === 'full' && t >= AS.start + HK.fullDelay(0.2));
+        if (HK.LOOK) vp.classList.toggle('pn-framed', stageEl.classList.contains('is-full'));
+        HK.updateBadges(scenes, cur, t);
 
         // 时间码 / 监视器信息 / 时间轴播放头
         tcEl.textContent = tc(t);
@@ -461,10 +605,13 @@
         playhead.style.left = `calc(150px + (100% - 150px) * ${p.toFixed(5)})`;
         played.style.width = `calc((100% - 150px) * ${p.toFixed(5)})`;
         if (cur !== lastCur) {
-          seqEl.textContent = `SEQ ${String(cur + 1).padStart(2, '0')}/${String(N).padStart(2, '0')} · ${S.type.toUpperCase()} · ${S.label || ''}`;
-          ioEl.textContent = `IN ${tc(S.start)} · OUT ${tc(S.start + S.dur)}`;
-          insCh.textContent = `CH ${String(cur + 1).padStart(2, '0')}`;
-          const vals = [`${String(cur + 1).padStart(2, '0')} · ${S.label || S.type}`, S.type.toUpperCase() + (S.data && S.data.kind ? ` · ${S.data.kind}` : ''), `${S.dur.toFixed(2)}s · ${Math.round(S.dur * FPS)}f`, `${tc(S.start).slice(3)} → ${tc(S.start + S.dur).slice(3)}`, String(S.avatar || 'card').toUpperCase()];
+          const NO = `${String(cur + 1).padStart(2, '0')}/${String(N).padStart(2, '0')}`;
+          seqEl.textContent = OFF ? `${NO}${S.label ? ` · ${S.label}` : ''}` : `SEQ ${NO} · ${S.type.toUpperCase()} · ${S.label || ''}`;
+          ioEl.textContent = OFF ? `${tc(S.start)} → ${tc(S.start + S.dur)}` : `IN ${tc(S.start)} · OUT ${tc(S.start + S.dur)}`;
+          insCh.textContent = OFF ? String(cur + 1).padStart(2, '0') : `CH ${String(cur + 1).padStart(2, '0')}`;
+          const vals = OFF
+            ? [`${String(cur + 1).padStart(2, '0')}${S.label ? ` · ${S.label}` : ''}`, S.label || '—', `${S.dur.toFixed(2)}″ · ${Math.round(S.dur * FPS)}`, `${tc(S.start).slice(3)} → ${tc(S.start + S.dur).slice(3)}`, AVSYM[S.avatar] || AVSYM.card]
+            : [`${String(cur + 1).padStart(2, '0')} · ${S.label || S.type}`, S.type.toUpperCase() + (S.data && S.data.kind ? ` · ${S.data.kind}` : ''), `${S.dur.toFixed(2)}s · ${Math.round(S.dur * FPS)}f`, `${tc(S.start).slice(3)} → ${tc(S.start + S.dur).slice(3)}`, String(S.avatar || 'card').toUpperCase()];
           kvVals.forEach((v, k) => { v.textContent = vals[k]; });
           lastCur = cur;
         }
@@ -487,15 +634,16 @@
               cover += t < b ? q : 1 - q;
             });
             slate.style.opacity = clamp01((cover / 4 - 0.7) / 0.3).toFixed(3);
-            document.getElementById('sl-a').textContent = `SCENE ${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')} · ${scenes[i].type.toUpperCase()}`;
-            document.getElementById('sl-b').textContent = scenes[i].label || scenes[i].type;
-            document.getElementById('sl-c').textContent = `✂ CUT @ ${tc(b)}`;
+            document.getElementById('sl-a').textContent = OFF ? `${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}` : `SCENE ${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')} · ${scenes[i].type.toUpperCase()}`;
+            document.getElementById('sl-b').textContent = HK.label(scenes[i]);
+            document.getElementById('sl-c').textContent = OFF ? `✂ ${tc(b)}` : `✂ CUT @ ${tc(b)}`;
             cut.style.display = 'block'; shown = true; break;
           }
         }
         if (!shown) cut.style.display = 'none';
 
         stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        HK.frame(t, stageEl, avatarMorph);
         document.getElementById('scrubber').value = t.toFixed(2);
         document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
       }
@@ -503,7 +651,7 @@
       // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
       let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
       const vid = document.getElementById('avatar-video');
-      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid }); // meta.avatar.offset + meta.audio
+      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid, scenes }); // meta.avatar.offset + meta.audio
       function seek(t) {
         cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
         scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });

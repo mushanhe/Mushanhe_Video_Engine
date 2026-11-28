@@ -74,6 +74,51 @@
     #subtitle-bar .w.active { color: #FF5A1F !important; text-shadow: none !important; }
 
     #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 26px; border-radius: 10px; background: #111418; color: #FF5A1F; font-size: 28px; font-weight: 900; display: none; }
+
+    /* v3.5 · 跟词组件（core/cue-kit.js）的 01 造型：10px 机加工圆角 + 拉丝金属 / 磨砂玻璃反光 + 底部实体厚度投影，
+       珍珠白 / 石墨钢 / 电光青 / 爱马仕橙；印章 = 冲孔橙色资产吊牌、贴纸 = 电光青吊牌、胶带 = 橙黑安全警示条、铭牌底板 = 拉丝钢控制台（只在剧本写了新字段时出现） */
+    :root {
+      --mk-ink: var(--id-ink); --mk-paper: var(--id-pearl); --mk-panel: var(--id-pearl);
+      --mk-muted: color-mix(in srgb, var(--id-pearl) 80%, var(--id-grey)); --mk-muted-ink: var(--id-grey);
+      --mk-c1: var(--id-pearl); --mk-on1: var(--id-ink); --mk-c2: var(--id-steel); --mk-on2: #FFFFFF;
+      --mk-c3: var(--id-teal); --mk-on3: #15181D; --mk-c4: var(--id-orange); --mk-on4: #15181D;
+      --mk-accent: var(--id-orange); --mk-dark: var(--id-steel); --mk-on-dark: var(--id-orange);
+      --mk-bw: 0px; --mk-rad: 10px; --mk-tilt: 0.3;
+      --mk-sh: inset 0 1px 0 rgba(255,255,255,.3), 0 8px 0 -1px rgba(16,18,21,.55), 0 30px 46px -18px rgba(14,18,24,.45);
+      --mk-sh-lg: inset 0 1px 0 rgba(255,255,255,.3), 0 10px 0 -1px rgba(16,18,21,.62), 0 40px 58px -18px rgba(14,18,24,.5);
+      --mk-sh-sm: 0 5px 0 -1px rgba(16,18,21,.5), 0 16px 24px -10px rgba(14,18,24,.42);
+      --mk-font: var(--id-font-cn); --mk-font-num: var(--id-font-latin);
+      --mk-tex: repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px), linear-gradient(160deg, rgba(255,255,255,.3) 0%, rgba(255,255,255,0) 46%, rgba(0,0,0,.08) 100%);
+      --mk-board: var(--id-steel); --mk-board-tex: repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px); --mk-tape: var(--id-orange);
+      --mk-trim: rgba(127,135,145,.4); --mk-trim-c: rgba(127,135,145,.95);
+      /* 全屏画框：石墨钢 4px 边 + 白色倒角高光 + 底部实体厚度 + 落地柔影，12px 机加工圆角；画框外 48px 露出画廊底景 */
+      --mh-frame-bw: 4px; --mh-frame-color: var(--id-steel); --mh-frame-radius: 12; --mh-frame-vig: .22;
+      --mh-frame-shadow: 0 0 0 1px rgba(255,255,255,.7), 0 12px 0 -2px #1D2025, 0 44px 80px -24px rgba(14,18,24,.5);
+    }
+    .mk-zone .mh-focus-ring { inset: -14px; border: 4px solid var(--id-orange); border-radius: 18px; box-shadow: 0 0 0 1px rgba(255,255,255,.55), 0 0 26px rgba(255,90,31,.32); }
+    html[data-mh-card="trim"] .mk-zone .mh-focus-ring:not(.row) { box-shadow: 0 0 0 1px rgba(255,255,255,.55), 0 0 34px 8px color-mix(in srgb, var(--mk-glow, var(--id-orange)) 55%, transparent); }
+    .mk-ai, .mk-banner, .mk-vs .dm, .mk-ticket .no, .mk-cstat .lb { background: repeating-linear-gradient(90deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px),linear-gradient(165deg,color-mix(in srgb,var(--id-steel) 78%,#FFFFFF) 0%,var(--id-steel) 40%,color-mix(in srgb,var(--id-steel) 66%,#000000) 100%); }
+    .mk-banner { color: #FFFFFF; }
+    .mk-banner .ar { color: var(--id-orange); }
+    .mk-stamp { background: linear-gradient(170deg, #FF7A47, var(--id-orange) 55%, #E24A12); color: #15181D; border: 0; outline: none; border-radius: 6px; padding: .12em .3em .14em .62em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 5px 0 -1px #9E2F08, 0 18px 28px -10px rgba(20,26,34,.45); }
+    .mk-stamp::before { content: ''; position: absolute; left: .2em; top: 50%; width: .2em; height: .2em; margin-top: -.1em; border-radius: 50%; background: var(--id-pearl); box-shadow: inset 0 2px 3px rgba(0,0,0,.45); }
+    .mk-sticker { background: linear-gradient(170deg, #25D9BF, var(--id-teal) 55%, #00A28C); color: #15181D; border: 0; border-radius: 6px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 5px 0 -1px #006F60, 0 18px 28px -10px rgba(20,26,34,.45); }
+    .mk-tape { background: repeating-linear-gradient(-45deg, var(--id-orange) 0 14px, #1D2025 14px 28px); border: 0; border-radius: 3px; opacity: 1; box-shadow: 0 6px 10px -4px rgba(20,26,34,.4); }
+    .mk-cmp .rw i, .mk-cmp .badge, .mk-ticket .pgb, .mk-cstat .pg, .mk-cmp .sw, .mk-cmp .btn, .mk-cmp .tlx { border-width: 1.5px; border-color: rgba(21,24,29,.28); }
+    .mk-cmp .rw i { border-radius: 50%; box-shadow: 0 0 10px rgba(255,90,31,.55); }
+    .mk-cmp .badge { background: repeating-linear-gradient(90deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px),linear-gradient(165deg,color-mix(in srgb,var(--id-steel) 78%,#FFFFFF) 0%,var(--id-steel) 40%,color-mix(in srgb,var(--id-steel) 66%,#000000) 100%); color: var(--id-teal); border-radius: 50%; }
+    .mk-ticket .pgb { background: rgba(0,0,0,.16); border-radius: 4px; }
+    .mk-cstat .pg { background: rgba(20,26,34,.1); border-radius: 4px; }
+    .mk-cstat .pg i { background: repeating-linear-gradient(90deg, var(--id-orange) 0 16px, transparent 16px 21px); filter: drop-shadow(0 0 6px rgba(255,90,31,.5)); }
+    .mk-cv-block { background-image: linear-gradient(150deg, rgba(255,255,255,.72) 0%, rgba(255,255,255,0) 55%), linear-gradient(rgba(20,30,44,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(20,30,44,.05) 1px, transparent 1px); background-size: auto, 24px 24px, 24px 24px; }
+    .mk-cv-dots { background-image: repeating-linear-gradient(90deg, rgba(21,24,29,.55) 0 6px, transparent 6px 22px), none; background-size: auto; background-clip: content-box, border-box; padding: 34px 40px; }   /* 散热格栅：只在内框里 */
+    .mk-cv-ring { box-shadow: 0 0 0 6px rgba(0,194,168,.14), 0 10px 20px -8px rgba(14,18,24,.4); }
+    .mk-cv-chip { border: 0; }
+    .mk-screw { background: radial-gradient(circle at 35% 32%, #F4F6F8 0%, #AEB5BE 48%, #5C636D 100%); border: 0; box-shadow: 0 1px 1px rgba(0,0,0,.45); }
+    .mk-screw::after { background: #4A5059; height: 2px; margin-top: -1px; }
+    .mk-ripple { border-color: var(--id-orange); }
   </style>
 </head>
 <body>
@@ -116,6 +161,10 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="../../core/script-sync.js"></script>
+  <script src="../../core/talk.js"></script>
+  <script src="../../core/focus.js"></script>
+  <script src="../../core/cue-kit.js"></script>
+  <script src="../../core/host-kit.js"></script>
   <script src="components.js"></script>
   <!-- v2 扩展（均为可选增强，缺失时宿主自动回退原组件）：换肤必须在 gallery-bg.js 之后；变体必须在 components.js 之后 -->
   <script src="themes.js"></script>
@@ -136,6 +185,16 @@
     // 画廊漫游：段尾提前 GLIDE_OUT 起步，下一段 GLIDE_IN 后落位，中点拉远 + 侧摇，展位之间连续行走
     const GLIDE_OUT = 0.45, GLIDE_IN = 0.3;
     const params = new URLSearchParams(location.search);
+    // v3.5：牌子层 01 造型（印章 = 冲孔橙色资产吊牌、贴纸 = 电光青吊牌、标签 = 拉丝钢铭牌 + 橙色侧条、长标签 = 磨砂玻璃胶囊、多色大字 = 橙 / 石墨 + 白描边）
+    const ID_STEEL = 'repeating-linear-gradient(90deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px),linear-gradient(165deg,color-mix(in srgb,var(--id-steel) 78%,#FFFFFF) 0%,var(--id-steel) 40%,color-mix(in srgb,var(--id-steel) 66%,#000000) 100%)';
+    MHEngine.Badges.registerKinds('01', {
+      stamp: 'padding:10px 30px 12px 58px;background:radial-gradient(circle at 28px 50%,var(--id-pearl) 0 8px,rgba(0,0,0,.35) 9px,transparent 10px),linear-gradient(170deg,#FF7A47,var(--id-orange) 55%,#E24A12);color:#15181D;border-radius:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 0 -1px #9E2F08,0 20px 30px -10px rgba(20,26,34,.45);font-family:var(--id-font-cn);font-weight:900;',
+      sticker: 'padding:12px 28px 14px 54px;background:radial-gradient(circle at 26px 50%,var(--id-pearl) 0 7px,rgba(0,0,0,.35) 8px,transparent 9px),linear-gradient(170deg,#25D9BF,var(--id-teal) 55%,#00A28C);color:#15181D;border-radius:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 0 -1px #006F60,0 20px 30px -10px rgba(20,26,34,.45);font-family:var(--id-font-cn);font-weight:900;',
+      tag: `padding:12px 30px 14px 28px;background:${ID_STEEL};color:#FFFFFF;border-left:10px solid var(--id-orange);border-radius:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 8px 0 -1px #101215,0 26px 40px -16px rgba(14,18,24,.55);font-family:var(--id-font-cn);font-weight:900;`,
+      label: 'padding:14px 38px 16px;background:linear-gradient(150deg,rgba(255,255,255,.96) 0%,rgba(247,248,250,.9) 55%,rgba(233,237,242,.86) 100%);color:#15181D;border:1px solid rgba(255,255,255,.96);border-radius:999px;box-shadow:inset 0 1px 0 #fff,0 8px 0 -1px #D2D7DD,0 30px 46px -18px rgba(20,26,34,.42);font-family:var(--id-font-cn);font-weight:900;',
+      big: { pal: ['var(--id-orange)', 'var(--id-steel)'], ink: '#FFFFFF', shadow: '0 10px 22px rgba(14,18,24,.38)' },
+      rot: { stamp: -5, sticker: 4, tag: 0, label: 0, big: 0 }
+    });
 
     /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
     function buildWordData(scenes) {
@@ -165,6 +224,7 @@
       try {
         const src = params.get('data') || 'demo_data.json';
         script = await (await fetch(src, { cache: 'no-store' })).json();
+        MHEngine.ScriptSync.resolveMedia(script, src); // v3.4：媒体路径以剧本文件为基准
       } catch (e) {
         const el = document.getElementById('load-error');
         el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
@@ -176,11 +236,17 @@
       Industrial3D.injectCSS();
       // 换肤：URL ?theme= ＞ 剧本 theme.preset ＞ pearl（pearl = 不覆盖，默认无参数访问与原版完全一致）
       if (window.Industrial3DThemes) Industrial3DThemes.init(script);
+      const HK = MHEngine.HostKit.init(script, document.getElementById('avatar-stage'));   // v3.5：铺满版式 / 画框 / 利落散聚 / 牌子层（剧本写了才开）
+      if (HK.CHROME_OFF) {   // v3.5：导出 / 抽帧时不出固定英文字样（预览页照旧）
+        document.querySelector('#ind-partition .ex').style.display = 'none';
+        const silTx = document.querySelector('#avatar-silhouette text'); if (silTx) silTx.textContent = '人像占位';
+      }
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
       if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
-      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      document.getElementById('avatar-tag-tx').textContent = av.tag || (av.video ? '' : 'YOUR NAME');
+      if (av.video && !String(av.tag || '').trim()) document.getElementById('avatar-tag').style.display = 'none';   // v3.5：真人素材没填名牌 → 整块不出（占位剪影仍配占位名）
       if (av.video) {
         const v = document.createElement('video');
         v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
@@ -190,6 +256,11 @@
 
       const world = document.getElementById('ind-world');
       const galleryBg = new MHEngine.GalleryBackground(document.getElementById('gallery-bg-canvas'));
+      if (HK.CHROME_OFF) {   // v3.5：导出时画廊底景不出英文水印（SPACE 01 / 换肤大字）和左下角英文图号；实例级覆盖，不改 core
+        galleryBg.drawWatermark = () => {};
+        const fid = galleryBg.drawSwissFiducials.bind(galleryBg);
+        galleryBg.drawSwissFiducials = (g, a, b) => { g.fillText = () => {}; try { fid(g, a, b); } finally { delete g.fillText; } };
+      }
 
       // 组装场景（每个 world 段配一个后退的展位）
       const scenes = []; let acc = 0, zoneX = 0;
@@ -202,13 +273,17 @@
           if (v) return v;
           console.warn('unknown variant, fallback to base type', `${sc.type}:${sc.variant}`);
         }
-        return own(Industrial3D.COMPONENTS, sc.type);
+        return own(Industrial3D.COMPONENTS, sc.type) || MHEngine.ScriptSync.coreComponent(sc.type);
       }
+      const COVER_AT = HK.coverAt(script.scenes, GLIDE_OUT);   // 画廊漫游 + 玻璃隔断在段边界前 GLIDE_OUT 秒起步
       (script.scenes || []).forEach((sc, i) => {
         const factory = findFactory(sc);
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
-        const comp = factory.create(sc.data || {}, { dur });
+        const ctx = MHEngine.ScriptSync.sceneCtx(sc, acc, dur);
+        ctx.area = HK.area(sc, { CAM_DX, CAM_ZOOM, SX, SY }); ctx.coverAt = COVER_AT[i];
+        const comp = MHEngine.CueKit.create(sc.type, sc.data, ctx) || factory.create(sc.data || {}, ctx);
+        const badges = HK.badges(sc, comp, ctx, document.getElementById('screen-layer'));
         const zx = zoneX, zy = ZONE_Y, zw = comp.w || 1400; zoneX += zw + ZONE_GAP;
                 const bay = document.createElement('div');
         bay.className = 'ind-bay'; bay.style.left = `${zx}px`; bay.style.top = `${zy}px`; bay.style.width = `${zw}px`;
@@ -216,7 +291,7 @@
         world.appendChild(bay);
         if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
         else { comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el); }
-        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, badges, zx, zy, avatar: sc.avatar || comp.avatar });
         acc += dur;
       });
       const DURATION = acc;
@@ -249,17 +324,17 @@
       camRig.setKeyframes(kfs);
 
       // 人像形态：card / pip / corner / full（4 种形态全部走 core 点阵粒子散聚转场）
-      const avatar = new MHEngine.AvatarController({
+      const avatar = new MHEngine.AvatarController(HK.presets({
         card:   { left: 1328, top: 82,  width: 540, height: 790, borderRadius: 12,  borderWidth: 3, tagOpacity: 1 },
         pip:    { left: 1532, top: 642, width: 320, height: 320, borderRadius: 160, borderWidth: 4, tagOpacity: 0 },
         corner: { left: 1410, top: 530, width: 458, height: 342, borderRadius: 12,  borderWidth: 3, tagOpacity: 1 }
-      });
+      }));
       const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
       const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
       const tl = gsap.timeline({ paused: true });
       const AVSEG = MHEngine.ScriptSync.avatarSegments(scenes); // 无 avatarCues 时与 scenes 一一对应
       avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
-      AVSEG.forEach((s, i) => {
+      if (!HK.scheduleMorphs({ segs: AVSEG, avatar, morph: avatarMorph, tl, mapAv, seed: 10100 })) AVSEG.forEach((s, i) => {
         if (i === 0) return;
         const prev = mapAv(AVSEG[i - 1].avatar);
         const cur = mapAv(s.avatar);
@@ -308,8 +383,9 @@
         const S = scenes[cur];
         const AS = MHEngine.ScriptSync.avatarAt(AVSEG, t, S);
         const isFull = AS.avatar === 'full';
-        stageEl.classList.toggle('is-full', isFull && t >= AS.start + 0.2);
-        camViewport.style.opacity = isFull && t >= AS.start + 0.15 && t < AS.start + AS.dur ? '0' : '1';
+        stageEl.classList.toggle('is-full', isFull && t >= AS.start + HK.fullDelay(0.2));
+        camViewport.style.opacity = isFull && t >= AS.start + HK.fullDelay(0.15) && t < AS.start + AS.dur ? '0' : '1';
+        HK.updateBadges(scenes, cur, t);
 
         // 玻璃隔断：画廊漫游期间从右向左掠过镜头前，带下一展位编号
         let shown = false;
@@ -320,13 +396,14 @@
             part.style.display = 'block';
             part.style.transform = `translateX(${x.toFixed(1)}px)`;
             part.querySelector('.no').textContent = String(i + 1).padStart(2, '0');
-            part.querySelector('.lb').textContent = scenes[i].label || scenes[i].type;
+            part.querySelector('.lb').textContent = HK.label(scenes[i]);   // v3.5：导出时没写 label 不出英文句型名
             shown = true; break;
           }
         }
         if (!shown) part.style.display = 'none';
 
         stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        HK.frame(t, stageEl, avatarMorph);
         document.getElementById('scrubber').value = t.toFixed(2);
         document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
       }
@@ -334,7 +411,7 @@
       // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
       let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
       const vid = document.getElementById('avatar-video');
-      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid }); // meta.avatar.offset + meta.audio
+      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid, scenes }); // meta.avatar.offset + meta.audio
       function seek(t) {
         cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
         scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });

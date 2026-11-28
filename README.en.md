@@ -10,7 +10,7 @@
 
 1 shared `core/` kernel · 10 universal talking-head scene types · 4 animated avatar modes with particle morphs · **4 live skins each for 01–06 (24) + 6 new styles 07–12**
 
-`v3.3.1` · plain HTML / CSS / JS · zero build · seek to any moment and get the exact frame · one-click 01–12 style switcher (top-right) · one-click 1080p / 4K MP4 export · bilingual AI Agent Skill included (`SKILL.md` / `SKILL.en.md`)
+`v3.5` · plain HTML / CSS / JS · zero build · seek to any moment and get the exact frame · one-click 01–12 style switcher (top-right) · one-click 1080p / 4K MP4 export · bilingual AI Agent Skill included (`SKILL.md` / `SKILL.en.md`)
 
 | 01 · 3D Industrial Gallery | 02 · Swiss Print Collage |
 |---|---|
@@ -62,6 +62,8 @@ Every frame is rendered deterministically in time: scrub to second 37.4 and you 
 | 🎛 **One-click 01–12 style switching (v3.2)** | Every preview page has a "🎨 Switch style" capsule in the top-right: jump to any style with one click, **carrying the current `?data=` script** (path auto-rebased) and the current playback time; hides with `H`, never appears during frame inspection / export |
 | 🎬 **One-click MP4 export (v3.2)** | `core/tools/export_mp4.py`: deterministic per-frame headless screenshots → multi-process chunked FFmpeg encoding, 1080p / 4K (2× vector rendering), BT.709 color, voice / BGM mixing |
 | 🎙 **Real word-level timeline (v3.2)** | Optional script fields: `sc.words` word timestamps (subtitles light up at real speaking pace), `sc.avatarCues` avatar changes within a scene, `meta.audio` voice track as master clock, `meta.themeCues` timed skin changes; without these fields output is frame-identical to earlier versions |
+| ✂️ **Rough cut + full-screen talk scene (v3.4)** | `core/tools/rough_cut.py` trims leading/trailing silence and compresses pauses >1 s, outputs an all-intra 1080p avatar (export ~1–1.5× real time) plus a cut list; new kernel scene type `talk` (full-screen presenter + 1–2 keywords popping in as they are spoken); chart elements can enter on a spoken word via `cue`; cuts that do not land on a scene change get an automatic punch-in to hide the jump |
+| 🛑 **Guard rails (v3.4)** | A scene boundary that is not at a sentence end → `align.py` fails with `STATUS FAIL cross-sentence`; missing voice / avatar / any media 404 → export fails with `STATUS FAIL missing-media` instead of a silent video; whisper hallucinations in silence are dropped; media paths resolve against the script file, so switching styles keeps every asset |
 | 🗣 **One-command voice-over alignment (v3.3)** | `core/tools/align.py`: recording / video → same-source per-character `words` + subtitle `sub`, or fill each draft scene's timing and `meta.audio` directly; local faster-whisper, no PyTorch needed |
 | 🤖 **AI Agent Skill** | Root `SKILL.md` (Chinese) / `SKILL.en.md` (English): after reading it, Claude Code / Antigravity / Cursor can recommend the best-fitting of the 12 styles, write the script, inspect frames and deliver a preview |
 
@@ -69,6 +71,7 @@ Every frame is rendered deterministically in time: scrub to second 37.4 and you 
 
 | Type | Talking-head use |
 |---|---|
+| `talk` Talk (v3.4 kernel type) | **Default for small talk / opinions / transitions**: full-screen presenter, 1–2 keywords pop in on the sides as they are spoken (outside the ±240 px centre band); works in all 12 packs |
 | `cover` Cover | Opening title, chapter number |
 | `stat` Big number | Number hooks like "from 3 hours down to 20 minutes", rolling number + ratio bar |
 | `steps` Steps | 3–5 step procedure |
@@ -124,7 +127,7 @@ Three ways to switch skins on 01–06, highest priority first:
 
 ## Local preview in 3 steps
 
-Don't want to download? Just open the [Live Demo](https://mushanhe.github.io/Mushanhe_Video_Engine/). To edit scripts locally you need Python 3.8+, with no extra dependencies:
+Don't want to download? Just open the [Live Demo](https://mushanhe.github.io/Mushanhe_Video_Engine/). To edit scripts locally you need Python 3.10+, with no extra dependencies:
 
 ```bash
 # 1. Clone the repository
@@ -146,11 +149,13 @@ Want another style? Click "🎨 Switch style 01–12" in the top-right to jump b
 
 ## Write your own script
 
-Copy `demo_data.json` from any style pack, edit it, and load it with `?data=`:
+Use any style pack's `demo_data.json` as a reference (**field names only — do not copy its item counts or copy**), keep the script and footage in `work/<episode>/` at the repo root, and load it with `?data=`:
 
 ```
-http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=my_script.json
+http://127.0.0.1:8765/templates/05_pro_nle/index.html?data=../../work/ep01/ep01.json
 ```
+
+Since v3.4, `meta.audio` / `meta.avatar.video` / `meta.avatar.bg` resolve **relative to the script file** (same for preview, inspection and export), so switching to any style pack keeps every asset.
 
 Script structure (excerpt):
 
@@ -188,6 +193,11 @@ All times are **absolute seconds on the whole-video timeline** (counted from the
 | `sc.avatarCues` | `[[absSec, "card\|pip\|corner\|full"], ...]` | Switch avatar mode within a scene |
 | `meta.audio` | `"voice.wav"` or `{ "src": "...", "offset": 0, "volume": 1 }` | Voice track, used as the master clock during playback |
 | `meta.themeCues` | `[[absSec, "obsidian", "badge text"], ...]` | Timed live skin changes (01–06) |
+| `cue` on `data` items (v3.4) | `"word"` or `["word", nth]` | The element enters on the frame the word is spoken; this round: pack 06 steps / checklist / stat and `talk`, the other 11 packs next round |
+| `meta.avatar.focus` (v3.4) | `"50% 30%"` | Avatar framing focus; required for phone-portrait / rotated footage in `full`, otherwise only the cap shows (default `center top`) |
+| `meta.avatar.cuts` (v3.4) | `[sec, ...]` (written by `align.py --cuts`) | Rough-cut points: hidden by a scene change when they land on one, otherwise a 1.0→1.08 punch-in on that frame hides the jump |
+| `theme.pip` (v3.4) | `"circle"` / `"square"` | PiP shape as a skin parameter; omitted = the pack's own |
+| `meta.transition` (v3.4, pack 06 only for now) | `"wipe"` (default) / `"cut"` | `cut`: hard cuts between scenes; only scenes marked `"chapter": true` keep the colour wipe |
 
 > ⚠️ **The avatar `<video>` is muted by default**: none of the 12 templates use the presenter video's own audio track. Supply the voice with `meta.audio` or `--audio` at export, otherwise the final video is silent.
 
@@ -212,8 +222,24 @@ python core/tools/align.py --input voice.wav --script script.txt --inject templa
 - **Input**: `.wav` `.mp3` `.m4a` `.mp4` `.mkv` `.mov`. Video input also exports a 48 kHz stereo WAV for `meta.audio` (or set `--extract-audio`).
 - **Model**: `--model medium` by default; set the cache with `--model-dir` or `HF_HOME`, `--offline` uses local models only. CUDA → float16 automatically, otherwise (or when cuBLAS / cuDNN are missing) it falls back to CPU int8.
 - **Script `--script`**: the prompt carries one short sentence plus the script's proper nouns (Claude, WorkBuddy, JSON, Skill…), never the whole text; fixes are conservative — only one-for-one homophones, number spelling (十二→12) and English case / spelling. Extra, skipped or rephrased words always follow what was actually said; every change is listed in `corrections`.
-- **Mode B rules**: each scene's draft text comes from `sub` (then `text`, then `script`); scenes butt against each other with no gaps; scenes without voice-over (outro, visual-only) keep their duration and follow in sequence; long scripts (about 2,000+ characters / 7+ minutes) are aligned scene by scene automatically. Read the last lines for the result: `STATUS OK` / `STATUS PARTIAL` (some scenes not filled or far from the recording, with a warning list) / `STATUS FAIL too-large|mismatch|io` (exit code 1, no regular output, only `<out>.failed.json` for troubleshooting). `meta.audio` is written relative to the template page folder (use `--page-dir` if the script lives elsewhere).
+- **Mode B rules**: each scene's draft text comes from `sub` (then `text`, then `script`); scenes butt against each other with no gaps; scenes without voice-over (outro, visual-only) keep their duration and follow in sequence; long scripts (about 2,000+ characters / 7+ minutes) are aligned scene by scene automatically. Read the last lines for the result: `STATUS OK` / `STATUS PARTIAL` (some scenes not filled or far from the recording, with a warning list) / `STATUS FAIL too-large|mismatch|io|cross-sentence` (exit code 1, no regular output, only `<out>.failed.json` for troubleshooting). `meta.audio` is written relative to the script file (`--page-dir` is deprecated since v3.4).
+- **Boundary check (v3.4)**: in mode B with `--script`, every scene must end on a sentence-ending mark of the written script (。！？…； / . ! ? ;); otherwise `STATUS FAIL cross-sentence`, listing exactly where each boundary cuts (e.g. 「写脚本、｜对齐」).
+- **Silence hallucination filter (v3.4)**: a run of words whose loudness never reaches the speech threshold is dropped if any of them has confidence <0.2 (e.g. 「在我面前的一切」 invented in trailing silence); the dropped words go to `dropped` / `meta.align.dropped` and a `NOTE` line.
+- **`--cuts cut_points.json` (v3.4)**: writes the `rough_cut.py` cut points into `meta.avatar.cuts`.
 - **`--refine` (optional)**: adds stable-ts forced alignment on the final text; needs `pip install stable-ts`, which **pulls in PyTorch (~0.5–2 GB)**; skipped with a hint when not installed.
+
+### Rough cut (v3.4)
+
+Rough-cut uncut footage before aligning (cuts by loudness only — flubs / retakes are still yours to cut):
+
+```bash
+python core/tools/rough_cut.py --input raw/take.mkv --out-dir work/ep01
+# → work/ep01/avatar.mp4 (1080p, every frame a keyframe) · voice.wav (48k) · cut_points.json
+python core/tools/align.py --input work/ep01/voice.wav --script work/ep01/script.txt --cuts work/ep01/cut_points.json --inject work/ep01/ep01_draft.json --out work/ep01/ep01.json
+```
+
+- Keeps ~0.3 s before the first and after the last word; compresses only pauses >1.0 s (to ~0.4 s); cuts snap to frame boundaries, picture and sound cut together.
+- Measured (62.6 s 4K original): 7.90 s trimmed at the head, 7.47 s at the tail, one 1.18 s pause compressed → 46.5 s; first word at 0.28 s, video ends 0.30 s after the last word.
 
 > ⚠️ **Hard rule**: run align.py on the exact `meta.audio` track used for playback and export. After cutting pauses, changing speed or re-splicing, run it again — otherwise the whole timeline drifts.
 
@@ -229,7 +255,9 @@ python core/tools/align.py --input voice.wav --script script.txt --inject templa
 
 ## Use it as an AI Agent Skill
 
-[`SKILL.md`](SKILL.md) (Chinese) and [`SKILL.en.md`](SKILL.en.md) (English) in the repo root are a standard Agent Skill: the 12-style + 30-skin index, a 10-scene-type cheat sheet, the script schema, the 5-step production workflow (including one-click MP4 export) and the "update check before you start (asks you before updating)" step are all inside. Hand the repo to an AI coding assistant and just describe what you want in plain language.
+[`SKILL.md`](SKILL.md) (Chinese) and [`SKILL.en.md`](SKILL.en.md) (English) in the repo root are a standard Agent Skill: the 12-style + 30-skin index, a 10-scene-type cheat sheet, the script schema, the production workflow (rough cut → align → script → preview → export, with 4 mandatory stops) and the "update check before you start (asks you before updating)" step are all inside. Hand the repo to an AI coding assistant and describe what you want in plain language; it will stop and ask you at the key points.
+
+**v3.5 recipe table**: the Skill now carries 9 sentence recipes copied from the final "gold sample" (opening cover, pain-point cards, input → AI, steps, before / now comparison, big number, closing nameplates + "next" banner, full-screen accent, plain transition sentence). Each fixes the avatar mode, the scene type, which elements enter on which spoken word and when they leave, with the gold sample's timestamps and script snippets; plus 12 whole-video rules (full screen ≤ 20%, on-screen text = spoken words only, …). The AI first writes a "sentence → recipe" table, then fills the recipes with the spoken words — no self-designed visuals, no invented text; the same script works in all 12 styles. See sections 2.5–2.7 of [`SKILL.en.md`](SKILL.en.md) (Chinese: [`SKILL.md`](SKILL.md)).
 
 **Claude Code**: copy `SKILL.en.md` to `~/.claude/skills/mushanhe-video-engine/SKILL.md` (global) or `.claude/skills/mushanhe-video-engine/SKILL.md` inside the repo (rename it to `SKILL.md` and paste the frontmatter block from the top of the Chinese `SKILL.md` above everything — `SKILL.en.md` itself ships without frontmatter so the two files never register as two Skills with the same name); it is then invoked automatically whenever you ask for a talking-head video. For a one-off, just say "read SKILL.en.md in the repo root first".
 
@@ -245,7 +273,7 @@ Then just ask, for example:
 >
 > This is a reading video about Song-dynasty poetry; pick the style that fits best.
 
-The AI follows 5 steps: ① confirm or recommend a style and skin → ② write the voice-over as a `{ meta, theme, scenes }` script → ③ run `inspect_frames.py`, confirm `ZERO_ERRORS` and check every screenshot → ④ start `serve.py` and deliver a preview link → ⑤ after approval, export with `export_mp4.py`. The same script can switch to any of the other 11 styles at any time, and 01–06 can also switch to their other 3 skins.
+The AI works like this and always waits for your reply at ⛔: ⛔ confirm or recommend a style and skin → ⛔ ask whether to rough-cut the footage (`rough_cut.py`) → write the script (boundaries only at sentence ends, on-screen text only from the narration, `talk` by default) → `align.py` fills in timing and lists corrections → `inspect_frames.py` checks every scene against the narration → ⛔ give you a playable preview link (never with `clean`) and ask what to change → ⛔ report duration and estimated time, export one file with `export_mp4.py` only after you say "export". The same script can switch to any of the other 11 styles at any time, and 01–06 can also switch to their other 3 skins.
 
 ## Headless frame inspection
 
@@ -255,7 +283,7 @@ After changing visuals, capture screenshots at any time points to self-check (re
 python core/tools/inspect_frames.py --template 01_industrial_3d --times 3,9.5,17,25,32.5,40,48,56,63,69.5 --out preview_frames
 ```
 
-To check a non-default skin or your own script, add `--theme` / `--data` (script path relative to the style-pack folder; it is assembled into `?data=..&theme=..&t=..&clean=1` automatically):
+To check a non-default skin or your own script, add `--theme` / `--data` (script path relative to the style-pack folder). Inspection and export add `clean=1&chrome=0` automatically (hiding controls, switcher and the top English scene tabs) — **these parameters are for the tools only; never put them in a preview link for people**. Missing assets fail immediately with `STATUS FAIL missing-media`, and console warnings are printed too:
 
 ```bash
 python core/tools/inspect_frames.py --template 01_industrial_3d --data demo_variants.json --theme obsidian --times 3,9.5 --out scratch_verify/my_ep
@@ -268,8 +296,8 @@ python core/tools/inspect_frames.py --template 01_industrial_3d --data demo_vari
 Requirements: `pip install playwright` (uses installed Edge / Chrome if present, otherwise also run `playwright install chromium`) + [FFmpeg](https://ffmpeg.org/download.html) on PATH.
 
 ```bash
-# Default demo of one template (duration read from the script length)
-python core/tools/export_mp4.py --template 01_industrial_3d --theme obsidian --out output/demo_obsidian.mp4
+# Default demo of one template (the demo has no voice; since v3.4 an audio track is required, e.g. background music)
+python core/tools/export_mp4.py --template 01_industrial_3d --theme obsidian --bgm my_music.mp3 --out output/demo_obsidian.mp4
 
 # Your own script + voice track (--audio can be omitted if the script has meta.audio)
 python core/tools/export_mp4.py --template 05_pro_nle --data my_script.json --theme color_grade --audio my_voice.wav --out output/my_ep.mp4
@@ -280,13 +308,15 @@ python core/tools/export_mp4.py --template 08_song_ink --data my_script.json --r
 
 | Option | Description |
 |---|---|
-| `--template` / `--file` / `--url-path` / `--data` / `--theme` | Same page entry points as `inspect_frames.py`, with `clean=1` added automatically (no HUD or switcher) |
+| `--template` / `--file` / `--url-path` / `--data` / `--theme` | Same page entry points as `inspect_frames.py`, with `clean=1&chrome=0` added automatically (no HUD, switcher or top English scene tabs) |
 | `--res 1080p\|4k` · `--fps 30` | Output 1920×1080 or 3840×2160, H.264 High · yuv420p · BT.709 |
 | `--start` / `--duration` | Export only a slice (great for smoke tests); without a duration it reads the page's `__MH_ENGINE__.duration` |
 | `--workers 4` · `--crf` · `--preset` | Multi-process chunked rendering; CRF defaults to 18 at 1080p and 16 at 4K |
 | `--audio` · `--bgm` · `--bgm-vol 0.10` | Precisely mix an external voice / master (defaults to the script's `meta.audio`), optional looping BGM; AAC 48 kHz 320 kbps |
 
-**Expected time**: local headless frame-by-frame rendering takes about 3–10× real time at 1080p (depending on machine and assets), longer at 4K. At start it prints total frames, worker count and estimated minutes, then progress and ETA every 5s. Smoke-test with `--duration 3` first to confirm picture and sound, then export the full video.
+**Expected time**: speed depends mostly on the avatar video's keyframe interval — an all-intra 1080p avatar from `rough_cut.py` exports at ~1–1.5× real time; a phone / camera original used directly ~4–6×; a 4K original as avatar 5–8×; `--res 4k` multiplies by ~2.5. At start it prints duration, frame count and estimated minutes, waits 5 s unless `--yes` (Ctrl+C to cancel), then reports progress and ETA every 5 s.
+
+**Missing assets fail (v3.4)**: a missing `--audio` file, a missing avatar / voice / background declared in the script, voice without an avatar video, no audio track at all, or any 404 while loading the page → `STATUS FAIL missing-media`, exit code 1, no mp4. There is no silent-fallback switch.
 
 How it works: for each frame `seek(t)` → wait for the avatar video to decode → wait 2 `requestAnimationFrame` ticks → pipe the PNG screenshot straight into FFmpeg (nothing written to disk), then losslessly concatenate the chunks and mux the audio. `ZERO_ERRORS` at the end means no page errors during the whole run.
 
@@ -320,11 +350,12 @@ Mushanhe_Video_Engine/
 │   ├── avatar-morph-fx.js     # Dot-matrix particle scatter/gather transitions
 │   ├── subtitle.js            # Word-level karaoke subtitles
 │   ├── timeline.js            # Word-level timeline
-│   ├── script-sync.js         # Real word timings / voice master clock / timed skins · top-right 01–12 style switcher
+│   ├── script-sync.js         # Real word timings / voice master clock / timed skins / media resolved against the script / cue / cut punch-in · top-right 01–12 style switcher
+│   ├── talk.js                # Kernel scene type talk: full-screen presenter + spoken keywords (v3.4)
 │   ├── engine.css             # 1920×1080 canvas, layers, HUD
 │   ├── …                      # 3D modules, gallery backgrounds, foreground FX, live cursors, foley and other extensions
 │   ├── vendor/                # Third-party libraries: GSAP, CustomEase, three.js
-│   └── tools/                 # serve.py preview server · inspect_frames.py frame inspection · smoke_test.py 12-pack smoke regression · align.py voice-over alignment · export_mp4.py MP4 export · check_update.py update check
+│   └── tools/                 # serve.py preview server · inspect_frames.py frame inspection · smoke_test.py 12-pack smoke regression · rough_cut.py rough cut · align.py voice-over alignment · export_mp4.py MP4 export · check_update.py update check
 └── templates/
     ├── 01_industrial_3d/      # Flagship #1 · 3D Industrial Gallery
     ├── 02_swiss_print/        # Flagship #2 · Swiss Print Collage
@@ -371,6 +402,8 @@ create(data, { dur }) → { el, layer, avatar, cams, update(localT), w? }
 - [ ] **More variants and vertical components**: `variant` layouts for the other packs + vertical components (finance / programming / reading)
 - [x] **v3.3**: `align.py` voice-over alignment (faster-whisper; mode A standalone output / mode B fills the script; same-source words + sub; conservative script fixes; optional `--refine` stable-ts forced alignment)
 - [x] **v3.3.1**: fix: segmented alignment for long scripts (2,000+ characters no longer fail as a whole), explicit failure status (`STATUS OK / PARTIAL / FAIL`), update check reuses today's local result, upgrade note on cleaning up renamed folders
+- [x] **v3.4**: `rough_cut.py` rough cut · kernel scene type `talk` · word-level `cue` · scene boundaries must be sentence ends (else FAIL) · export fails on missing assets · silence-hallucination filter · media resolved against the script · avatar `focus` / cut punch-in · English scene tabs hidden on export · mandatory stops in the Skill
+- [ ] `cue` for chart types in the other 11 packs; `meta.transition` for all 12 packs
 - [ ] Automatic BGM ducking (lower background music under speech)
 - [ ] Visual script editor
 

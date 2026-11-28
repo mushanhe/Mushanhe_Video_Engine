@@ -52,7 +52,7 @@
       if (this.tagEl) gsap.set(this.tagEl, { opacity: p.tagOpacity });
     }
 
-    animateOnTimeline(tl, mode, atTime, dur = 0.65) {
+    animateOnTimeline(tl, mode, atTime, dur = 0.65, tagDur = 0.25) {
       const p = this.getPreset(mode);
       tl.to(this.stageEl, {
         left: p.left,
@@ -67,7 +67,7 @@
       if (this.tagEl) {
         tl.to(this.tagEl, {
           opacity: p.tagOpacity,
-          duration: 0.25
+          duration: tagDur
         }, atTime);
       }
     }

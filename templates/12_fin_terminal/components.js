@@ -120,8 +120,11 @@
   function mark(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<em>$1</em>').replace(/\n/g, '<br/>'); }
   /** 功能键式小标题：琥珀底功能码 + 银灰标题 */
   let FN_SEQ = 0;
+  const blank = (s) => !String(s == null ? '' : s).trim();
   function kicker(text, style, code) {
-    return h('div', 'bf-kicker', style, `<b>${esc(code || 'FN')}</b><span>${esc(text)}</span>`);
+    const e = h('div', 'bf-kicker', style, `<b>${esc(code || 'FN')}</b><span>${esc(text)}</span>`);
+    if (blank(text)) e.style.display = 'none';   // v3.5：没填 kicker → 功能键小标题整块不出
+    return e;
   }
   /** 研报标题行 + 下方 1px 钢蓝分隔规 + 右侧报告元信息 */
   function headBlock(el, A, data, size, meta, code) {
@@ -336,11 +339,15 @@
       `<div class="cv">${PROPS.candles(500, 270, 26, 1203, 1)}</div><div class="px">+9.0x ▲</div>`);
     const cv = chart.querySelector('.cv'), px = chart.querySelector('.px');
     const ch = panel('bf-cv-ch', null, 'TICKER', null,
-      `<div class="l">${esc(data.chapterLabel || 'CHAPTER')}</div><div class="n">${esc(data.chapter || '01')}</div><div class="f"><span>VOL 1.0M</span><span>▲ 100%</span></div>`);
+      `<div class="l">${esc(data.chapterLabel || '')}</div><div class="n">${esc(data.chapter || '')}</div><div class="f"><span>VOL 1.0M</span><span>▲ 100%</span></div>`);
+    if (blank(data.chapterLabel) && blank(data.chapter)) ch.style.display = 'none';   // v3.5：章节牌没填 → 整块不出（不再默认 CHAPTER 01）
     const sub = panel('bf-cv-sub', null, 'SUMMARY · 摘要', 'P.01', `<div class="tx">${mark(data.subtitle)}</div>`);
+    if (blank(data.subtitle)) sub.style.display = 'none';
     const dm = h('div', 'bf-chip', 'left:380px;top:812px;', `<i></i>${esc(data.dim || '')}`);
+    if (blank(data.dim)) dm.style.display = 'none';
     const st = data.stamp ? badge(data.stamp, data.stampSmall || '', 'fill', 'left:1010px;top:600px;font-size:72px;min-width:280px;') : null;
     const rl = h('div', 'bf-meta', 'left:1010px;top:566px;color:var(--bf-amber2);', 'ANALYST RATING');
+    if (!st) rl.style.display = 'none';   // 评级标题跟着评级徽章：没填 stamp 就不出
     el.append(kick, meta, title, chart, ch, sub, dm, rl);
     if (st) el.appendChild(st);
     A.add(kick, 0.05, 0.3, { x: -30, o: 0 }, { x: 0, o: 1 }, 'quart');
@@ -422,15 +429,17 @@
     const items = (data.items || []).slice(0, 5); const n = Math.max(1, items.length);
     const el = h('div', 'bf-zone');
     headBlock(el, A, data, 84, `EXECUTION PLAN · ${n} LEGS`, 'FN·03');
-    const tag = h('div', 'bf-chip', 'left:1100px;top:176px;font-size:28px;color:var(--bf-amber2);', `<i></i>${esc(data.dim || `${n} STEPS`)}`);
+    const tag = h('div', 'bf-chip', 'left:1100px;top:176px;font-size:28px;color:var(--bf-amber2);', `<i></i>${esc(data.dim || '')}`);
+    if (blank(data.dim)) tag.style.display = 'none';   // v3.5：没填 dim 不再默认「N STEPS」
     const AW = 44, cw = (1280 - AW * (n - 1)) / n;
     const cards = items.map((it, i) => panel('bf-leg', `left:${60 + i * (cw + AW)}px;width:${cw}px;`, `LEG ${String(i + 1).padStart(2, '0')}`, '<span class="st">QUEUED</span>',
-      `<div class="no">${esc(it.no || String(i + 1).padStart(2, '0'))}</div><div class="nm">${esc(it.title)}</div><div class="pg"><i></i></div><div class="fn">${esc(it.desc || '')}</div>`));
+      `<div class="no">${esc(it.no || String(i + 1).padStart(2, '0'))}</div><div class="nm">${esc(it.title)}</div><div class="pg"><i></i></div>${blank(it.desc) ? '' : `<div class="fn">${esc(it.desc)}</div>`}`));
     const arrows = items.slice(1).map((_, i) => h('div', 'bf-arw', `left:${60 + (i + 1) * (cw + AW) - AW + 8}px;`, '›'));
     const bar = panel('bf-pf', null, null, null,
-      `<div class="f">▣ ${esc(data.folder || 'PROJECT /')}</div><div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`);
+      `${blank(data.folder) ? '' : `<div class="f">▣ ${esc(data.folder)}</div>`}<div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`);
     const label = data.label ? badge(data.label, data.labelSmall || '', 'fill amber', 'left:1080px;top:752px;font-size:38px;min-width:220px;') : null;
     el.append(tag, ...cards, ...arrows, bar);
+    if ([data.folder, data.folderBig, data.folderMeta, data.label].every(blank)) bar.style.display = 'none';   // v3.5：项目条全空 → 整条不出
     if (label) el.appendChild(label);
     A.add(tag, 0.6, 0.35, { x: 30, o: 0 }, { x: 0, o: 1 }, 'quart');
     A.add(bar, 0.5, 0.45, { y: 60, o: 0 }, { y: 0, o: 1 }, 'quart');
@@ -456,7 +465,7 @@
     const RH = 92, R0 = 268;
     const H = R0 + n * RH + (data.note ? 150 : 30);
     const el = h('div', 'bf-zone');
-    const card = panel('bf-ck-card', `height:${H}px;`, `COMPLIANCE · ${esc(data.kicker || '')}`, `${n} ITEMS`,
+    const card = panel('bf-ck-card', `height:${H}px;`, `COMPLIANCE${blank(data.kicker) ? '' : ` · ${esc(data.kicker)}`}`, `${n} ITEMS`,
       `<div class="ttl">${esc(data.title)}</div><div class="sub">${esc(data.subtitle || '')}</div><div class="th"><span>#</span><span>ITEM / 条目</span><span>STATUS</span></div>`);
     const rows = items.map((it, i) => {
       const r = h('div', 'bf-row', `top:${R0 + i * RH}px;`,
@@ -497,13 +506,15 @@
     const el = h('div', 'bf-zone');
     headBlock(el, A, data, 84, 'PAIR ANALYSIS · A / B', 'FN·05');
     const L = h('div', 'bf-panel bf-cmp wrong', 'left:60px;',
-      `<div class="band"><span>${esc(w.label || '✕ WRONG')}</span><span>SELL ▼</span></div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div><div class="kc">${PROPS.candles(522, 92, 22, 505, -1, { grid: false, ma: false })}</div><svg class="strike" width="480" height="150"><path d="M4 42 L430 36" stroke="var(--bf-down)" stroke-width="6" fill="none" stroke-dasharray="430" stroke-dashoffset="430"/><path d="M4 106 L390 100" stroke="var(--bf-down)" stroke-width="6" fill="none" stroke-dasharray="390" stroke-dashoffset="390"/></svg>`);
+      `<div class="band"><span>${esc(w.label || '✕')}</span><span>SELL ▼</span></div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div><div class="kc">${PROPS.candles(522, 92, 22, 505, -1, { grid: false, ma: false })}</div><svg class="strike" width="480" height="150"><path d="M4 42 L430 36" stroke="var(--bf-down)" stroke-width="6" fill="none" stroke-dasharray="430" stroke-dashoffset="430"/><path d="M4 106 L390 100" stroke="var(--bf-down)" stroke-width="6" fill="none" stroke-dasharray="390" stroke-dashoffset="390"/></svg>`);
     const R = h('div', 'bf-panel bf-cmp right', 'left:780px;',
-      `<div class="band"><span>${esc(r.label || '✓ RIGHT')}</span><span>BUY ▲</span></div><div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div><div class="kc">${PROPS.candles(522, 92, 22, 507, 1, { grid: false, ma: false })}</div>`);
+      `<div class="band"><span>${esc(r.label || '✓')}</span><span>BUY ▲</span></div><div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div><div class="kc">${PROPS.candles(522, 92, 22, 507, 1, { grid: false, ma: false })}</div>`);
     const vs = h('div', 'bf-vs', null, 'VS');
     const xs = badge(w.stamp || '✕', 'SELL', 'down', 'left:390px;top:372px;font-size:40px;');
-    const verdict = h('div', 'bf-panel bf-verdict', null, `<b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${mark(data.verdict || '')}</span>`);
+    if (blank(w.stamp)) xs.style.display = 'none';   // v3.5：没填印章 → 不出
+    const verdict = h('div', 'bf-panel bf-verdict', null, `${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${mark(data.verdict || '')}</span>`);
     const rate = badge('STRONG', 'BUY', 'fill', 'left:1110px;top:776px;font-size:44px;');
+    if (blank(data.verdict)) { verdict.style.display = 'none'; rate.style.display = 'none'; }   // 没写结论 → 结论条连同评级不出；没写 verdictLabel 不再默认 VERDICT
     el.append(L, R, vs, xs, verdict, rate);
     A.add(L, -1, 0.01, { o: 0 }, { o: 0 });
     A.add(L, 0.5, 0.45, { x: -60, o: 0 }, { x: 0, o: 1 }, 'quart');
@@ -527,7 +538,7 @@
   }
 
   // ============================== 6. showcase 终端 / 研报文档 / 录屏 / 产品 ==============================
-  const DEVICE_SVG = `<svg viewBox="0 0 400 300"><rect x="40" y="70" width="320" height="190" rx="4" fill="#0F192B" stroke="#94A3B8" stroke-width="4"/><polyline points="70,220 120,190 160,200 210,140 250,160 300,100 330,110" fill="none" stroke="#10B981" stroke-width="6"/><rect x="70" y="92" width="90" height="12" fill="#F59E0B"/><rect x="150" y="262" width="100" height="18" fill="#94A3B8"/><text x="200" y="298" text-anchor="middle" font-family="Consolas, monospace" font-size="18" font-weight="700" fill="#94A3B8" letter-spacing="4">PRODUCT IMAGE</text></svg>`;
+  const DEVICE_SVG = `<svg viewBox="0 0 400 300"><rect x="40" y="70" width="320" height="190" rx="4" fill="#0F192B" stroke="#94A3B8" stroke-width="4"/><polyline points="70,220 120,190 160,200 210,140 250,160 300,100 330,110" fill="none" stroke="#10B981" stroke-width="6"/><rect x="70" y="92" width="90" height="12" fill="#F59E0B"/><rect x="150" y="262" width="100" height="18" fill="#94A3B8"/></svg>`;
   function productPanel(data) {
     const el = h('div', 'bf-prod');
     const pic = h('div', 'pic');
@@ -601,8 +612,9 @@
     const el = h('div', 'bf-screen-wrap', 'position:absolute;inset:0;pointer-events:none;');
     const right = data.pos === 'right';
     const side = right ? 'right:70px;' : 'left:70px;';
-    const card = h('div', 'bf-q', side, `<div class="bf-ph"><span>ANALYST NOTE · ${esc(data.kicker || 'QUOTE')}</span><span class="r">★★★★★</span></div><div class="t">${mark(data.text)}</div><div class="sp">${PROPS.spark(420, 60, 88, 1, 'var(--bf-amber)', 28)}</div><div class="by">${esc(data.by || '')}</div>`);
-    const st = badge(data.stamp || 'AAA', data.stampSmall || '', 'fill amber', `${right ? 'right:120px;' : 'left:470px;'}top:${data.stampTop || 690}px;font-size:54px;`);
+    const card = h('div', 'bf-q', side, `<div class="bf-ph"><span>ANALYST NOTE${blank(data.kicker) ? '' : ` · ${esc(data.kicker)}`}</span><span class="r">★★★★★</span></div><div class="t">${mark(data.text)}</div><div class="sp">${PROPS.spark(420, 60, 88, 1, 'var(--bf-amber)', 28)}</div><div class="by">${esc(data.by || '')}</div>`);
+    const st = badge(data.stamp || '', data.stampSmall || '', 'fill amber', `${right ? 'right:120px;' : 'left:470px;'}top:${data.stampTop || 690}px;font-size:54px;`);
+    if (blank(data.stamp)) st.style.display = 'none';   // v3.5：没填 stamp 不再默认 AAA
     el.append(card, st);
     const dir = right ? 1 : -1;
     A.add(card, -1, 0.01, { o: 0 }, { o: 0 });
@@ -620,12 +632,16 @@
     headBlock(el, A, data, 84, 'ORDER TICKET · NEXT ACTIONS', 'FN·10');
     const tagBg = [['var(--bf-up)', '#06130D'], ['var(--bf-amber)', '#0B1220'], ['#38BDF8', '#0B1220']];
     const acts = (data.actions || []).slice(0, 3).map((a, i) => panel('bf-act', `top:${290 + i * 176}px;`, null, null,
-      `<div class="tg" style="background:${tagBg[i][0]};color:${tagBg[i][1]}">${esc(a.tag || 'ACTION')}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div><div class="no">${String(i + 1).padStart(2, '0')}</div>`));
+      `${blank(a.tag) ? '' : `<div class="tg" style="background:${tagBg[i][0]};color:${tagBg[i][1]}">${esc(a.tag)}</div>`}<div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div><div class="no">${String(i + 1).padStart(2, '0')}</div>`));
     const c = data.cta || {};
     const btnSt = [['var(--bf-up)', '#06130D'], ['var(--bf-amber)', '#0B1220'], ['#0A1222', 'var(--bf-silver)']];
-    const cta = panel('bf-cta', null, esc(c.kicker || 'OPEN SOURCE'), '<span class="live">● MARKET OPEN</span>',
-      `<div class="in"><div class="t">${esc(c.title || '')}</div><div class="repo">${esc(c.repo || '')}</div><div class="btns">${(c.buttons || []).slice(0, 3).map((b, i) => `<span style="background:${btnSt[i][0]};color:${btnSt[i][1]};border-color:${i === 2 ? 'var(--bf-steel)' : btnSt[i][0]}">${esc(b)}</span>`).join('')}</div></div>`);
-    const go = badge(c.stamp || 'GO', c.stampSmall || '', 'fill', 'left:1080px;top:650px;font-size:60px;min-width:220px;');
+    const btnL = (c.buttons || []).filter((b) => !blank(b)).slice(0, 3);
+    // v3.5：CTA 里没填的字段整块不出（不再默认 OPEN SOURCE / GO）；整张单子都没内容就不出
+    const cta = panel('bf-cta', null, blank(c.kicker) ? '' : esc(c.kicker), '<span class="live">● MARKET OPEN</span>',
+      `<div class="in"><div class="t">${esc(c.title || '')}</div>${blank(c.repo) ? '' : `<div class="repo">${esc(c.repo)}</div>`}${btnL.length ? `<div class="btns">${btnL.map((b, i) => `<span style="background:${btnSt[i][0]};color:${btnSt[i][1]};border-color:${i === 2 ? 'var(--bf-steel)' : btnSt[i][0]}">${esc(b)}</span>`).join('')}</div>` : ''}</div>`);
+    if ([c.kicker, c.title, c.repo].every(blank) && !btnL.length) cta.style.display = 'none';
+    const go = badge(c.stamp || '', c.stampSmall || '', 'fill', 'left:1080px;top:650px;font-size:60px;min-width:220px;');
+    if (blank(c.stamp)) go.style.display = 'none';
     el.append(...acts, cta, go);
     const t0 = 0.7, stp = Math.min(0.5, (D * 0.3) / Math.max(1, acts.length));
     acts.forEach((a, i) => { A.add(a, -1, 0.01, { o: 0 }, { o: 0 }); A.add(a, t0 + i * stp, 0.45, { x: -60, o: 0 }, { x: 0, o: 1 }, 'quart'); });

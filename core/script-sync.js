@@ -14,9 +14,129 @@
  *   4. meta.audio    "voice.wav" 或 { src, offset, volume } → 挂载 <audio id="voice-audio">，
  *                    播放时以人声音轨为主时钟（seek / 播放 / 暂停全部同步）。
  *   5. meta.themeCues [[t, "obsidian", "可选角标文字"], ...] → 按时间确定性切换 01–06 的实时皮肤（seek 可逆）。
+ *
+ * v3.4 新增（同样「剧本里有才生效」）：
+ *   6. resolveMedia(script, dataSrc)：meta.audio / meta.avatar.video / meta.avatar.bg 一律以「剧本 JSON 文件」为基准解析
+ *      （不再以页面目录为基准），换风格包、剧本放在 work/ 下都不断素材；任一媒体加载失败 → console.error + 页面红条（missing-media）。
+ *   7. meta.avatar.focus "50% 30%" → 人像 object-position（竖屏 / 手机素材 full 时不裁脸）；不写保持 center top。
+ *   8. meta.avatar.cuts [秒, ...]（rough_cut.py 的剪点）→ 剪点不在换段处时，人像做一次 1.0→1.08 推近盖住跳切（确定性，可逆）。
+ *   9. sceneCtx(sc, start, dur) → 组件 ctx = { dur, start, words, cue }；cue("词", 兜底秒) 返回该词在本段的局部起点秒。
+ *  10. theme.pip "circle" | "square" → 画中画圆窗 / 方窗由皮肤参数决定；?chrome=0（导出 / 抽帧）隐藏顶部英文页签。
+ *
+ * v3.4.1（金样片）：
+ *  11. ctx.cueEnd("词") → 该词念完的局部秒；ctx.clauseEnd(t) → t 所在分句最后一个字念完的局部秒（牌子按它退场）。
+ *  12. sc.avatarPush { cue, zoom=1.08, dur=0.8 } → 说到这个词时人像镜头缓推一次（本段结束复位）。
  */
 (function (global) {
   const MHEngine = (global.MHEngine = global.MHEngine || {});
+
+  // ==================== v3.4 · 媒体路径以剧本为基准 + 缺素材显式报错 ====================
+  const ABS_URL = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+  const MEDIA_LABEL = { 'avatar-video': '人像视频 meta.avatar.video', 'voice-audio': '人声音轨 meta.audio', 'avatar-studio-bg': '人像底图 meta.avatar.bg' };
+  const mediaErrors = [];
+  function showMediaError(msg) {
+    const doc = global.document;
+    if (!doc || !doc.body) return;
+    let el = doc.getElementById('mh-media-error');
+    if (!el) {
+      el = doc.createElement('div'); el.id = 'mh-media-error';
+      el.style.cssText = 'position:fixed;left:16px;top:16px;z-index:2000;max-width:min(1100px,calc(100vw - 32px));padding:12px 18px;background:#D7263D;color:#FFFFFF;border:3px solid #111111;font:700 15px/1.45 "Noto Sans SC","Microsoft YaHei",sans-serif;white-space:pre-wrap;word-break:break-all;box-shadow:6px 6px 0 #111111;';
+      doc.body.appendChild(el);
+    }
+    el.textContent = `⚠ 素材加载失败（missing-media），成片会没人或没声音：\n${mediaErrors.join('\n')}\n素材路径按「剧本 JSON 所在目录」解析，请检查剧本里的路径。`;
+    if (msg) el.dataset.last = msg;
+  }
+  if (global.addEventListener) {
+    // 资源加载失败的 error 事件不冒泡，但可以在捕获阶段统一接住（<video> / <audio> / <img>）
+    global.addEventListener('error', (e) => {
+      const el = e && e.target;
+      if (!el || !/^(VIDEO|AUDIO|IMG|SOURCE)$/.test(el.tagName || '')) return;
+      const url = el.currentSrc || el.src || el.getAttribute('src') || '';
+      if (!url) return;
+      const what = MEDIA_LABEL[el.id] || el.tagName.toLowerCase();
+      const line = `${what} → ${url}`;
+      if (mediaErrors.includes(line)) return;
+      mediaErrors.push(line);
+      console.error(`[MHEngine] missing-media 媒体加载失败：${line}`);
+      showMediaError(line);
+    }, true);
+  }
+
+  /** 把剧本里的媒体路径换成「以剧本 JSON 为基准」的绝对 URL（原地修改并返回 script）。绝对 URL / data: / blob: 不动。 */
+  function resolveMedia(script, dataSrc) {
+    if (!script || typeof script !== 'object') return script;
+    let base;
+    try { base = new URL(dataSrc || 'demo_data.json', global.location.href); } catch (_) { return script; }
+    const fix = (s) => (typeof s === 'string' && s && !ABS_URL.test(s) ? new URL(s, base).href : s);
+    const meta = (script.meta = script.meta || {});
+    const av = meta.avatar;
+    if (av && typeof av === 'object') { if (av.video) av.video = fix(av.video); if (av.bg) av.bg = fix(av.bg); }
+    const A = meta.audio;
+    if (typeof A === 'string') meta.audio = fix(A);
+    else if (A && typeof A === 'object' && A.src) A.src = fix(A.src);
+    // 画中画形状交给皮肤参数：theme.pip（或 meta.avatar.pip）= circle / square；不写 = 风格包原样
+    const pip = (script.theme && script.theme.pip) || (av && av.pip);
+    const root = global.document && global.document.documentElement;
+    if (root && (pip === 'circle' || pip === 'square')) root.setAttribute('data-mh-pip', pip);
+    return script;
+  }
+
+  // ?chrome=0：导出 / 抽帧时隐藏顶部英文页签（engine.css 按 html.mh-chrome-off 隐藏），预览页照常显示
+  try {
+    if (global.document && new URLSearchParams(global.location.search).get('chrome') === '0') global.document.documentElement.classList.add('mh-chrome-off');
+  } catch (_) {}
+
+  /** 剪点推近计划：返回 t → 缩放倍数；没有 meta.avatar.cuts 时返回 null（画面与原版逐帧一致）。
+   *  规则：换段（第 2 段起的段首）与 avatarCues 视为「已有镜头切换」，±0.35s 内的剪点不另做处理，并把推近复位到 1.0；
+   *        其余剪点在剪点那一帧做一次硬推近（1.0 ↔ cutZoom，默认 1.08，交替），盖住人物位置的跳变。 */
+  function cutPlan(meta, scenes) {
+    const av = (meta && meta.avatar) || {};
+    const cuts = (Array.isArray(av.cuts) ? av.cuts : []).map((c) => +(c && typeof c === 'object' ? c.t : c)).filter(Number.isFinite).sort((a, b) => a - b);
+    if (!cuts.length) return null;
+    const Z = +av.cutZoom > 1 ? +av.cutZoom : 1.08;
+    const bounds = [];
+    (scenes || []).forEach((s, i) => {
+      if (i) bounds.push(+s.start);
+      (s.avatarCues || []).forEach((c) => { if (Array.isArray(c) && Number.isFinite(+c[0])) bounds.push(+c[0]); });
+    });
+    const ev = bounds.map((b) => [b, 'reset']);
+    const list = cuts.map((c) => {
+      const covered = bounds.some((b) => Math.abs(b - c) <= 0.35);
+      if (!covered) ev.push([c, 'toggle']);
+      return { t: c, covered };
+    });
+    ev.sort((a, b) => a[0] - b[0] || (a[1] === 'reset' ? -1 : 1));
+    const at = (t) => {
+      let z = 1;
+      for (const [x, k] of ev) { if (x > t + 1e-6) break; z = k === 'reset' ? 1 : (z === 1 ? Z : 1); }
+      return z;
+    };
+    return { at, list, zoom: Z };
+  }
+
+  /** v3.4.1 · 镜头推近：sc.avatarPush = { cue: "到底", zoom: 1.08, dur: 0.8 }（或数组）→ 说到这个词时人像镜头缓推一次，
+   *  到本段结束复位。没写就返回 null（画面逐帧不变）。与剪点推近相乘。 */
+  function pushPlan(scenes) {
+    const ev = [];
+    (scenes || []).forEach((s) => {
+      const list = Array.isArray(s.avatarPush) ? s.avatarPush : s.avatarPush ? [s.avatarPush] : [];
+      if (!list.length) return;
+      const st = +s.start || 0, end = st + (+s.dur || 0), K = cueKit(s, st);
+      list.forEach((p) => {
+        const o = typeof p === 'string' ? { cue: p } : p || {};
+        const at = K.cue(o.cue, typeof o.t === 'number' ? o.t - st : null);
+        if (at == null) return;
+        ev.push({ t0: st + at, d: Math.max(0.1, +o.dur || 0.8), z: +o.zoom > 1 ? +o.zoom : 1.08, end });
+      });
+    });
+    if (!ev.length) return null;
+    const ease = (x) => 1 - Math.pow(1 - x, 3);   // 先快后慢：说到这个词的那一帧镜头就开始动
+    return { list: ev, at(t) {
+      let z = 1;
+      ev.forEach((e) => { if (t >= e.t0 && t < e.end) z *= 1 + (e.z - 1) * ease(Math.max(0, Math.min(1, (t - e.t0) / e.d))); });
+      return z;
+    } };
+  }
 
   const LATIN = /^[A-Za-z0-9.\-_/@#:+%]+$/;
   const STRIP = /[\s，。、！？；：,!?;:“”"'‘’（）()《》【】「」…—·~～]/g;
@@ -139,6 +259,145 @@
     return true;
   }
 
+  /**
+   * v3.4 · 词级 cue：返回 cue(spec, fallback) → 本段局部秒。
+   *   spec = "词"（本段第 1 次出现）| ["词", 第几次] | { text, nth } | 数字（直接写本段局部秒）；
+   *   本段没有 words → 原样返回 fallback（不写 words / cue 时画面与原版逐帧一致）；有 words 但找不到该词 → console.warn 后用 fallback。
+   *   返回的是「该词第一个字的起点 − 模板给本段的起点 start」，元素就在这一帧开始入场。
+   */
+  function makeCue(sc, start) { return cueKit(sc, start).cue; }
+
+  /** v3.4.1：同一份 words 上的三件套 —— cue（词起点）、cueEnd（词终点）、clauseEnd（某时刻所在分句最后一个字的终点），都是本段局部秒 */
+  function cueKit(sc, start) {
+    const st = +start || 0, du = +((sc && sc.dur) || 0);
+    let W = (sc && Array.isArray(sc.words) ? sc.words : []).filter((w) => Array.isArray(w) && w.length >= 3 && String(w[0]).trim());
+    if (W.length && st > 0 && Math.min(...W.map((w) => +w[1] || 0)) < st - 0.5) {   // 与 pushWords 同一条相对秒兜底
+      const sh = W.map((w) => [w[0], +w[1] + st, +w[2] + st]);
+      if (sh.every((w) => w[1] >= st - 1.0 && w[2] <= st + du + 1.0)) W = sh;
+    }
+    // 两条字流：原字（「12」）+ 数字展开成读法（「十二」），cue 写哪种都能对上
+    const streams = [[], []].map((C, mode) => {
+      const CW = [];
+      W.forEach((w, wi) => chars(mode ? cnNum(w[0]) : w[0]).forEach((c) => { C.push(c); CW.push(wi); }));
+      return { C, CW };
+    });
+    const warned = new Set();
+    /** 找到 spec 在字流里的位置 → [第一个字的词号, 最后一个字的词号]；找不到返回 null */
+    function locate(spec) {
+      let text = spec, nth = 1;
+      if (Array.isArray(spec)) { text = spec[0]; nth = Math.max(1, +spec[1] || 1); }
+      else if (typeof spec === 'object') { text = spec.text; nth = Math.max(1, +spec.nth || 1); }
+      if (!streams[0].C.length || !chars(text).length) return null;
+      let hit = -1, CW = null, KL = 0;
+      for (let mode = 0; mode < 2 && hit < 0; mode++) {
+        const K = chars(mode ? cnNum(text) : text), C = streams[mode].C;
+        let cnt = 0;
+        for (let i = 0; i + K.length <= C.length && hit < 0; i++) {
+          let ok = true;
+          for (let k = 0; k < K.length; k++) if (C[i + k] !== K[k]) { ok = false; break; }
+          if (ok && ++cnt === nth) { hit = i; CW = streams[mode].CW; KL = K.length; }
+        }
+      }
+      if (hit < 0) {
+        const key = `${text}#${nth}`;
+        if (!warned.has(key)) { warned.add(key); console.warn(`[MHEngine.ScriptSync] cue「${text}」（第 ${nth} 次）在本段口播 words 里找不到，已退回模板默认时间；cue 必须和 words 里的字一模一样。`); }
+        return null;
+      }
+      return [CW[hit], CW[hit + KL - 1]];
+    }
+    const isSpec = (spec) => !(spec == null || spec === '' || spec === false);
+    function cue(spec, fallback) {
+      if (!isSpec(spec)) return fallback;
+      if (typeof spec === 'number' && Number.isFinite(spec)) return spec;
+      const L = locate(spec);
+      return L ? Math.max(0, +(+W[L[0]][1] - st).toFixed(3)) : fallback;
+    }
+    /** 这个词（最后一个字）念完的局部秒 */
+    function cueEnd(spec, fallback) {
+      if (!isSpec(spec) || typeof spec === 'number') return fallback;
+      const L = locate(spec);
+      return L ? Math.max(0, +(+W[L[1]][2] - st).toFixed(3)) : fallback;
+    }
+    // 分句终点：sc.sub 里 ，。！？；…（及半角）前面那个字所在的词 = 分句最后一个字；顿号 / 冒号不算。
+    // sub 与 words 按字 LCS 对齐（与分行同一套），没有 sub 时按词间停顿 ≥0.35s 兜底；本段最后一个词永远是分句终点。
+    let ends = null;
+    function clauseEnds() {
+      if (ends) return ends;
+      ends = W.map(() => false);
+      if (!W.length) return ends;
+      const subs = (sc && Array.isArray(sc.sub) ? sc.sub : []).map((x) => String(x == null ? '' : x));
+      const S = [], F = [];
+      subs.forEach((line) => Array.from(line).forEach((ch) => {
+        if (/[，。！？；…,.!?;]/.test(ch)) { if (S.length) F[S.length - 1] = true; return; }
+        const c = norm(ch).toLowerCase();
+        if (c) { S.push(c); F.push(false); }
+      }));
+      const C = streams[0].C, CW = streams[0].CW, n = S.length, m = C.length;
+      if (n && m && n * m <= 4e6 && F.some(Boolean)) {
+        const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+        for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = S[i] === C[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+        let lastW = -1;
+        for (let i = 0, j = 0; i < n && j < m;) {
+          if (S[i] === C[j]) { lastW = CW[j]; if (F[i]) ends[lastW] = true; i++; j++; }
+          else if (dp[i + 1][j] >= dp[i][j + 1]) { if (F[i] && lastW >= 0) ends[lastW] = true; i++; }
+          else j++;
+        }
+      } else {
+        for (let i = 0; i + 1 < W.length; i++) if (+W[i + 1][1] - +W[i][2] >= 0.35) ends[i] = true;
+      }
+      ends[W.length - 1] = true;
+      return ends;
+    }
+    /** 局部秒 t 所在（或之后第一个）分句最后一个字念完的局部秒；没有 words 返回 fallback */
+    function clauseEnd(t, fallback) {
+      if (!W.length || !Number.isFinite(+t)) return fallback;
+      const E = clauseEnds(), abs = st + +t;
+      let i = W.findIndex((w) => +w[2] > abs + 0.02);
+      if (i < 0) i = W.length - 1;
+      while (i < W.length - 1 && !E[i]) i++;
+      return Math.max(0, +(+W[i][2] - st).toFixed(3));
+    }
+    return { cue, cueEnd, clauseEnd, locate };
+  }
+
+  /** 阿拉伯数字 → 普通话读法（12→十二、30→三十、105→一百零五、3.5→三点五），只给 cue 比对用（与 align.py num_reading 同规则） */
+  function cnNum(s) {
+    const D = '零一二三四五六七八九';
+    const four = (n) => {
+      let out = '', zero = false;
+      [[1000, '千'], [100, '百'], [10, '十'], [1, '']].forEach(([v, u]) => {
+        const d = Math.floor(n / v) % 10;
+        if (d) { if (zero) out += '零'; out += D[d] + u; zero = false; } else if (out) zero = true;
+      });
+      return out;
+    };
+    return String(s == null ? '' : s).replace(/(\d+)(?:\.(\d+))?(%?)/g, (m, ip, dp, pct) => {
+      const n = +ip;
+      let r;
+      if (n === 0) r = '零';
+      else if (ip.length > 8) r = Array.from(ip).map((c) => D[+c]).join('');
+      else {
+        const hi = Math.floor(n / 10000), lo = n % 10000;
+        r = hi ? four(hi) + '万' + (lo > 0 && lo < 1000 ? '零' : '') + four(lo) : four(lo);
+        if (r.startsWith('一十')) r = r.slice(1);
+      }
+      if (dp) r += '点' + Array.from(dp).map((c) => D[+c]).join('');
+      return (pct ? '百分之' : '') + r;
+    }).replace(/两/g, '二');
+  }
+
+  /** 组件 ctx：{ dur, start, words, cue }。12 套组件原来只读 ctx.dur，多出来的键不影响旧组件 */
+  function sceneCtx(sc, start, dur) {
+    const K = cueKit(sc, start);
+    return { dur, start: +start || 0, words: (sc && Array.isArray(sc.words)) ? sc.words : [], cue: K.cue, cueEnd: K.cueEnd, clauseEnd: K.clauseEnd };
+  }
+
+  /** 内核句型（v3.4：talk）：风格包自己没有该 type 时由内核提供，12 套通用 */
+  function coreComponent(type) {
+    const C = MHEngine.CoreComponents || {};
+    return Object.prototype.hasOwnProperty.call(C, type) ? C[type] : null;
+  }
+
   /** 人像形态分段：没有 avatarCues 时与 scenes 一一对应（种子、时间完全不变） */
   function avatarSegments(scenes) {
     const segs = [];
@@ -179,9 +438,26 @@
     // 元数据晚到时补一次定位（无头抽帧 / 首屏 seek 都靠它）
     [video, audio].forEach((el, i) => el && el.addEventListener('loadedmetadata', () => { if (el.paused) setT(el, i ? aOff : vOff, target); }));
 
+    // v3.4：人像焦点（object-position）+ 剪点推近（transform），都只在剧本写了对应字段时才动样式
+    const av = meta.avatar || {};
+    const focus = typeof av.focus === 'string' && av.focus.trim() ? av.focus.trim() : '';
+    if (video && focus) video.style.objectPosition = focus;
+    const plan = video ? cutPlan(meta, opts && opts.scenes) : null;
+    const push = video ? pushPlan(opts && opts.scenes) : null;
+    let lastZ = 1;
+    const zoomAt = (t) => {
+      if (!plan && !push) return;
+      const z = +((plan ? plan.at(t) : 1) * (push ? push.at(t) : 1)).toFixed(4);
+      if (z === lastZ && video.style.transform) return;
+      lastZ = z;
+      video.style.transformOrigin = focus || '50% 30%';
+      video.style.transform = z === 1 ? 'scale(1)' : `scale(${z})`;
+    };
+    if (plan || push) zoomAt(0);
+
     return {
-      audio, video,
-      seek(t) { target = t; setT(video, vOff, t); if (video) video.playbackRate = 1; setT(audio, aOff, t); },
+      audio, video, cuts: plan ? plan.list : [],
+      seek(t) { target = t; zoomAt(t); setT(video, vOff, t); if (video) video.playbackRate = 1; setT(audio, aOff, t); },
       play(t) {
         if (t != null && Math.abs(t - target) > 0.05) this.seek(t);
         if (video) video.play().catch(() => {});
@@ -197,6 +473,7 @@
       /** 人像视频柔性追帧（漂移 >0.55s 硬切、>0.025s 微调倍速） */
       follow(t) {
         target = t;
+        zoomAt(t);
         if (!video || video.seeking || video.readyState < 2) return;
         const drift = vOff + t - video.currentTime, now = performance.now();
         if (Math.abs(drift) > 0.55 && now - lastHard > 900) { video.playbackRate = 1; setT(video, vOff, t); lastHard = now; }
@@ -321,12 +598,27 @@
     return `../${folder}/index.html${q.length ? '?' + q.join('&') : ''}`;
   }
 
+  /** 防呆：真人用浏览器打开了带 clean=1 的链接（播放键 / 切换器都被隐藏）→ 右下角提示并给出正常预览链接。
+   *  无头抽帧 / 导出（navigator.webdriver = true）不显示，画面不受影响。 */
+  function warnCleanLink() {
+    try { if (global.navigator && global.navigator.webdriver) return; } catch (_) { return; }
+    const doc = global.document;
+    const u = new URL(global.location.href);
+    ['clean', 't', 'chrome'].forEach((k) => u.searchParams.delete(k));
+    const el = doc.createElement('div');
+    el.id = 'mh-clean-warn';
+    el.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2001;max-width:520px;padding:12px 16px;background:#FFE500;color:#111111;border:3px solid #111111;box-shadow:5px 5px 0 #111111;font:700 14px/1.5 "Noto Sans SC","Microsoft YaHei",sans-serif;';
+    el.innerHTML = `这个链接带 <code>clean=1</code>，只给抽帧 / 导出用：播放键和风格切换器都被隐藏了。<br/><a href="${u.pathname + u.search}" style="color:#111111;">→ 打开正常预览（能播放、能换风格）</a>`;
+    doc.body.appendChild(el);
+  }
+
   function mountStyleSwitcher() {
     const doc = global.document;
     const m = /\/templates\/((0[1-9]|1[0-2])_[^/]+)\//.exec(global.location.pathname);
     if (!m || doc.getElementById(SW_ID)) return;
     let embedded = true;
     try { embedded = global.self !== global.top; } catch (_) {}
+    if (!embedded && new URLSearchParams(global.location.search).get('clean') === '1') warnCleanLink();
     if (embedded || new URLSearchParams(global.location.search).get('clean') === '1') return;
     const curNo = m[2];
     const cur = PACKS.find((p) => p[0] === curNo) || [curNo, m[1], m[1], '#FFFFFF'];
@@ -426,5 +718,6 @@
     else mountStyleSwitcher();
   }
 
-  MHEngine.ScriptSync = { pushWords, avatarSegments, avatarAt, mediaClock, renderCues, styleSwitchHref };
+  MHEngine.ScriptSync = { pushWords, avatarSegments, avatarAt, mediaClock, renderCues, styleSwitchHref,
+    resolveMedia, mediaErrors, cutPlan, pushPlan, makeCue, cueKit, sceneCtx, coreComponent };
 })(window);

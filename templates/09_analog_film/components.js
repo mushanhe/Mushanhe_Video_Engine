@@ -27,6 +27,9 @@
     back: (x) => { const c1 = 1.25, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); }
   };
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const blank = (s) => !String(s == null ? '' : s).trim();
+  /** v3.5：可选字段没填 → 整块不渲染（display:none；Animator 只动 transform / opacity，不会再显出来） */
+  const hideIf = (el, cond) => { if (cond && el) el.style.display = 'none'; return el; };
 
   function h(tag, cls, style, html) {
     const el = document.createElement(tag);
@@ -121,10 +124,10 @@
   };
 
   function prop(name, args, style) { return h('div', 'af-prop', style, PROPS[name](...(args || []))); }
-  function kicker(text, style) { return h('div', 'af-kicker', style, `<span class="no">No.</span>${esc(text)}<i></i>`); }
+  function kicker(text, style) { return hideIf(h('div', 'af-kicker', style, `<span class="no">No.</span>${esc(text)}<i></i>`), blank(text)); }
   /** 圆形价签贴纸 */
   function dotSticker(text, small, size, cls, style) {
-    return h('div', `af-dot ${cls || ''}`, `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.2)}px;${style || ''}`, `<div><b>${esc(text)}</b>${small ? `<small>${esc(small)}</small>` : ''}</div>`);
+    return hideIf(h('div', `af-dot ${cls || ''}`, `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.2)}px;${style || ''}`, `<div><b>${esc(text)}</b>${small ? `<small>${esc(small)}</small>` : ''}</div>`), blank(text));
   }
   function tape(style) { return h('div', 'af-tape', style); }
   function dateStamp(text, size, style) { return h('div', 'af-date', `font-size:${size}px;${style || ''}`, esc(text || `'${DATE}`)); }
@@ -346,12 +349,13 @@
       if (c === '\n') { title.appendChild(document.createElement('br')); return; }
       const s = h('span', null, null, c === ' ' ? '&nbsp;' : esc(c)); title.appendChild(s); chars.push(s);
     });
-    const sub = h('div', 'af-cover-sub', null, mark(data.subtitle));
-    const dim = h('div', 'af-cap', 'left:64px;top:700px;font-size:22px;color:var(--af-ink);', `— ${esc(data.dim || '')}`);
+    const sub = hideIf(h('div', 'af-cover-sub', null, mark(data.subtitle)), blank(data.subtitle));
+    const dim = hideIf(h('div', 'af-cap', 'left:64px;top:700px;font-size:22px;color:var(--af-ink);', `— ${esc(data.dim || '')}`), blank(data.dim));
     const rule = h('div', 'af-rule', 'left:60px;top:770px;width:640px;');
-    const P = polaroid(470, 470, 'sunset', 'left:810px;top:150px;', `<span>${esc(data.chapterLabel || 'CHAPTER')} ${esc(data.chapter || '01')}</span><span></span>`);
-    P.ph.insertBefore(h('div', 'af-cover-chl', null, `${esc(data.chapterLabel || 'CHAPTER')} ·`), P.dev);
-    P.ph.insertBefore(h('div', 'af-cover-ch', null, esc(data.chapter || '01')), P.dev);
+    const chL = data.chapterLabel || '', chN = data.chapter || '';
+    const P = polaroid(470, 470, 'sunset', 'left:810px;top:150px;', `<span>${esc(`${chL} ${chN}`.trim())}</span><span></span>`);
+    P.ph.insertBefore(hideIf(h('div', 'af-cover-chl', null, `${esc(chL)} ·`), blank(chL)), P.dev);
+    P.ph.insertBefore(hideIf(h('div', 'af-cover-ch', null, esc(chN)), blank(chN)), P.dev);
     P.ph.insertBefore(dateStamp(`'${DATE}`, 24, 'right:22px;top:20px;'), P.dev);
     const tp = tape('left:975px;top:128px;transform:rotate(-4deg);');
     const st = dotSticker(data.stamp || '', data.stampSmall || '', 150, 'teal', 'left:1170px;top:640px;');
@@ -440,7 +444,7 @@
     const el = h('div', 'af-zone');
     const kick = kicker(data.kicker, 'left:60px;top:108px;');
     const head = h('div', 'af-head', 'left:56px;top:150px;font-size:84px;', mark(data.title));
-    const tag = h('div', 'af-kind', 'left:1150px;top:182px;', esc(data.dim || `${n} STEPS`));
+    const tag = hideIf(h('div', 'af-kind', 'left:1150px;top:182px;', esc(data.dim || '')), blank(data.dim));
     const strip = h('div', 'af-strip');
     const pfT = h('div', 'pf af-perf', 'top:0;'), pfB = h('div', 'pf af-perf', 'bottom:0;');
     strip.append(pfT, pfB);
@@ -450,15 +454,16 @@
     const frames = items.map((it, i) => {
       const x = G + i * (fw + G);
       const f = h('div', 'af-frame', `left:${x}px;width:${fw}px;`,
-        `<div class="bgc" style="background:radial-gradient(90% 70% at 85% 10%,rgba(255,170,90,.35),transparent 60%),${COLORS[i % 5]}"></div><div class="no">${esc(it.no || String(i + 1).padStart(2, '0'))}</div><div class="nm">${esc(it.title)}</div><div class="fn">${esc(it.desc || '')}</div><div class="unexp"></div><div class="flash"></div>`);
+        `<div class="bgc" style="background:radial-gradient(90% 70% at 85% 10%,rgba(255,170,90,.35),transparent 60%),${COLORS[i % 5]}"></div><div class="no">${esc(it.no || String(i + 1).padStart(2, '0'))}</div><div class="nm">${esc(it.title)}</div>${blank(it.desc) ? '' : `<div class="fn">${esc(it.desc)}</div>`}<div class="unexp"></div><div class="flash"></div>`);
       strip.appendChild(f);
       const e1 = h('div', 'edge', `left:${x + 8}px;top:381px;font-size:12px;`, `▸ ${i + 1}&nbsp;&nbsp;&nbsp;${i + 1}A`);
       strip.appendChild(e1);
       return f;
     });
     strip.appendChild(h('div', 'edge', 'left:20px;top:42px;font-size:12px;opacity:.75;', 'PORTRA 400 · 01A'));
-    const bar = h('div', 'af-capbar', null,
-      `<div class="f">▣ ${esc(data.folder || 'PROJECT /')}</div><div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`);
+    const bar = hideIf(h('div', 'af-capbar', null,
+      `${blank(data.folder) ? '' : `<div class="f">▣ ${esc(data.folder)}</div>`}<div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`),
+      blank(data.folder) && blank(data.folderBig) && blank(data.folderMeta));
     const fx = 60 + G + (n - 1) * (fw + G);
     const loop = prop('loop', [fw + 60, 400, 31], `left:${fx - 30}px;top:310px;`);
     const label = data.label ? h('div', 'af-mk', `left:${Math.min(1060, fx + 10)}px;top:738px;font-size:36px;`, `${esc(data.label)}${data.labelSmall ? `<small>${esc(data.labelSmall)}</small>` : ''}`) : null;
@@ -534,8 +539,8 @@
     const el = h('div', 'af-zone');
     const kick = kicker(data.kicker, 'left:60px;top:108px;');
     const head = h('div', 'af-head', 'left:56px;top:150px;font-size:84px;', mark(data.title));
-    const L = polaroid(540, 330, 'faded', 'left:60px;top:282px;', `<b style="color:var(--af-mute)">${esc(w.label || '✕ WRONG')}</b><span style="color:var(--af-mute)">01</span>`);
-    const R = polaroid(540, 330, 'teal af-on-dark', 'left:800px;top:282px;', `<b>${esc(r.label || '✓ RIGHT')}</b><span>02</span>`);
+    const L = polaroid(540, 330, 'faded', 'left:60px;top:282px;', `<b style="color:var(--af-mute)">${esc(w.label || '✕')}</b><span style="color:var(--af-mute)">01</span>`);
+    const R = polaroid(540, 330, 'teal af-on-dark', 'left:800px;top:282px;', `<b>${esc(r.label || '✓')}</b><span>02</span>`);
     [L, R].forEach((p) => p.el.classList.add('af-cmp'));
     L.ph.insertBefore(h('div', 't', null, esc(w.title).replace(/\n/g, '<br/>')), L.dev);
     L.ph.insertBefore(h('div', 'd', null, esc(w.desc || '')), L.dev);
@@ -549,7 +554,7 @@
     R.el.appendChild(badge);
     const vs = h('div', 'af-vs', null, 'vs.<small>COMPARE</small>');
     const xs = h('div', 'af-reject', 'left:300px;top:560px;', esc(w.stamp || '✕'));
-    const verdict = h('div', 'af-verdict', null, `<b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${mark(data.verdict || '')}</span>`);
+    const verdict = hideIf(h('div', 'af-verdict', null, `${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${mark(data.verdict || '')}</span>`), blank(data.verdict));
     const ds = dateStamp(`'${DATE}`, 22, 'left:1150px;top:180px;');
     el.append(kick, head, L.el, R.el, vs, xs, verdict, ds);
     A.add(kick, 0.1, 0.4, { o: 0 }, { o: 1 });
@@ -581,7 +586,7 @@
   function productPanel(data) {
     const el = h('div', 'af-prod');
     const pic = h('div', 'pic');
-    const p = polaroid(480, 300, 'umber', '', `<span>${esc(data.file || 'PRODUCT')}</span><span class="af-date" style="position:relative;font-size:16px;">'${DATE}</span>`);
+    const p = polaroid(480, 300, 'umber', '', `<span>${esc(data.file || '')}</span><span class="af-date" style="position:relative;font-size:16px;">'${DATE}</span>`);
     p.el.style.position = 'relative'; p.el.style.boxShadow = 'none';
     if (data.src) { const im = h('img'); im.src = data.src; p.ph.insertBefore(im, p.dev); } else p.ph.insertBefore(h('div', null, 'width:100%;display:flex;justify-content:center', DEVICE_SVG), p.dev);
     pic.appendChild(p.el);
@@ -602,18 +607,18 @@
     const dark = kind === 'code' || kind === 'terminal' || kind === 'image' || kind === 'video';
     const panel = h('div', `af-panel ${dark ? 'dark' : 'light'}`);
     if (dark) panel.append(h('div', 'pf af-perf', 'top:0;'), h('div', 'pf af-perf', 'bottom:0;'));
-    panel.appendChild(h('div', 'bar', null, `<span>▸ ${esc(data.file || kind.toUpperCase())}</span><span class="ep">PORTRA 400 · 08A</span>`));
+    panel.appendChild(h('div', 'bar', null, `<span>${blank(data.file) ? '' : `▸ ${esc(data.file)}`}</span><span class="ep">PORTRA 400 · 08A</span>`));
     let codeEl = null, media = null, prod = null;
     const lines = data.lines || [];
     if (kind === 'product') { prod = productPanel(data); panel.appendChild(prod.el); }
     else if (kind === 'image' && data.src) { media = h('img', 'af-media'); media.src = data.src; panel.appendChild(media); }
     else if (kind === 'video' && data.src) { media = h('video', 'af-media'); media.src = data.src; media.muted = true; media.loop = true; media.playsInline = true; media.preload = 'auto'; panel.appendChild(media); }
     else { codeEl = h('div', 'af-code'); panel.appendChild(codeEl); }
-    const notes = (data.notes || []).slice(0, 3).map((nt, i) => {
+    const notes = (data.notes || []).filter((nt) => nt && !blank(nt.text)).slice(0, 3).map((nt, i) => {
       const px = 60 + 1240 * (((nt.at && nt.at[0]) || 60) / 100), py = 262 + 640 * (((nt.at && nt.at[1]) || 30 + i * 20) / 100);
       return h('div', 'af-callout', `left:${px.toFixed(0)}px;top:${(py - 24).toFixed(0)}px;`, `<div class="dt"></div><div class="ln"></div><span>${esc(nt.text)}</span>`);
     });
-    const tag = h('div', 'af-kind', 'left:1172px;top:204px;', esc(kind.toUpperCase()));
+    const tag = hideIf(h('div', 'af-kind', 'left:1172px;top:204px;', esc(kind.toUpperCase())), blank(data.kind));   // v3.5：没写 kind 不出默认 CODE
     el.append(kick, head, panel, ...notes, tag);
     A.add(kick, 0.1, 0.4, { o: 0 }, { o: 1 });
     fadeUp(A, head, 0.2);
@@ -656,7 +661,7 @@
     const el = h('div', 'af-screen-wrap', 'position:absolute;inset:0;pointer-events:none;');
     const right = data.pos === 'right';
     const side = right ? 'right:70px;' : 'left:70px;';
-    const card = h('div', 'af-q', side, `<div class="k"><i></i>${esc(data.kicker || 'QUOTE')}</div><div class="t">${mark(data.text)}</div><div class="by">${esc(data.by || '')}</div>`);
+    const card = h('div', 'af-q', side, `${blank(data.kicker) ? '' : `<div class="k"><i></i>${esc(data.kicker)}</div>`}<div class="t">${mark(data.text)}</div>${blank(data.by) ? '' : `<div class="by">${esc(data.by)}</div>`}`);
     const st = dotSticker(data.stamp || '', data.stampSmall || '', 160, '', `${right ? 'right:140px;' : 'left:470px;'}top:${data.stampTop || 680}px;`);
     const tp = tape(`${right ? 'right:330px;' : 'left:300px;'}top:150px;transform:rotate(${right ? 5 : -5}deg);`);
     const ds = dateStamp(`'${DATE}`, 40, `${right ? 'left:90px;' : 'right:96px;'}top:820px;`);
@@ -675,16 +680,18 @@
     const kick = kicker(data.kicker, 'left:60px;top:108px;');
     const head = h('div', 'af-head', 'left:56px;top:148px;font-size:84px;', mark(data.title));
     const acts = (data.actions || []).slice(0, 3).map((a, i) => h('div', 'af-act', `top:${280 + i * 172}px;`,
-      `<div class="no">${String(i + 1).padStart(2, '0')}</div><div class="tg">${esc(a.tag || 'ACTION')}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div>`));
+      `<div class="no">${String(i + 1).padStart(2, '0')}</div>${blank(a.tag) ? '' : `<div class="tg">${esc(a.tag)}</div>`}<div class="t">${esc(a.title)}</div>${blank(a.desc) ? '' : `<div class="d">${esc(a.desc)}</div>`}`));
     const c = data.cta || {};
+    const noCta = blank(c.kicker) && blank(c.title) && blank(c.repo) && !(c.buttons || []).some((b) => !blank(b)) && blank(c.stamp);
     const P = polaroid(640, 400, 'sunset af-on-dark', 'left:690px;top:262px;', `<span>${esc(c.repo || '')}</span><span class="af-date" style="position:relative;font-size:16px;">'${DATE}</span>`);
     P.el.classList.add('af-cta');
-    P.ph.insertBefore(h('div', 'k', null, esc(c.kicker || 'OPEN SOURCE')), P.dev);
+    P.ph.insertBefore(hideIf(h('div', 'k', null, esc(c.kicker || '')), blank(c.kicker)), P.dev);
+    hideIf(P.el, noCta);
     P.ph.insertBefore(h('div', 't', null, esc(c.title || '')), P.dev);
     const btnWrap = h('div', 'btns', null, (c.buttons || []).slice(0, 3).map((b) => `<span>${esc(b)}</span>`).join(''));
     P.ph.insertBefore(btnWrap, P.dev);
-    const go = dotSticker(c.stamp || 'GO', c.stampSmall || '', 150, 'teal', 'left:1180px;top:690px;');
-    const tp = tape('left:940px;top:240px;transform:rotate(3deg);');
+    const go = dotSticker(c.stamp || '', c.stampSmall || '', 150, 'teal', 'left:1180px;top:690px;');
+    const tp = hideIf(tape('left:940px;top:240px;transform:rotate(3deg);'), noCta);
     el.append(kick, head, ...acts, P.el, tp, go);
     A.add(kick, 0.1, 0.4, { o: 0 }, { o: 1 });
     fadeUp(A, head, 0.2);

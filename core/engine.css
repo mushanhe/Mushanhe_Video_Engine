@@ -354,3 +354,18 @@ html, body {
 .rv-jump { color: #FDE793 !important; font-family: var(--font-mono, monospace); }
 .rv-item-sub { font-size: 11px; color: #98A6B3; margin-bottom: 4px; }
 .rv-item-text { font-size: 13px; color: #FFF; line-height: 1.5; white-space: pre-wrap; }
+
+/* === v3.4 · 导出 / 抽帧（?chrome=0）隐藏顶部英文句型页签；预览页照常显示（visibility 保留布局，不挤动别的元素） === */
+html.mh-chrome-off #ind-tabs,
+html.mh-chrome-off #sp-tabs,
+html.mh-chrome-off #vx-tabs,
+html.mh-chrome-off #ng-tabs,
+html.mh-chrome-off #nb-tabs,
+html.mh-chrome-off #cb-tabs,
+html.mh-chrome-off #af-index,
+html.mh-chrome-off #rc-tabs,
+html.mh-chrome-off #bf-tabs { visibility: hidden !important; }
+
+/* === v3.4 · 画中画形状交给皮肤参数：剧本 theme.pip = "square" 强制直角窗；"circle" 时 02 / 04 / 06 / 12 放开圆角（见各包 index.html） === */
+html[data-mh-pip="square"] #avatar-stage { border-radius: 0 !important; }
+html[data-mh-pip="circle"] #avatar-stage.is-pip { border-radius: 50% !important; }   /* 04 的画中画预设本身是 3px 直角，靠 is-pip 类放成圆窗 */

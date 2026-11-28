@@ -131,6 +131,9 @@
   const tape = (style) => h('div', 'vx-tape', style);
   const pin = (style, red) => h('div', `vx-pin${red ? ' red' : ''}`, style);
   const tag = (text, style) => h('div', 'vx-tag', style, esc(text));
+  /** v3.5 空字段不出框：可选字段没填 → 整块不渲染（display:none；Animator 只动 transform / opacity，不会再把它显示出来） */
+  const blank = (s) => !String(s == null ? '' : s).trim();
+  const hideIf = (el, cond) => { if (el && cond) el.style.display = 'none'; return el; };
   function stamp(text, small, style) { return h('div', 'vx-stamp', style, `${esc(text)}${small ? `<small>${esc(small)}</small>` : ''}`); }
   /** 把 "这句**关键词**话" 中 ** 包裹部分变成黄色马克笔高亮 */
   function mark(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<span class="vx-hl">$1</span>').replace(/\n/g, '<br/>'); }
@@ -142,7 +145,7 @@
     return lines.map((l, i) => (i === lines.length - 1 ? `<span class="vx-hl">${esc(l)}</span>` : esc(l))).join('<br/>');
   }
   function kickHead(el, A, data, size = 88) {
-    const kick = tag(data.kicker || '', 'left:60px;top:104px;');
+    const kick = hideIf(tag(data.kicker || '', 'left:60px;top:104px;'), blank(data.kicker));   // 没填 kicker 不出空的深墨标签
     const head = h('div', 'vx-head', `left:56px;top:150px;font-size:${size}px;`, mark(data.title));
     el.append(kick, head);
     A.add(kick, 0.1, 0.3, { x: -30, o: 0 }, { x: 0, o: 1 });
@@ -342,18 +345,24 @@
   function cover(data, ctx) {
     const D = ctx.dur, A = new Animator();
     const el = h('div', 'vx-zone');
-    const kick = tag(data.kicker || '', 'left:60px;top:104px;');
+    const kick = hideIf(tag(data.kicker || '', 'left:60px;top:104px;'), blank(data.kicker));
     const sheet = h('div', 'vx-paper bind vx-cv-sheet', null,
-      `<div class="hd"><span>CASE FILE · No.${esc(data.chapter || '01')}</span><span>MUSHANHE DESK</span></div><div class="vx-cv-title">${markTitle(data.title).split('<br/>').map((l) => `<span class="ln">${l}</span>`).join('')}</div>`);
+      `<div class="hd"><span>CASE FILE${blank(data.chapter) ? '' : ` · No.${esc(data.chapter)}`}</span><span>MUSHANHE DESK</span></div><div class="vx-cv-title">${markTitle(data.title).split('<br/>').map((l) => `<span class="ln">${l}</span>`).join('')}</div>`);
     const lines = Array.from(sheet.querySelectorAll('.ln'));
-    const pol = h('div', 'vx-polar vx-cv-pol', null, `<div class="ph"><div class="l">${esc(data.chapterLabel || 'CHAPTER')}</div><div class="n">${esc(data.chapter || '01')}</div></div><div class="cap">EXHIBIT · ${esc(data.chapter || '01')}</div>`);
+    const pol = h('div', 'vx-polar vx-cv-pol', null, `<div class="ph"><div class="l">${esc(data.chapterLabel || '')}</div><div class="n">${esc(data.chapter || '')}</div></div><div class="cap">${blank(data.chapter) ? '' : `EXHIBIT · ${esc(data.chapter)}`}</div>`);
     const polTape = tape('left:1075px;top:172px;');
     const sub = h('div', 'vx-sticky vx-cv-sub', null, mark(data.subtitle));
     const card = h('div', 'vx-card vx-cv-dim', null, `<div class="t">${esc(data.dim || '')}</div>`);
     const under = penUnder(470, 'left:770px;top:780px;');
-    const st = stamp(data.stamp || '', data.stampSmall || '', 'left:1020px;top:836px;font-size:50px;');
+    const st = hideIf(stamp(data.stamp || '', data.stampSmall || '', 'left:1020px;top:836px;font-size:50px;'), blank(data.stamp));
     const pinA = pin('left:1150px;top:200px;', true), pinB = pin('left:1010px;top:724px;', true), pinC = pin('left:390px;top:700px;');
     const strings = stringsSvg(1400, 1100, [sag(1150, 200, 1010, 724, 60)]);
+    // 章节号 / 章节名都没填 → 宝丽来章节照（连胶带、图钉）不出；subtitle / dim 没填 → 便签 / 索引卡（连图钉、红笔下划线）不出；红丝线两头都在才拉
+    const noPol = blank(data.chapterLabel) && blank(data.chapter), noDim = blank(data.dim);
+    [pol, polTape, pinA].forEach((e) => hideIf(e, noPol));
+    [sub, pinC].forEach((e) => hideIf(e, blank(data.subtitle)));
+    [card, under, pinB].forEach((e) => hideIf(e, noDim));
+    hideIf(strings, noPol || noDim);
     el.append(prop('coffee', 240, 'left:820px;top:40px;z-index:0;filter:none;'), kick, sheet, pol, polTape, sub, card, under, strings, pinA, pinB, pinC, st,
       prop('pencil', 380, 'left:560px;top:950px;transform:rotate(-4deg);'));
     A.add(kick, 0.15, 0.35, { x: -30, o: 0 }, { x: 0, o: 1 });
@@ -382,8 +391,8 @@
     const items = (data.items || []).slice(0, 5); const n = Math.max(1, items.length);
     const el = h('div', 'vx-zone');
     kickHead(el, A, data, 90);
-    const dimL = h('div', 'vx-penlabel', 'left:102px;top:270px;', esc(data.dim || `${n} STEPS`));
-    const dimU = penUnder(220, 'left:96px;top:300px;', 5);
+    const dimL = hideIf(h('div', 'vx-penlabel', 'left:102px;top:270px;', esc(data.dim || '')), blank(data.dim));   // 没填 dim 不出默认 N STEPS
+    const dimU = hideIf(penUnder(220, 'left:96px;top:300px;', 5), blank(data.dim));
     const gap = 30, sw = (1200 - gap * (n - 1)) / n;
     const pins = [], cards = items.map((it, i) => {
       const x = 100 + i * (sw + gap);
@@ -395,7 +404,7 @@
     const pinEls = pins.map((p, i) => pin(`left:${p.x}px;top:${p.y}px;`, i === n - 1));
     const segs = pins.slice(1).map((p, i) => sag(pins[i].x, pins[i].y, p.x, p.y, 34));
     const strings = stringsSvg(1400, 1100, segs);
-    const folder = h('div', 'vx-folder', null, `<div class="tb">${esc(data.folder || 'PROJECT /')}</div><div class="bd"></div><div class="big">${esc(data.folderBig || '')}</div><div class="meta">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`);
+    const folder = h('div', 'vx-folder', null, `<div class="tb">${esc(data.folder || '')}</div><div class="bd"></div><div class="big">${esc(data.folderBig || '')}</div><div class="meta">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>`);
     const label = data.label ? stamp(data.label, data.labelSmall || '', 'left:1036px;top:756px;font-size:40px;') : null;
     el.append(dimL, dimU, folder, ...cards, strings, ...pinEls, prop('clip', 0, 'left:1270px;top:660px;transform:rotate(12deg);'), prop('magnifier', 150, 'left:1180px;top:110px;transform:rotate(-10deg);'));
     if (label) { label.classList.add('solid'); label.style.background = 'transparent'; label.style.mixBlendMode = 'multiply'; el.appendChild(label); }
@@ -430,7 +439,7 @@
     });
     let note = null;
     if (data.note) {
-      note = h('div', 'vx-dnote', `top:${330 + n * 112 + 40}px;`, `<small>${esc(data.noteLead || '')}</small><span class="vx-hl">${esc(data.note)}</span>`);
+      note = h('div', 'vx-dnote', `top:${330 + n * 112 + 40}px;`, `${blank(data.noteLead) ? '' : `<small>${esc(data.noteLead)}</small>`}<span class="vx-hl">${esc(data.note)}</span>`);
       doc.appendChild(note);
     }
     const subHl = doc.querySelectorAll('.sub .vx-hl');
@@ -459,15 +468,15 @@
     const w = data.wrong || {}, r = data.right || {};
     const el = h('div', 'vx-zone');
     kickHead(el, A, data, 90);
-    const L = h('div', 'vx-paper vx-cmp wrong', 'left:60px;', `<div class="band">${esc(w.label || '✕ WRONG')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div>`);
-    const R = h('div', 'vx-paper bind vx-cmp', 'left:820px;', `<div class="band">${esc(r.label || '✓ RIGHT')}</div><div class="t"><span class="vx-hl">${esc(r.title).replace(/\n/g, '</span><br/><span class="vx-hl">')}</span></div><div class="d">${esc(r.desc || '')}</div>`);
+    const L = h('div', 'vx-paper vx-cmp wrong', 'left:60px;', `${blank(w.label) ? '' : `<div class="band">${esc(w.label)}</div>`}<div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div>`);
+    const R = h('div', 'vx-paper bind vx-cmp', 'left:820px;', `${blank(r.label) ? '' : `<div class="band">${esc(r.label)}</div>`}<div class="t"><span class="vx-hl">${esc(r.title).replace(/\n/g, '</span><br/><span class="vx-hl">')}</span></div><div class="d">${esc(r.desc || '')}</div>`);
     const cross = penCross(440, 300, 'left:100px;top:360px;', 11);
-    const xs = stamp(w.stamp || '✕', '', 'left:300px;top:640px;font-size:44px;');
+    const xs = hideIf(stamp(w.stamp || '', '', 'left:300px;top:640px;font-size:44px;'), blank(w.stamp));
     const ring = penLoop(420, 200, 3, 'left:848px;top:372px;', 6);
     const ck = penCheck(90, 'left:1236px;top:300px;', 10);
     const vs = h('div', 'vx-vs', null, 'VS');
     const pinL = pin('left:320px;top:300px;'), pinR = pin('left:1080px;top:300px;', true);
-    const verdict = h('div', 'vx-verdict', null, `<b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${mark(data.verdict || '')}</span>`);
+    const verdict = hideIf(h('div', 'vx-verdict', null, `${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${mark(data.verdict || '')}</span>`), blank(data.verdict));
     const marker = prop('marker', 240, 'left:0px;top:0px;');
     el.append(L, R, cross, xs, ring, ck, vs, pinL, pinR, verdict, marker, prop('coffee', 200, 'left:560px;top:250px;z-index:0;filter:none;'));
     A.add(L, 0.6, 0.45, { y: 140, o: 0, r: -6 }, { y: 0, o: 1, r: -1.8 }, 'drop');
@@ -503,7 +512,7 @@
     const dark = kind === 'code' || kind === 'terminal';
     const photo = (kind === 'image' || kind === 'video') && data.src;
     const panel = h('div', `vx-panel ${dark ? 'dark' : photo ? 'photo' : 'light'}`, null,
-      `<div class="bar"><i style="background:#FF5F56"></i><i style="background:#FFBD2E"></i><i style="background:#27C93F"></i><span>${esc(data.file || kind.toUpperCase())}</span></div>`);
+      `<div class="bar"><i style="background:#FF5F56"></i><i style="background:#FFBD2E"></i><i style="background:#27C93F"></i><span>${esc(data.file || '')}</span></div>`);
     let codeEl = null, media = null, prod = null;
     const lines = data.lines || [];
     if (kind === 'product') { prod = productPanel(data); panel.appendChild(prod.el); }
@@ -555,7 +564,7 @@
   /** showcase kind:"product" —— 左宝丽来产品照（无 src 用设备线稿占位）+ 右打字规格表（数值逐行黄笔）+ 价格红章 */
   function productPanel(data) {
     const el = h('div', 'vx-prod');
-    const pic = h('div', 'pic', null, `<div class="in"></div><div class="cap">${esc(data.picLabel || 'EXHIBIT · PRODUCT')}</div>`);
+    const pic = h('div', 'pic', null, `<div class="in"></div><div class="cap">${esc(data.picLabel || '')}</div>`);
     if (data.src) { const im = h('img'); im.src = data.src; pic.firstChild.appendChild(im); } else pic.firstChild.innerHTML = PROPS.device('var(--vx-red)');
     const info = h('div', 'info', null, `<div class="nm"><span class="vx-hl">${esc(data.name || '')}</span></div><div class="tg">${esc(data.tagline || '')}</div>`);
     const specs = h('div', 'specs');
@@ -572,10 +581,10 @@
     const el = h('div', 'vx-screen-wrap', 'position:absolute;inset:0;pointer-events:none;');
     const right = data.pos === 'right';
     const card = h('div', 'vx-quote', right ? 'right:80px;' : 'left:80px;',
-      `<div class="k">${esc(data.kicker || 'QUOTE')}</div><div class="tx">${mark(data.text)}</div><div class="by">${esc(data.by || '')}</div>`);
+      `${blank(data.kicker) ? '' : `<div class="k">${esc(data.kicker)}</div>`}<div class="tx">${mark(data.text)}</div>${blank(data.by) ? '' : `<div class="by">${esc(data.by)}</div>`}`);
     const tp = tape(`left:${right ? 1920 - 80 - 680 + 260 : 340}px;top:200px;transform:rotate(-4deg);`);
     const tp2 = tape(`left:${right ? 1920 - 80 - 40 - 120 : 80 + 680 - 110}px;top:${data.stampTop ? 236 : 236}px;width:110px;transform:rotate(38deg);`);
-    const st = stamp(data.stamp || '', data.stampSmall || '', `${right ? 'right:120px;' : 'left:440px;'}top:${data.stampTop || 640}px;font-size:54px;`);
+    const st = hideIf(stamp(data.stamp || '', data.stampSmall || '', `${right ? 'right:120px;' : 'left:440px;'}top:${data.stampTop || 640}px;font-size:54px;`), blank(data.stamp));
     st.classList.add('solid');
     el.append(card, tp, tp2, st);
     A.add(card, 0.5, 0.5, { x: right ? 120 : -120, o: 0, r: right ? 5 : -5 }, { x: 0, o: 1, r: right ? 1.2 : -1.2 }, 'drop');
@@ -592,16 +601,19 @@
     const el = h('div', 'vx-zone');
     kickHead(el, A, data, 90);
     const acts = (data.actions || []).slice(0, 3).map((a, i) => {
-      const e = h('div', 'vx-card vx-act', `top:${280 + i * 172}px;`, `<div class="box"></div><div class="no">${String(i + 1).padStart(2, '0')} / ${esc(a.tag || 'ACTION')}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div>`);
+      const e = h('div', 'vx-card vx-act', `top:${280 + i * 172}px;`, `<div class="box"></div><div class="no">${String(i + 1).padStart(2, '0')}${blank(a.tag) ? '' : ` / ${esc(a.tag)}`}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div>`);
       e.appendChild(penCheck(58, null, 7));
       return e;
     });
     const pins = acts.map((_, i) => pin(`left:340px;top:${290 + i * 172}px;`, i === 0));
     const c = data.cta || {};
-    const cta = h('div', 'vx-cta', null, `<div class="k">${esc(c.kicker || 'OPEN SOURCE')} · CASE CLOSED</div><div class="t">${mark(c.title || '')}</div><div class="repo">${esc(c.repo || '')}</div><div class="btns">${(c.buttons || []).slice(0, 3).map((b) => `<span>${esc(b)}</span>`).join('')}</div>`);
-    const go = stamp(c.stamp || 'GO', c.stampSmall || '', 'left:1110px;top:700px;font-size:62px;');
+    const btns = (c.buttons || []).slice(0, 3).filter((b) => !blank(b));
+    const cta = h('div', 'vx-cta', null, `${blank(c.kicker) ? '' : `<div class="k">${esc(c.kicker)} · CASE CLOSED</div>`}<div class="t">${mark(c.title || '')}</div>${blank(c.repo) ? '' : `<div class="repo">${esc(c.repo)}</div>`}<div class="btns">${btns.map((b) => `<span>${esc(b)}</span>`).join('')}</div>`);
+    const go = hideIf(stamp(c.stamp || '', c.stampSmall || '', 'left:1110px;top:700px;font-size:62px;'), blank(c.stamp));
     go.classList.add('solid');
     const ctaTape = tape('left:940px;top:262px;');
+    const noCta = blank(c.kicker) && blank(c.title) && blank(c.repo) && !btns.length;   // CTA 一个字段都没填 → 整张结案卡（连胶带）不出
+    [cta, ctaTape].forEach((e) => hideIf(e, noCta));
     el.append(...acts, ...pins, cta, go, ctaTape, prop('magnifier', 150, 'left:1180px;top:110px;transform:rotate(-8deg);'));
     const t0 = 0.7, stp = Math.min(0.7, (D * 0.4) / Math.max(1, acts.length));
     acts.forEach((a, i) => {
@@ -652,7 +664,7 @@
     kickHead(el, A, data, 90);
     const gap = 40, w = (1280 - gap * (n - 1)) / n, fs = n === 1 ? 250 : n === 2 ? 180 : 132;
     const cards = items.map((it, i) => h('div', `vx-paper vx-stat${i === n - 1 ? ' hot' : ''}`, `left:${60 + i * (w + gap)}px;width:${w}px;`,
-      `<div class="lb">${esc(it.label || '')}</div><div class="num" style="font-size:${fs}px;">${it.prefix ? `<span class="pf">${esc(it.prefix)}</span>` : ''}<b>0</b><span class="u">${esc(it.unit || '')}</span></div><div class="bar"><i style="width:${(clamp01(it.bar != null ? it.bar : 1) * 100).toFixed(1)}%"></i></div><div class="sc">${it.bar != null ? `${Math.round(clamp01(it.bar) * 100)}%` : ''}</div>`));
+      `<div class="lb"${blank(it.label) ? ' style="visibility:hidden;"' : ''}>${esc(it.label || '')}</div><div class="num" style="font-size:${fs}px;">${it.prefix ? `<span class="pf">${esc(it.prefix)}</span>` : ''}<b>0</b><span class="u">${esc(it.unit || '')}</span></div><div class="bar"><i style="width:${(clamp01(it.bar != null ? it.bar : 1) * 100).toFixed(1)}%"></i></div><div class="sc">${it.bar != null ? `${Math.round(clamp01(it.bar) * 100)}%` : ''}</div>`));
     const nums = cards.map((c) => c.querySelector('.num'));
     const decs = items.map((it) => (it.decimals != null ? it.decimals : decOf(it.value || 0)));
     const finals = items.map((it, i) => fmtNum(it.value || 0, decs[i]));

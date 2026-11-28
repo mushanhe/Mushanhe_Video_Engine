@@ -85,7 +85,9 @@
     }
   };
 
-  function kicker(text, style) { return h('div', 'kg-kicker', style, `<i></i><span>${esc(text)}</span>`); }
+  const blank = (s) => !String(s == null ? '' : s).trim();
+  /** 小标题（v3.5：没填 → 整块不出，不留空的圆点条） */
+  function kicker(text, style) { const e = h('div', 'kg-kicker', style, `<i></i><span>${esc(text)}</span>`); if (blank(text)) e.style.display = 'none'; return e; }
   /** 「这句**关键词**话」→ ** 包裹部分用极光渐变字 */
   function mark(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<em>$1</em>').replace(/\n/g, '<br/>'); }
   function head(text, style) { return h('div', 'kg-head kg-ti', style, mark(text)); }
@@ -297,8 +299,10 @@
       const s = h('span', 'kg-ti', null, c === ' ' ? '&nbsp;' : esc(c)); title.appendChild(s); chars.push(s);
     });
     const sub = h('div', 'kg-cover-sub', null, mark(data.subtitle));
-    const ch = glass('kg-cover-ch', null, `<div class="l">${esc(data.chapterLabel || 'CHAPTER')}</div><div class="n kg-num-thin kg-ti">${esc(data.chapter || '01')}</div>`);
+    const ch = glass('kg-cover-ch', null, `<div class="l">${esc(data.chapterLabel || '')}</div><div class="n kg-num-thin kg-ti">${esc(data.chapter || '')}</div>`);
+    if (blank(data.chapterLabel) && blank(data.chapter)) ch.style.display = 'none';   // v3.5：章节牌没填 → 整块不出（不再默认 CHAPTER 01）
     const dm = pill(data.dim || '', 'left:402px;top:726px;');
+    if (blank(data.dim)) dm.style.display = 'none';
     const orbSh = h('div', 'kg-orb-shadow');
     const orb = h('div', 'kg-orb');
     const bd = data.stamp ? badge(data.stamp, data.stampSmall || '', 'left:402px;top:810px;font-size:44px;') : null;
@@ -371,16 +375,18 @@
     const el = h('div', 'kg-zone');
     const kick = kicker(data.kicker, 'left:64px;top:118px;');
     const hd = head(data.title, 'left:58px;top:160px;font-size:88px;');
-    const tag = pill(data.dim || `${n} STEPS`, 'right:60px;top:186px;', 'mono');
+    const tag = pill(data.dim || '', 'right:60px;top:186px;', 'mono');
+    if (blank(data.dim)) tag.style.display = 'none';   // v3.5：没填 dim 不再默认「N STEPS」
     const GAP = 36, cw = (1280 - GAP * (n - 1)) / n;
     const tiles = items.map((it, i) => glass('kg-tile', `left:${60 + i * (cw + GAP)}px;width:${cw}px;`,
-      `<div class="no kg-num-thin kg-ti">${esc(it.no || String(i + 1).padStart(2, '0'))}</div><div class="nm">${esc(it.title)}</div><div class="fn">${esc(it.desc || '')}</div>`));
+      `<div class="no kg-num-thin kg-ti">${esc(it.no || String(i + 1).padStart(2, '0'))}</div><div class="nm">${esc(it.title)}</div>${blank(it.desc) ? '' : `<div class="fn">${esc(it.desc)}</div>`}`));
     const TY = 752;
     const track = h('div', 'kg-track', `left:${60 + cw / 2}px;top:${TY}px;width:${(n - 1) * (cw + GAP)}px;`, '<i></i>');
     const dots = items.map((_, i) => h('div', 'kg-track-dot', `left:${60 + cw / 2 + i * (cw + GAP)}px;top:${TY}px;`));
     const bar = glass('kg-sbar', null,
-      `<div class="f">${esc(data.folder || 'PROJECT /')}</div><div class="b kg-ti">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>${data.label ? `<div class="kg-pill hero lbl"><span>${esc(data.label)}</span>${data.labelSmall ? `<small>${esc(data.labelSmall)}</small>` : ''}</div>` : ''}`);
+      `${blank(data.folder) ? '' : `<div class="f">${esc(data.folder)}</div>`}<div class="b kg-ti">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>${data.label ? `<div class="kg-pill hero lbl"><span>${esc(data.label)}</span>${data.labelSmall ? `<small>${esc(data.labelSmall)}</small>` : ''}</div>` : ''}`);
     el.append(kick, hd, tag, track, ...dots, ...tiles, bar);
+    if ([data.folder, data.folderBig, data.folderMeta, data.label].every(blank)) bar.style.display = 'none';   // v3.5：项目条全空 → 整条不出
     rise(A, kick, 0.1, 0.6, 16, 8);
     rise(A, hd, 0.25, 0.8, 40, 16);
     rise(A, tag, 0.6, 0.6, 16, 8);
@@ -403,8 +409,9 @@
     const H = R0 + n * RH + (data.note ? 136 : 26);
     const el = h('div', 'kg-zone');
     const card = glass('kg-card', `height:${H}px;`,
-      `<div class="kg-kicker hd"><i></i><span>${esc(data.kicker || '')}</span></div><div class="ttl kg-ti">${esc(data.title)}</div><div class="sub">${esc(data.subtitle || '')}</div><div class="hr"></div>`);
+      `<div class="kg-kicker hd"${blank(data.kicker) ? ' style="display:none"' : ''}><i></i><span>${esc(data.kicker || '')}</span></div><div class="ttl kg-ti">${esc(data.title)}</div><div class="sub">${esc(data.subtitle || '')}</div><div class="hr"></div>`);
     card.querySelector('.hd').style.position = 'absolute';
+    if (blank(data.kicker)) card.querySelector('.hd').style.display = 'none';
     const rows = items.map((it, i) => {
       const r = h('div', 'kg-row', `top:${R0 + i * RH}px;`,
         `<div class="glow"></div><div class="ci">${PROPS.check(44, 4.5)}</div><div class="k">${esc(it.k)}</div><div class="d">${esc(it.d || '')}</div><div class="n">${String(i + 1).padStart(2, '0')}</div>`);
@@ -452,11 +459,12 @@
     const kick = kicker(data.kicker, 'left:64px;top:118px;');
     const hd = head(data.title, 'left:58px;top:160px;font-size:88px;');
     const L = glass('kg-cmp wrong', 'left:60px;',
-      `<div class="band">${esc(w.label || '✕ BEFORE')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div>${w.stamp ? `<div class="xs">${esc(w.stamp)}</div>` : ''}<svg class="strike" width="480" height="150"><path d="M4 40 L380 40" stroke="#F87171" stroke-opacity=".75" stroke-width="4" stroke-linecap="round" fill="none" stroke-dasharray="376" stroke-dashoffset="376"/><path d="M4 106 L380 106" stroke="#F87171" stroke-opacity=".75" stroke-width="4" stroke-linecap="round" fill="none" stroke-dasharray="376" stroke-dashoffset="376"/></svg>`);
+      `<div class="band">${esc(w.label || '')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div>${w.stamp ? `<div class="xs">${esc(w.stamp)}</div>` : ''}<svg class="strike" width="480" height="150"><path d="M4 40 L380 40" stroke="#F87171" stroke-opacity=".75" stroke-width="4" stroke-linecap="round" fill="none" stroke-dasharray="376" stroke-dashoffset="376"/><path d="M4 106 L380 106" stroke="#F87171" stroke-opacity=".75" stroke-width="4" stroke-linecap="round" fill="none" stroke-dasharray="376" stroke-dashoffset="376"/></svg>`);
     const R = glass('kg-cmp right hero', 'left:780px;',
-      `<div class="band">${esc(r.label || '✓ AFTER')}</div><div class="t kg-ti">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div><div class="ok">${PROPS.check(40, 5, '#FFFFFF')}</div>`);
+      `<div class="band">${esc(r.label || '')}</div><div class="t kg-ti">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div><div class="ok">${PROPS.check(40, 5, '#FFFFFF')}</div>`);
     const vs = glass('kg-vs', null, 'VS');
-    const verdict = glass('kg-verdict', null, `<b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${mark(data.verdict || '')}</span>`);
+    const verdict = glass('kg-verdict', null, `${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${mark(data.verdict || '')}</span>`);
+    if (blank(data.verdict)) verdict.style.display = 'none';   // v3.5：没写结论 → 结论条不出；没写 verdictLabel 不再默认 VERDICT
     el.append(kick, hd, L, R, vs, verdict);
     rise(A, kick, 0.1, 0.6, 16, 8);
     rise(A, hd, 0.25, 0.8, 40, 16);
@@ -619,7 +627,7 @@
   }
 
   // ============================== 8. showcase 玻璃窗口 / 代码打字 / 文档 / 录屏 / 产品 ==============================
-  const DEVICE_SVG = `<svg viewBox="0 0 400 300"><defs><linearGradient id="kg-dev-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E2E8F0"/><stop offset="1" stop-color="#64748B"/></linearGradient></defs><rect x="70" y="60" width="260" height="170" rx="18" fill="rgba(255,255,255,.04)" stroke="url(#kg-dev-g)" stroke-width="3"/><rect x="88" y="78" width="224" height="134" rx="8" fill="#0B0D14"/><circle cx="200" cy="145" r="40" fill="none" stroke="url(#kg-au-grad)" stroke-width="3"/><circle cx="200" cy="145" r="14" fill="url(#kg-au-grad)"/><path d="M140 252 H260" stroke="url(#kg-dev-g)" stroke-width="3" stroke-linecap="round"/><text x="200" y="292" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="600" fill="#94A3B8" letter-spacing="5">PRODUCT IMAGE</text></svg>`;
+  const DEVICE_SVG = `<svg viewBox="0 0 400 300"><defs><linearGradient id="kg-dev-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E2E8F0"/><stop offset="1" stop-color="#64748B"/></linearGradient></defs><rect x="70" y="60" width="260" height="170" rx="18" fill="rgba(255,255,255,.04)" stroke="url(#kg-dev-g)" stroke-width="3"/><rect x="88" y="78" width="224" height="134" rx="8" fill="#0B0D14"/><circle cx="200" cy="145" r="40" fill="none" stroke="url(#kg-au-grad)" stroke-width="3"/><circle cx="200" cy="145" r="14" fill="url(#kg-au-grad)"/><path d="M140 252 H260" stroke="url(#kg-dev-g)" stroke-width="3" stroke-linecap="round"/></svg>`;
   function productPanel(data) {
     const el = h('div', 'kg-prod');
     const pic = h('div', 'pic');
@@ -639,7 +647,7 @@
     const kick = kicker(data.kicker, 'left:64px;top:118px;');
     const hd = head(data.title, 'left:58px;top:156px;font-size:80px;');
     const dark = kind === 'code' || kind === 'terminal';
-    const panel = glass(`kg-panel${dark ? '' : ' doc'}`, null, `<div class="bar"><div class="dots"><i></i><i></i><i></i></div>${esc(data.file || kind.toUpperCase())}</div>`);
+    const panel = glass(`kg-panel${dark ? '' : ' doc'}`, null, `<div class="bar"><div class="dots"><i></i><i></i><i></i></div>${esc(data.file || '')}</div>`);
     let codeEl = null, media = null, prod = null;
     const lines = data.lines || [];
     if (kind === 'product') { prod = productPanel(data); panel.appendChild(prod.el); }
@@ -694,7 +702,7 @@
     const el = h('div', 'kg-screen', 'position:absolute;inset:0;pointer-events:none;');
     const right = data.pos === 'right';
     const side = right ? 'right:110px;' : 'left:110px;';
-    const card = glass('kg-q', side, `<div class="kg-kicker"><i></i><span>${esc(data.kicker || 'KEY TAKEAWAY')}</span></div><div class="t kg-ti">${mark(data.text)}</div><div class="ft"><div class="by">${esc(data.by || '')}</div></div>`);
+    const card = glass('kg-q', side, `${blank(data.kicker) ? '' : `<div class="kg-kicker"><i></i><span>${esc(data.kicker)}</span></div>`}<div class="t kg-ti">${mark(data.text)}</div><div class="ft"><div class="by">${esc(data.by || '')}</div></div>`);
     let bd = null;
     if (data.stamp) { bd = badge(data.stamp, data.stampSmall || '', 'font-size:34px;'); card.querySelector('.ft').appendChild(bd); }
     el.append(card);
@@ -712,10 +720,14 @@
     const kick = kicker(data.kicker, 'left:64px;top:118px;');
     const hd = head(data.title, 'left:58px;top:156px;font-size:88px;');
     const acts = (data.actions || []).slice(0, 3).map((a, i) => glass('kg-act', `top:${290 + i * 170}px;`,
-      `<div class="tg">${esc(a.tag || 'ACTION')}</div><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div><div class="no kg-num-thin">${String(i + 1).padStart(2, '0')}</div>`));
+      `${blank(a.tag) ? '' : `<div class="tg">${esc(a.tag)}</div>`}<div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div><div class="no kg-num-thin">${String(i + 1).padStart(2, '0')}</div>`));
     const c = data.cta || {};
-    const cta = glass('kg-cta hero', null, `<div class="kg-kicker" style="position:relative"><i></i><span>${esc(c.kicker || 'OPEN SOURCE')}</span></div><div class="t kg-au">${esc(c.title || '')}</div><div class="repo">${esc(c.repo || '')}</div><div class="btns">${(c.buttons || []).slice(0, 3).map((b, i) => `<span class="${i === 0 ? 'pri' : ''}">${esc(b)}</span>`).join('')}</div>`);
-    const go = h('div', 'kg-go', 'left:1176px;top:668px;', `<b>${esc(c.stamp || 'GO')}</b>${c.stampSmall ? `<small>${esc(c.stampSmall)}</small>` : ''}`);
+    const btnL = (c.buttons || []).filter((b) => !blank(b)).slice(0, 3);
+    // v3.5：CTA 卡里没填的字段整块不出（不再默认 OPEN SOURCE / GO）；整张卡都没内容就不出
+    const cta = glass('kg-cta hero', null, `${blank(c.kicker) ? '' : `<div class="kg-kicker" style="position:relative"><i></i><span>${esc(c.kicker)}</span></div>`}<div class="t kg-au">${esc(c.title || '')}</div>${blank(c.repo) ? '' : `<div class="repo">${esc(c.repo)}</div>`}${btnL.length ? `<div class="btns">${btnL.map((b, i) => `<span class="${i === 0 ? 'pri' : ''}">${esc(b)}</span>`).join('')}</div>` : ''}`);
+    if ([c.kicker, c.title, c.repo].every(blank) && !btnL.length) cta.style.display = 'none';
+    const go = h('div', 'kg-go', 'left:1176px;top:668px;', `<b>${esc(c.stamp || '')}</b>${c.stampSmall ? `<small>${esc(c.stampSmall)}</small>` : ''}`);
+    if (blank(c.stamp)) go.style.display = 'none';
     el.append(kick, hd, ...acts, cta, go);
     rise(A, kick, 0.1, 0.6, 16, 8);
     rise(A, hd, 0.25, 0.8, 40, 16);

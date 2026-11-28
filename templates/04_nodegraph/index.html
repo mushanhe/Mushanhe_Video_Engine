@@ -59,7 +59,8 @@
     .ng-tab .fl { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--ng-jade); box-shadow: 0 0 8px var(--ng-jade); }
 
     /* 人像：CAM_MONITOR 节点监视器框 + 剪影占位 */
-    #avatar-stage { border-radius: 3px !important; border: 1.5px solid rgba(56, 189, 248, 0.55) !important; box-shadow: 0 24px 56px rgba(0, 0, 0, 0.65), 0 0 30px rgba(56, 189, 248, 0.16) !important; }
+    html:not([data-mh-pip="circle"]) #avatar-stage:not(.is-full) { border-radius: 3px !important; }
+    #avatar-stage { border: 1.5px solid rgba(56, 189, 248, 0.55) !important; box-shadow: 0 24px 56px rgba(0, 0, 0, 0.65), 0 0 30px rgba(56, 189, 248, 0.16) !important; }
     #avatar-stage.is-full { border-radius: 0 !important; border: 0 solid transparent !important; box-shadow: none !important; }
     #avatar-nh { position: absolute; left: 0; right: 0; top: 0; height: 36px; z-index: 6; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: linear-gradient(90deg, rgba(56,189,248,.32), rgba(18,23,34,.92) 80%); border-bottom: 1px solid rgba(255,255,255,.12); font-family: var(--ng-font-mono); font-size: 13px; font-weight: 900; color: #fff; letter-spacing: .1em; white-space: nowrap; }
     #avatar-nh b { margin-left: auto; color: var(--ng-coral); }
@@ -83,6 +84,84 @@
     #subtitle-bar .w.active { color: #00E5C3 !important; text-shadow: 0 0 14px rgba(0, 229, 195, 0.45) !important; }
 
     #load-error { position: absolute; left: 80px; top: 200px; z-index: 99; padding: 16px 24px; background: #121722; color: #FF4D6D; border: 1.5px solid #FF4D6D; font-size: 28px; font-weight: 900; display: none; }
+    html.mh-chrome-off #avatar-silhouette text { display: none; }   /* v3.5：导出时剪影占位不出英文 */
+
+    /* v3.5 · 跟词组件（core/cue-kit.js）的 04 造型：暗色直角节点卡（3px 圆角上限）+ 1.5px 发光描边 + 青 / 紫 / 翡翠 / 琥珀信号色 + 等宽数字；不歪（只在剧本写了新字段时出现） */
+    :root {
+      --ng-on-acc: #06080D;
+      --mk-ink: var(--ng-text); --mk-paper: var(--ng-bg); --mk-panel: color-mix(in srgb, var(--ng-bg) 70%, #000); --mk-muted: color-mix(in srgb, var(--ng-coral) 7%, var(--ng-node)); --mk-muted-ink: #8391A7;
+      --mk-c1: color-mix(in srgb, var(--ng-cyan) 16%, var(--ng-node)); --mk-on1: var(--ng-text);
+      --mk-c2: color-mix(in srgb, var(--ng-violet) 16%, var(--ng-node)); --mk-on2: var(--ng-text);
+      --mk-c3: color-mix(in srgb, var(--ng-jade) 15%, var(--ng-node)); --mk-on3: var(--ng-text);
+      --mk-c4: color-mix(in srgb, var(--ng-amber) 15%, var(--ng-node)); --mk-on4: var(--ng-text);
+      --mk-accent: var(--ng-jade); --mk-dark: color-mix(in srgb, var(--ng-bg) 60%, #000); --mk-on-dark: var(--ng-jade);
+      --mk-bw: 1.5px; --mk-rad: 3px; --mk-tilt: 0;
+      --mk-sh: 0 22px 50px rgba(0,0,0,.6); --mk-sh-lg: 0 26px 60px rgba(0,0,0,.66); --mk-sh-sm: 0 10px 26px rgba(0,0,0,.55);
+      --mk-font: var(--ng-font-cn); --mk-font-num: var(--ng-font-mono);
+      --mk-board: color-mix(in srgb, var(--ng-node) 55%, var(--ng-bg)); --mk-board-tex: radial-gradient(rgba(148,163,184,.2) 1.5px, transparent 1.5px); --mk-tape: color-mix(in srgb, var(--ng-jade) 22%, var(--ng-node));
+      --mk-trim: rgba(148,163,184,.18); --mk-trim-c: color-mix(in srgb, var(--ng-cyan) 70%, transparent);
+      /* 全屏画框：CAM 监视器节点——1.5px 青色发光描边 + 深投影 + 外发光；框外 48px 露出蓝图点阵 */
+      --mh-frame-bw: 1.5px; --mh-frame-color: color-mix(in srgb, var(--ng-cyan) 70%, transparent); --mh-frame-radius: 3; --mh-frame-vig: .3;
+      --mh-frame-shadow: 0 30px 70px rgba(0,0,0,.7), 0 0 44px color-mix(in srgb, var(--ng-cyan) 26%, transparent);
+    }
+    html[data-ng-theme="daylight"] { --ng-on-acc: #FFFFFF; --mk-muted-ink: #64748B; --mk-sh: 0 18px 40px rgba(15,23,42,.14); --mk-sh-lg: 0 22px 48px rgba(15,23,42,.16); --mk-sh-sm: 0 8px 20px rgba(15,23,42,.12); --mk-board-tex: radial-gradient(rgba(71,85,105,.2) 1.5px, transparent 1.5px); }
+    html[data-mh-full="frame"] #avatar-stage.is-full { border-radius: 3px !important; }
+    /* 卡片信号色：按组件写进 style 的 --mk-cN 认出这是哪一路（青 / 紫 / 翡翠 / 琥珀） */
+    .mk-zone [style*="var(--mk-c1)"] { --ng-a: var(--ng-cyan); }
+    .mk-zone [style*="var(--mk-c2)"] { --ng-a: var(--ng-violet); }
+    .mk-zone [style*="var(--mk-c3)"], .mk-zone .mk-cmp.right, .mk-zone .mk-ai { --ng-a: var(--ng-jade); }
+    .mk-zone [style*="var(--mk-c4)"] { --ng-a: var(--ng-amber); }
+    .mk-zone .mk-cmp.wrong { --ng-a: var(--ng-coral); }
+    .mk-zone .mk-cstat { --ng-a: var(--ng-cyan); }
+    .mk-zone .mk-box { border-color: color-mix(in srgb, var(--ng-a, var(--ng-text)) 75%, transparent); box-shadow: var(--mk-sh), 0 0 30px color-mix(in srgb, var(--ng-a, transparent) 24%, transparent); }
+    .mk-zone .mk-box.lg { box-shadow: var(--mk-sh-lg), 0 0 34px color-mix(in srgb, var(--ng-a, transparent) 26%, transparent); }
+    .mk-zone .mk-ticket, .mk-zone .mk-file, .mk-zone .mk-plate, .mk-zone .mk-cmp { background-image: linear-gradient(180deg, color-mix(in srgb, var(--ng-a, var(--ng-cyan)) 22%, transparent) 0, transparent 120px); }
+    .mk-zone .mh-focus-ring { inset: -12px; border: 2px solid var(--ng-a, var(--ng-jade)); border-radius: 6px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--ng-a, var(--ng-jade)) 30%, transparent), 0 0 34px color-mix(in srgb, var(--ng-a, var(--ng-jade)) 55%, transparent); }
+    html[data-mh-card="trim"] .mk-zone .mh-focus-ring:not(.row) { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ng-a, var(--ng-jade)) 30%, transparent), 0 0 40px 6px color-mix(in srgb, var(--ng-a, var(--ng-jade)) 50%, transparent); }
+    .mk-head { color: var(--ng-text); text-shadow: 0 4px 24px rgba(0,0,0,.6); }
+    .mk-ticket .no { background: var(--ng-a, var(--ng-cyan)); color: var(--ng-on-acc); border-radius: 3px 0 3px 0; box-shadow: 0 0 16px color-mix(in srgb, var(--ng-a, var(--ng-cyan)) 50%, transparent); }
+    .mk-ticket .ico { color: var(--ng-a, var(--ng-cyan)); }
+    .mk-ticket .pgb { background: color-mix(in srgb, var(--ng-bg) 70%, #000); border: 1px solid color-mix(in srgb, var(--ng-text) 14%, transparent); border-radius: 0; }
+    .mk-ticket .pgb i { background: var(--ng-a, var(--ng-jade)); box-shadow: 0 0 14px var(--ng-a, var(--ng-jade)); }
+    .mk-stamp { background: var(--ng-amber); color: var(--ng-on-acc); border: 0; outline: 1.5px solid color-mix(in srgb, var(--ng-on-acc) 35%, transparent); outline-offset: -8px; border-radius: 3px; box-shadow: 0 0 34px color-mix(in srgb, var(--ng-amber) 50%, transparent), 0 18px 40px rgba(0,0,0,.6); }
+    .mk-cmp.wrong .mk-stamp { background: var(--ng-coral); color: #FFFFFF; outline-color: rgba(255,255,255,.4); box-shadow: 0 0 34px color-mix(in srgb, var(--ng-coral) 50%, transparent), 0 18px 40px rgba(0,0,0,.6); }
+    .mk-sticker { background: var(--ng-coral); color: #FFFFFF; border: 0; border-radius: 3px; box-shadow: 0 0 26px color-mix(in srgb, var(--ng-coral) 50%, transparent), 0 10px 26px rgba(0,0,0,.55); }
+    .mk-tape { border: 1.5px solid var(--ng-jade); background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ng-jade) 45%, transparent) 0 2px, transparent 2px 10px); box-shadow: 0 0 14px color-mix(in srgb, var(--ng-jade) 35%, transparent); opacity: 1; }
+    .mk-arrow { color: var(--ng-cyan); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--ng-cyan) 60%, transparent)); }
+    .mk-file .ic, .mk-plate .ic { color: var(--ng-a, var(--ng-cyan)); }
+    .mk-file .ear { background: linear-gradient(225deg, var(--ng-bg) 0 50%, var(--ng-a, var(--ng-cyan)) 50% calc(50% + 2px), color-mix(in srgb, var(--ng-a, var(--ng-cyan)) 28%, transparent) calc(50% + 2px)); }
+    .mk-ai { border-color: var(--ng-jade) !important; }
+    .mk-ai b { text-shadow: 0 0 30px color-mix(in srgb, var(--ng-jade) 60%, transparent); }
+    .mk-ai .mini u { border-width: 1.5px; }
+    .mk-cmp .rw i { width: 18px; height: 18px; border: 0; border-radius: 50%; background: var(--ng-a); box-shadow: 0 0 10px var(--ng-a); }
+    .mk-cmp .badge { color: var(--ng-on-acc); background: var(--ng-jade); border: 0; border-radius: 3px; box-shadow: 0 0 22px var(--ng-jade); }
+    .mk-cmp .btn { background: color-mix(in srgb, var(--ng-bg) 70%, #000); color: var(--ng-text); border: 2px solid var(--ng-cyan); border-bottom-width: 7px; border-radius: 3px; box-shadow: 0 0 18px color-mix(in srgb, var(--ng-cyan) 35%, transparent); }
+    .mk-cmp .sw { border: 1.5px solid color-mix(in srgb, var(--ng-text) 25%, transparent); border-radius: 3px; }
+    .mk-cmp .sw i { border-left-width: 1.5px; border-left-color: color-mix(in srgb, var(--ng-bg) 60%, #000); }
+    .mk-cmp .tlx { border: 1px solid color-mix(in srgb, var(--ng-text) 14%, transparent); background: color-mix(in srgb, var(--ng-bg) 70%, #000); border-radius: 0; }
+    .mk-cmp .tlx .trk { border-bottom: 1px solid color-mix(in srgb, var(--ng-text) 10%, transparent); }
+    .mk-cmp .tlx .clp { border: 1.5px solid var(--ng-a, var(--ng-cyan)); border-radius: 2px; }
+    .mk-cmp .tlx .ph { width: 3px; background: var(--ng-coral); box-shadow: 0 0 10px var(--ng-coral); }
+    .mk-vs .dm { border: 1.5px solid var(--ng-amber); box-shadow: 0 0 26px color-mix(in srgb, var(--ng-amber) 40%, transparent), var(--mk-sh-sm); }
+    .mk-vs .tx { color: var(--ng-amber); text-shadow: 0 0 18px color-mix(in srgb, var(--ng-amber) 55%, transparent); }
+    .mk-ripple { border: 2px solid var(--ng-jade); box-shadow: 0 0 18px var(--ng-jade); }
+    .mk-cstat .lb { background: var(--ng-cyan); color: var(--ng-on-acc); border-radius: 2px; }
+    .mk-cstat .num { text-shadow: 0 0 26px color-mix(in srgb, var(--ng-cyan) 40%, transparent); }
+    .mk-cstat .pg { border: 1px solid color-mix(in srgb, var(--ng-text) 14%, transparent); border-radius: 0; }
+    .mk-cstat .pg i { background: var(--ng-jade); box-shadow: 0 0 14px var(--ng-jade); }
+    .mk-screw { border: 0; background: var(--ng-jade); box-shadow: 0 0 10px var(--ng-jade); }
+    .mk-screw::after { display: none; }
+    .mk-banner { border: 1.5px solid color-mix(in srgb, var(--ng-jade) 60%, transparent); border-left: 6px solid var(--ng-jade); box-shadow: var(--mk-sh), 0 0 30px color-mix(in srgb, var(--ng-jade) 22%, transparent); }
+    .mk-cv-block { background-image: linear-gradient(color-mix(in srgb, var(--ng-cyan) 9%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--ng-cyan) 9%, transparent) 1px, transparent 1px); background-size: 30px 30px; }
+    .mk-cv-title { text-shadow: 0 0 30px color-mix(in srgb, var(--ng-cyan) 25%, transparent); }
+    .mk-cv-blue { color: var(--ng-violet); }
+    .mk-cv-dots { background-image: radial-gradient(color-mix(in srgb, var(--ng-amber) 55%, transparent) 2.5px, transparent 2.5px); }
+    .mk-cv-chip { border-width: 1.5px; border-color: var(--ng-a, var(--ng-cyan)); box-shadow: 0 0 18px color-mix(in srgb, var(--ng-a, var(--ng-cyan)) 35%, transparent); }
+    .mk-cv-ring { border: 3px solid var(--ng-jade); box-shadow: 0 0 24px color-mix(in srgb, var(--ng-jade) 50%, transparent); }
+    .mk-cv-ring::after { background: var(--ng-jade); opacity: .28; }
+    .mk-cv-wave path { stroke: var(--ng-amber); stroke-width: 5; }
+      /* v3.5 收尾（12 套打分）：「换风格」色块点击前用本包的亮色，不在深色卡上像三个空格 */
+    :root { --mk-sw0: var(--ng-text); --mk-sw1: var(--ng-cyan); --mk-sw2: var(--ng-violet); --mk-sw3: var(--ng-amber); }
   </style>
 </head>
 <body>
@@ -132,6 +211,10 @@
   <script src="../../core/avatar.js"></script>
   <script src="../../core/subtitle.js"></script>
   <script src="../../core/script-sync.js"></script>
+  <script src="../../core/talk.js"></script>
+  <script src="../../core/focus.js"></script>
+  <script src="../../core/cue-kit.js"></script>
+  <script src="../../core/host-kit.js"></script>
   <script src="components.js"></script>
   <script src="themes.js"></script>
   <script>
@@ -148,6 +231,17 @@
     // 组件局部安全区 x60–1340 / y100–980 → 屏幕 x≈115–1295（避开人像框 1328+）/ y≈100–910（避开字幕）
     const CAM_DX = 60, CAM_ZOOM = 0.92;
     const params = new URLSearchParams(location.search);
+    // v3.5：牌子层 04 造型（印章 = 琥珀实色信号芯片、贴纸 = 珊瑚报错芯片、标签 = 暗色节点头条 + 翡翠左灯条、多色大字 = 霓虹字 + 暗描边发光；全部不歪）
+    MHEngine.Badges.registerKinds('04', {
+      stamp: 'padding:10px 30px 12px;background:var(--ng-amber);color:var(--ng-on-acc);border-radius:3px;outline:1.5px solid color-mix(in srgb,var(--ng-on-acc) 35%,transparent);outline-offset:-8px;box-shadow:0 0 34px color-mix(in srgb,var(--ng-amber) 50%,transparent),0 18px 40px rgba(0,0,0,.6);font-family:var(--ng-font-cn);font-weight:900;',
+      sticker: 'padding:12px 28px 14px;background:color-mix(in srgb,var(--ng-bg) 70%,#000);color:var(--ng-coral);border:2px solid var(--ng-coral);border-radius:3px;box-shadow:0 0 26px color-mix(in srgb,var(--ng-coral) 40%,transparent),0 12px 30px rgba(0,0,0,.55);font-family:var(--ng-font-cn);font-weight:900;',
+      tag: 'padding:12px 28px 14px 24px;background:var(--ng-node);color:var(--ng-text);border:1.5px solid color-mix(in srgb,var(--ng-cyan) 45%,transparent);border-left:7px solid var(--ng-jade);border-radius:3px;box-shadow:0 18px 42px rgba(0,0,0,.55),0 0 28px color-mix(in srgb,var(--ng-cyan) 20%,transparent);font-family:var(--ng-font-cn);font-weight:900;',
+      label: 'padding:14px 34px 16px 28px;background:var(--ng-node);color:var(--ng-text);border:1.5px solid var(--ng-cyan);border-left:7px solid var(--ng-cyan);border-radius:3px;box-shadow:0 22px 50px rgba(0,0,0,.6),0 0 32px color-mix(in srgb,var(--ng-cyan) 28%,transparent);font-family:var(--ng-font-cn);font-weight:900;',
+      big: { pal: ['var(--ng-jade)', 'var(--ng-cyan)', 'var(--ng-amber)', 'var(--ng-violet)'], ink: 'var(--ng-bg)', shadow: '0 0 30px rgba(56,189,248,.4)' },
+      rot: { stamp: 0, sticker: 0, tag: 0, label: 0, big: 0 }
+    });
+    // v3.5：「换风格」按钮点完换上的色块 = 04 自己的 4 套皮肤（深空赛博 / 黑客矩阵 / 核能琥珀 / 白昼蓝图）
+    MHEngine.CueKit.swatches = [['#0A0D14', '#38BDF8', '#A78BFA', '#00E5C3'], ['#060B08', '#00FF88', '#00D4FF', '#B8FF4D'], ['#120F0C', '#FF9F1C', '#FF4D4D', '#FFD166'], ['#F1F5F9', '#2563EB', '#059669', '#7C3AED']];
 
     /** 把每段 sub[] 均匀铺成 core/subtitle.js 需要的 WORD_DATA（中文逐字、英文/数字成词） */
     function buildWordData(scenes) {
@@ -177,6 +271,7 @@
       try {
         const src = params.get('data') || 'demo_data.json';
         script = await (await fetch(src, { cache: 'no-store' })).json();
+        MHEngine.ScriptSync.resolveMedia(script, src); // v3.4：媒体路径以剧本文件为基准
       } catch (e) {
         const el = document.getElementById('load-error');
         el.style.display = 'block'; el.textContent = '剧本 JSON 加载失败：请用 python core/tools/serve.py 通过 HTTP 打开本页。';
@@ -188,11 +283,14 @@
       NodeGraph.injectCSS();
       // 换肤：URL ?theme= ＞ 剧本 theme.preset ＞ cyber（cyber = 不覆盖，无参数访问与原版逐像素一致）
       if (window.NodeGraphThemes) NodeGraphThemes.init(script);
+      const HK = MHEngine.HostKit.init(script, document.getElementById('avatar-stage'));   // v3.5：铺满版式 / 画框 / 利落散聚 / 牌子层（剧本写了才开）
 
       // 人像：可选真人视频，否则用剪影占位
       const meta = script.meta || {}, av = meta.avatar || {};
       if (av.bg) document.getElementById('avatar-studio-bg').src = av.bg;
-      document.getElementById('avatar-tag-tx').textContent = av.tag || 'YOUR NAME';
+      document.getElementById('avatar-tag-tx').textContent = av.tag || (av.video ? '' : 'YOUR NAME');
+      if (av.video && !String(av.tag || '').trim()) document.getElementById('avatar-tag').style.display = 'none';   // v3.5：真人素材没填名牌 → 整块不出（占位剪影仍配占位名）
+      if (HK.CHROME_OFF) { const nh = document.getElementById('avatar-nh'); nh.querySelector('span').textContent = ''; nh.querySelector('b').textContent = '●'; }   // v3.5：导出时监视器头条不出英文
       if (av.video) {
         const v = document.createElement('video');
         v.id = 'avatar-video'; v.src = av.video; v.muted = true; v.playsInline = true; v.preload = 'auto';
@@ -203,21 +301,26 @@
       // 组装场景（每段一个蓝图分区，底部带分区水印）
       const world = document.getElementById('ng-world');
       const scenes = []; let acc = 0, zoneX = 0;
+      const COVER_AT = HK.coverAt(script.scenes, 0.38);   // 电缆帘幕在段边界前 0.38s 开始盖
       (script.scenes || []).forEach((sc, i) => {
-        const factory = NodeGraph.COMPONENTS[sc.type];
+        const factory = NodeGraph.COMPONENTS[sc.type] || MHEngine.ScriptSync.coreComponent(sc.type);
         if (!factory) { console.warn('unknown scene type', sc.type); return; }
         const dur = sc.dur || 6;
-        const comp = factory.create(sc.data || {}, { dur });
+        const ctx = MHEngine.ScriptSync.sceneCtx(sc, acc, dur);
+        ctx.area = HK.area(sc, { CAM_DX, CAM_ZOOM, SX, SY }); ctx.coverAt = COVER_AT[i];
+        const comp = MHEngine.CueKit.create(sc.type, sc.data, ctx) || factory.create(sc.data || {}, ctx);
+        const badges = HK.badges(sc, comp, ctx, document.getElementById('screen-layer'));
         const zx = zoneX, zy = ZONE_Y; zoneX += (comp.w || 1400) + ZONE_GAP;
         if (comp.layer === 'screen') { comp.el.style.display = 'none'; document.getElementById('screen-layer').appendChild(comp.el); }
         else {
           comp.el.style.left = `${zx}px`; comp.el.style.top = `${zy}px`; world.appendChild(comp.el);
           const wm = document.createElement('div'); wm.className = 'ng-wm';
           wm.style.cssText = `left:${zx + 40}px;top:${zy + 960}px;font-size:150px;`;
-          wm.textContent = `${String(scenes.length + 1).padStart(2, '0')} · ${sc.type.toUpperCase()}`;
+          const wmTx = HK.CHROME_OFF ? (sc.label || '') : sc.type.toUpperCase();   // v3.5：导出时不出英文句型名
+          wm.textContent = `${String(scenes.length + 1).padStart(2, '0')}${wmTx ? ` · ${wmTx}` : ''}`;
           world.appendChild(wm);
         }
-        scenes.push({ ...sc, idx: i, start: acc, dur, comp, zx, zy, avatar: sc.avatar || comp.avatar });
+        scenes.push({ ...sc, idx: i, start: acc, dur, comp, badges, zx, zy, avatar: sc.avatar || comp.avatar });
         acc += dur;
       });
       const DURATION = acc;
@@ -238,17 +341,17 @@
       camRig.setKeyframes(kfs);
 
       // 人像形态：card / pip / corner / full（4 种形态全部支持 core 点阵粒子散聚转场）
-      const avatar = new MHEngine.AvatarController({
+      const avatar = new MHEngine.AvatarController(HK.presets({
         card:   { left: 1328, top: 82,  width: 540, height: 790, borderRadius: 3, borderWidth: 1.5, tagOpacity: 1 },
         pip:    { left: 1532, top: 642, width: 320, height: 320, borderRadius: 3, borderWidth: 1.5, tagOpacity: 0 },
         corner: { left: 1410, top: 530, width: 458, height: 342, borderRadius: 3, borderWidth: 1.5, tagOpacity: 1 }
-      });
+      }));
       const mapAv = (m) => m === 'full' ? 'fullscreen' : (m === 'pip' || m === 'corner' ? m : 'card');
       const avatarMorph = new MHEngine.AvatarMorphFX(document.getElementById('avatar-morph-canvas'), avatar.presets);
       const tl = gsap.timeline({ paused: true });
       const AVSEG = MHEngine.ScriptSync.avatarSegments(scenes); // 无 avatarCues 时与 scenes 一一对应
       avatar.setImmediate(scenes[0] ? mapAv(scenes[0].avatar) : 'card');
-      AVSEG.forEach((s, i) => {
+      if (!HK.scheduleMorphs({ segs: AVSEG, avatar, morph: avatarMorph, tl, mapAv, seed: 40400 })) AVSEG.forEach((s, i) => {
         if (i === 0) return;
         const prev = mapAv(AVSEG[i - 1].avatar);
         const cur = mapAv(s.avatar);
@@ -303,10 +406,11 @@
         const S = scenes[cur];
         const AS = MHEngine.ScriptSync.avatarAt(AVSEG, t, S);
         const isFull = AS.avatar === 'full';
-        stageEl.classList.toggle('is-full', isFull && t >= AS.start + 0.2);
-        stageEl.classList.toggle('is-pip', AS.avatar === 'pip' && t >= AS.start + 0.1);
-        stageEl.classList.toggle('is-corner', AS.avatar === 'corner' && t >= AS.start + 0.1);
-        const hideWorld = isFull && t >= AS.start + 0.15 && t < AS.start + AS.dur;
+        stageEl.classList.toggle('is-full', isFull && t >= AS.start + HK.fullDelay(0.2));
+        stageEl.classList.toggle('is-pip', AS.avatar === 'pip' && t >= AS.start + HK.fullDelay(0.1));
+        stageEl.classList.toggle('is-corner', AS.avatar === 'corner' && t >= AS.start + HK.fullDelay(0.1));
+        const hideWorld = isFull && t >= AS.start + HK.fullDelay(0.15) && t < AS.start + AS.dur;
+        HK.updateBadges(scenes, cur, t);
         camViewport.style.opacity = hideWorld ? '0' : '1';
         vign.style.opacity = hideWorld ? '0' : '1';
 
@@ -322,8 +426,9 @@
               sl.style.transform = `translateX(${x.toFixed(1)}px)`;
             });
             execNo.textContent = String(i + 1).padStart(2, '0');
-            execLb.textContent = scenes[i].label || scenes[i].type;
-            execHd.textContent = `▶ EXECUTE · ${scenes[i].type.toUpperCase()}`;
+            execLb.textContent = HK.label(scenes[i]);
+            // v3.5：导出时（?chrome=0）头条不出 EXECUTE / 英文句型名，换成 ▶ 段号 / 总段数
+            execHd.textContent = HK.CHROME_OFF ? `▶ ${String(i + 1).padStart(2, '0')} / ${String(scenes.length).padStart(2, '0')}` : `▶ EXECUTE · ${scenes[i].type.toUpperCase()}`;
             execTr.style.transform = `scaleX(${clamp01((t - (b - 0.2)) / 0.4).toFixed(3)})`;
             wipe.style.display = 'block'; shown = true; break;
           }
@@ -331,6 +436,7 @@
         if (!shown) wipe.style.display = 'none';
 
         stageEl.style.opacity = avatarMorph.render(t).toFixed(3);
+        HK.frame(t, stageEl, avatarMorph);
         document.getElementById('scrubber').value = t.toFixed(2);
         document.getElementById('time-readout').textContent = `${t.toFixed(2)} / ${DURATION.toFixed(2)}s · ${String(cur + 1).padStart(2, '0')} ${S.type}`;
       }
@@ -338,7 +444,7 @@
       // 播放时钟（无音轨，按 performance.now 推进；有 avatar.video 时同步视频）
       let playing = false, t0 = 0, tStart = 0, cur = 0, raf = null;
       const vid = document.getElementById('avatar-video');
-      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid }); // meta.avatar.offset + meta.audio
+      const CLOCK = MHEngine.ScriptSync.mediaClock({ meta, duration: DURATION, video: vid, scenes }); // meta.avatar.offset + meta.audio
       function seek(t) {
         cur = Math.max(0, Math.min(DURATION, t)); updateUI(cur);
         scenes.forEach((s) => { const m = s.comp.media; if (m && m.tagName === 'VIDEO') { try { m.currentTime = Math.max(0, cur - s.start - 0.3) % (m.duration || 1e9); } catch (_) {} } });

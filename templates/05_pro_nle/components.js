@@ -97,7 +97,10 @@
     }
   };
 
-  function kicker(text, style) { return h('div', 'pn-kicker', style, esc(text)); }
+  /** v3.5：可选字段没填（空串 / 全空白）→ 整块不渲染 */
+  const blank = (s) => !String(s == null ? '' : s).trim();
+  const hide = (e) => { if (e) e.style.display = 'none'; return e; };
+  function kicker(text, style) { const e = h('div', 'pn-kicker', style, esc(text)); return blank(text) ? hide(e) : e; }
   function head(text, style) { return h('div', 'pn-head', style, mark(text)); }
   /** 监视器高光印章：发光描边胶囊 */
   function badge(text, small, color, style) {
@@ -105,7 +108,7 @@
   }
   function chip(text, color, style) { return h('div', 'pn-chip', `color:${color};${style || ''}`, esc(text)); }
   function winbar(title, right) {
-    return `<div class="pn-bar"><i></i><i></i><i></i><span class="tab">${esc(title)}</span>${right ? `<span class="r">${right}</span>` : ''}</div>`;
+    return `<div class="pn-bar"><i></i><i></i><i></i>${blank(title) ? '' : `<span class="tab">${esc(title)}</span>`}${right ? `<span class="r">${right}</span>` : ''}</div>`;
   }
   /** "这句**关键词**话" → ** 包裹部分做翡翠高亮块 */
   function mark(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<em>$1</em>').replace(/\n/g, '<br/>'); }
@@ -330,15 +333,18 @@
         title.appendChild(s); chars.push(s);
       });
     });
-    const ch = h('div', 'pn-panel pn-cover-ch', null, `<div class="sc"></div><div class="l">${esc(data.chapterLabel || 'CHAPTER')}</div><div class="m">SEQ · TAKE 1</div><div class="n">${esc(data.chapter || '01')}</div>`);
+    const ch = h('div', 'pn-panel pn-cover-ch', null, `<div class="sc"></div><div class="l">${esc(data.chapterLabel || '')}</div><div class="m">SEQ · TAKE 1</div><div class="n">${esc(data.chapter || '01')}</div>`);
     const sub = h('div', 'pn-panel pn-cover-sub', null, mark(data.subtitle));
+    if (blank(data.subtitle)) hide(sub);   // v3.5：没写副标题不出空面板
     const bootLines = (data.boot && data.boot.length ? data.boot : ['MOUNTING demo_data.json ··· SCENES ×10', 'LOADING components.js · 10 SENTENCE TYPES', 'BOOTING CAMERA RIG + AVATAR MORPH FX']).slice(0, 3);
     const boot = h('div', 'pn-panel pn-boot');
+    if (!(data.boot && data.boot.length)) hide(boot);   // v3.5：没写 boot 不出默认英文启动日志面板
     const track = h('div', 'pn-track', 'left:40px;top:540px;width:1160px;', '<i></i>');
     const fill = track.querySelector('i');
     const dim = h('div', 'pn-meta', 'left:40px;top:562px;color:#94A3B8;', esc(data.dim || ''));
     const pct = h('div', 'pn-meta', 'right:40px;top:562px;color:var(--pn-jade);', 'BOOT 0%');
     const st = badge(data.stamp || '', data.stampSmall || '', 'var(--pn-crimson)', 'left:1004px;top:280px;font-size:40px;');
+    if (blank(data.stamp) && blank(data.stampSmall)) hide(st);   // v3.5：没写 stamp 不出空胶囊
     el.append(kick, led, title, ch, sub, boot, track, dim, pct, st);
     A.add(kick, 0.1, 0.3, { x: -30, o: 0 }, { x: 0, o: 1 });
     A.add(led, 0.3, 0.3, { o: 0 }, { o: 1 });
@@ -382,7 +388,7 @@
     const hd = head(data.title, 'left:38px;top:64px;');
     const gap = 40, w = (1160 - gap * (n - 1)) / n, fs = n === 1 ? 190 : n === 2 ? 140 : 100;
     const cards = items.map((it, i) => h('div', `pn-panel pn-stat${i === n - 1 && n > 1 ? ' hot' : ''}`, `left:${40 + i * (w + gap)}px;width:${w}px;`,
-      `<div class="lb">${esc(it.label || '')}</div><div class="num" style="font-size:${fs}px;">${it.prefix ? `<span class="pf">${esc(it.prefix)}</span>` : ''}<b>0</b><span class="u">${esc(it.unit || '')}</span></div><div class="pn-meter">${'<s></s>'.repeat(SEG)}</div><div class="sc"><span>LEVEL</span><span class="pc">0%</span></div>`));
+      `<div class="lb"${blank(it.label) ? ' style="visibility:hidden"' : ''}>${esc(it.label || '')}</div><div class="num" style="font-size:${fs}px;">${it.prefix ? `<span class="pf">${esc(it.prefix)}</span>` : ''}<b>0</b><span class="u">${esc(it.unit || '')}</span></div><div class="pn-meter">${'<s></s>'.repeat(SEG)}</div><div class="sc"><span>LEVEL</span><span class="pc">0%</span></div>`));
     const nums = cards.map((c) => c.querySelector('.num'));
     const segs = cards.map((c) => Array.from(c.querySelectorAll('.pn-meter s')));
     const pcs = cards.map((c) => c.querySelector('.pc'));
@@ -427,18 +433,20 @@
     const el = h('div', 'pn-zone');
     const kick = kicker(data.kicker, 'left:40px;top:28px;');
     const hd = head(data.title, 'left:38px;top:64px;');
-    const tag = chip(data.dim || `${n} STEPS`, 'var(--pn-amber)', 'right:40px;top:84px;font-size:20px;');
+    const tag = chip(data.dim || '', 'var(--pn-amber)', 'right:40px;top:84px;font-size:20px;');
+    if (blank(data.dim)) hide(tag);   // v3.5：没写 dim 不出（原默认 N STEPS）
     const AW = 50, cw = (1160 - AW * (n - 1)) / n;
     const cx = (i) => 40 + i * (cw + AW) + cw / 2;
     const cards = items.map((it, i) => h('div', 'pn-panel pn-node', `left:${40 + i * (cw + AW)}px;width:${cw}px;--a:${ACC[i % 4]};`,
-      `<div class="hd"><span class="no">${esc(it.no || String(i + 1).padStart(2, '0'))}</span>NODE<span class="pt"></span></div><div class="nm">${esc(it.title)}</div><div class="fn">${esc(it.desc || '')}</div>`));
+      `<div class="hd"><span class="no">${esc(it.no || String(i + 1).padStart(2, '0'))}</span>NODE<span class="pt"></span></div><div class="nm">${esc(it.title)}</div>${blank(it.desc) ? '' : `<div class="fn">${esc(it.desc)}</div>`}`));
     const stubs = items.map((_, i) => h('div', 'pn-stub', `left:${cx(i) - 1}px;`));
     const rail = h('div', 'pn-rail', null, '<i></i>');
     const rfill = rail.querySelector('i');
     const pkts = items.slice(1).map((_, i) => h('div', 'pn-pkt', `--a:${ACC[(i + 1) % 4]};`));
     const bin = h('div', 'pn-panel pn-bin', null,
-      `<div class="f">▣ ${esc(data.folder || 'PROJECT /')}</div><div class="b">${esc(data.folderBig || '')}</div><div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>${data.label ? `<div class="lbl">${esc(data.label)}${data.labelSmall ? `<small>${esc(data.labelSmall)}</small>` : ''}</div>` : ''}`);
+      `${blank(data.folder) ? '' : `<div class="f">▣ ${esc(data.folder)}</div>`}${blank(data.folderBig) ? '' : `<div class="b">${esc(data.folderBig)}</div>`}<div class="m">${esc(data.folderMeta || '').replace(/\n/g, '<br/>')}</div>${data.label ? `<div class="lbl">${esc(data.label)}${data.labelSmall ? `<small>${esc(data.labelSmall)}</small>` : ''}</div>` : ''}`);
     const lbl = bin.querySelector('.lbl');
+    if (blank(data.folder) && blank(data.folderBig) && blank(data.folderMeta) && blank(data.label)) hide(bin);   // v3.5：输出目录一个字段都没写 → 整条不出
     el.append(kick, hd, tag, rail, ...stubs, ...cards, ...pkts, bin);
     headIn(A, kick, hd);
     A.add(tag, 0.5, 0.3, { o: 0, s: 1.3 }, { o: 1, s: 1 }, 'back');
@@ -475,14 +483,14 @@
     const RH = n >= 5 ? 52 : 60, EX = 52, R0 = 180;
     const el = h('div', 'pn-zone');
     const ide = h('div', 'pn-panel pn-ide', null,
-      `${winbar(data.kicker || 'RULES.md', 'UTF-8 · LF')}<div class="ttl">${esc(data.title)}</div><div class="sub">${esc(data.subtitle || '')}</div><div class="pass">0/${n} PASSED</div><div class="hr"></div>`);
+      `${winbar(data.kicker || '', 'UTF-8 · LF')}<div class="ttl">${esc(data.title)}</div><div class="sub">${esc(data.subtitle || '')}</div><div class="pass">0/${n} PASSED</div><div class="hr"></div>`);
     const pass = ide.querySelector('.pass');
     const rows = items.map((it, i) => {
       const r = h('div', 'pn-acc', `--a:${ACC[i % 4]};height:${RH}px;`,
-        `<div class="no">${String(i + 1).padStart(2, '0')}</div><div class="box">${PROPS.check(30, '#061014', 4)}</div><div class="k">${esc(it.k)}</div><div class="bd">RULE</div><div class="d">${esc(it.d || '')}</div>`);
+        `<div class="no">${String(i + 1).padStart(2, '0')}</div><div class="box">${PROPS.check(30, '#061014', 4)}</div><div class="k">${esc(it.k)}</div><div class="bd">RULE</div><div class="d"${blank(it.d) ? ' style="display:none"' : ''}>${esc(it.d || '')}</div>`);
       ide.appendChild(r); return r;
     });
-    const memo = data.note ? h('div', 'pn-memo', null, `<small>${esc(data.noteLead || 'NOTE')}</small>${mark(data.note)}`) : null;
+    const memo = data.note ? h('div', 'pn-memo', null, `${blank(data.noteLead) ? '' : `<small>${esc(data.noteLead)}</small>`}${mark(data.note)}`) : null;
     if (memo) ide.appendChild(memo);
     el.appendChild(ide);
     rise(A, ide, 0.05, 50, 0.55);
@@ -495,7 +503,7 @@
       let y = R0, done = 0;
       rows.forEach((r, i) => {
         const open = EASE.out(clamp01((t - tO[i]) / 0.3)) * (i < n - 1 ? 1 - EASE.out(clamp01((t - tO[i + 1]) / 0.3)) : 1);
-        const hh = RH + EX * open;
+        const hh = RH + (blank(items[i].d) ? 0 : EX) * open;   // v3.5：没写说明的行不展开空条
         r.style.top = `${y.toFixed(1)}px`; r.style.height = `${hh.toFixed(1)}px`;
         r.querySelector('.d').style.opacity = open.toFixed(3);
         r.classList.toggle('open', open > 0.5);
@@ -519,12 +527,13 @@
     const kick = kicker(data.kicker, 'left:40px;top:28px;');
     const hd = head(data.title, 'left:38px;top:64px;');
     const L = h('div', 'pn-panel pn-cmp wrong', 'left:40px;',
-      `<div class="band">${esc(w.label || '✕ WRONG')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div><div class="pn-redbox"><b>1</b></div>`);
+      `<div class="band">${esc(w.label || '✕')}</div><div class="t">${esc(w.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(w.desc || '')}</div><div class="pn-redbox"><b>1</b></div>`);
     const R = h('div', 'pn-panel pn-cmp right', 'left:670px;',
-      `<div class="band">${esc(r.label || '✓ RIGHT')}</div><div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div><div class="ok">${PROPS.check(34, '#061014', 5)}</div>`);
+      `<div class="band">${esc(r.label || '✓')}</div><div class="t">${esc(r.title).replace(/\n/g, '<br/>')}</div><div class="d">${esc(r.desc || '')}</div><div class="ok">${PROPS.check(34, '#061014', 5)}</div>`);
     const vs = h('div', 'pn-vs', null, 'VS');
     const xs = badge(w.stamp || '✕', '', 'var(--pn-crimson)', 'left:330px;top:438px;font-size:30px;');
-    const verdict = h('div', 'pn-panel pn-verdict', null, `<b>${esc(data.verdictLabel || 'VERDICT')}</b><span>${mark(data.verdict || '')}</span>`);
+    const verdict = h('div', 'pn-panel pn-verdict', null, `${blank(data.verdictLabel) ? '' : `<b>${esc(data.verdictLabel)}</b>`}<span>${mark(data.verdict || '')}</span>`);
+    if (blank(data.verdict) && blank(data.verdictLabel)) hide(verdict);   // v3.5：没写 verdict 不出结论条
     el.append(kick, hd, L, R, vs, xs, verdict);
     headIn(A, kick, hd);
     rise(A, L, 0.5, 50);
@@ -631,8 +640,9 @@
       .map(([p, b]) => h('div', 'pn-vf', p + b));
     const rec = h('div', 'pn-rec', right ? 'left:auto;right:96px;' : '', '<i></i><span>REC 00:00:00:00</span>');
     const recTx = rec.querySelector('span');
-    const card = h('div', 'pn-q', side, `<div class="k">${esc(data.kicker || 'QUOTE')}</div><div class="t">${mark(data.text)}</div><div class="by">${esc(data.by || '')}</div>`);
+    const card = h('div', 'pn-q', side, `${blank(data.kicker) ? '' : `<div class="k">${esc(data.kicker)}</div>`}<div class="t"${blank(data.kicker) ? ' style="margin-top:0"' : ''}>${mark(data.text)}</div>${blank(data.by) ? '' : `<div class="by">${esc(data.by)}</div>`}`);
     const st = badge(data.stamp || '', data.stampSmall || '', 'var(--pn-amber)', `${right ? 'right:110px;' : 'left:110px;'}top:${data.stampTop || 690}px;font-size:46px;`);
+    if (blank(data.stamp) && blank(data.stampSmall)) hide(st);   // v3.5：没写 stamp 不出空胶囊
     el.append(...vf, rec, card, st);
     vf.forEach((v, i) => A.add(v, 0.25 + i * 0.05, 0.4, { o: 0, s: 1.4 }, { o: 1, s: 1 }));
     A.add(rec, 0.4, 0.3, { o: 0 }, { o: 1 });
@@ -655,11 +665,13 @@
     const kick = kicker(data.kicker, 'left:40px;top:28px;');
     const hd = head(data.title, 'left:38px;top:64px;');
     const jobs = (data.actions || []).slice(0, 3).map((a, i) => h('div', 'pn-panel pn-job', `top:${160 + i * 136}px;--a:${ACC[i % 4]};`,
-      `<span class="tg">${esc(a.tag || 'JOB')}</span><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div><div class="no">${String(i + 1).padStart(2, '0')}</div><div class="st">QUEUED</div><div class="pb"><i></i></div>`));
+      `<span class="tg"${blank(a.tag) ? ' style="visibility:hidden"' : ''}>${esc(a.tag || '')}</span><div class="t">${esc(a.title)}</div><div class="d">${esc(a.desc || '')}</div><div class="no">${String(i + 1).padStart(2, '0')}</div><div class="st">QUEUED</div><div class="pb"><i></i></div>`));
     const c = data.cta || {};
     const BA = ['var(--pn-amber)', 'var(--pn-crimson)', 'var(--pn-jade)'];
-    const cta = h('div', 'pn-panel pn-cta', null, `<div class="k">${esc(c.kicker || 'OPEN SOURCE')}</div><div class="t">${esc(c.title || '')}</div><div class="repo"><span class="p">$ git clone</span><span class="rp"></span></div><div class="btns">${(c.buttons || []).slice(0, 3).map((b, i) => `<span style="--a:${BA[i]}">${esc(b)}</span>`).join('')}</div><div class="ex">⬇ EXPORT · H.264 · 1080p30</div>`);
-    const go = badge(c.stamp || 'GO', c.stampSmall || '', 'var(--pn-jade)', 'left:1010px;top:500px;font-size:48px;');
+    const cta = h('div', 'pn-panel pn-cta', null, `${blank(c.kicker) ? '' : `<div class="k">${esc(c.kicker)}</div>`}<div class="t">${esc(c.title || '')}</div><div class="repo"${blank(c.repo) ? ' style="display:none"' : ''}><span class="p">$ git clone</span><span class="rp"></span></div><div class="btns">${(c.buttons || []).slice(0, 3).map((b, i) => `<span style="--a:${BA[i]}">${esc(b)}</span>`).join('')}</div><div class="ex">⬇ EXPORT · H.264 · 1080p30</div>`);
+    const go = badge(c.stamp || '', c.stampSmall || '', 'var(--pn-jade)', 'left:1010px;top:500px;font-size:48px;');
+    if (blank(c.stamp) && blank(c.stampSmall)) hide(go);   // v3.5：没写 stamp 不出（原默认 GO）
+    if (blank(c.kicker) && blank(c.title) && blank(c.repo) && !(c.buttons || []).length) hide(cta);   // v3.5：cta 一个字段都没写 → 整块不出
     el.append(kick, hd, ...jobs, cta, go);
     headIn(A, kick, hd);
     const t0 = 0.6, stp = Math.min(0.45, (D * 0.25) / Math.max(1, jobs.length));
